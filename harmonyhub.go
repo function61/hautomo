@@ -147,7 +147,9 @@ func prettyXmlName(name xml.Name) string {
 func (x *HarmonyHubConnection) InitAndAuthenticate() error {
 	openingMsg := `<stream:stream xmlns="jabber:client" xmlns:stream="http://etherx.jabber.org/streams" version="1.0" to="x.com">`
 
-	x.Send(openingMsg)
+	if err := x.Send(openingMsg); err != nil {
+		return err
+	}
 
 	// We expect the server to start a <stream>.
 	streamStartEl, err := nextStart(x.xmlDecoder)
@@ -187,7 +189,9 @@ func (x *HarmonyHubConnection) InitAndAuthenticate() error {
 	authCreds := "Z3Vlc3RAeC5jb20AZ3Vlc3QAZ3Vlc3Q="
 	authMsg := fmt.Sprintf("<auth xmlns='urn:ietf:params:xml:ns:xmpp-sasl' mechanism='PLAIN'>%s</auth>\n", authCreds)
 
-	x.Send(authMsg)
+	if err := x.Send(authMsg); err != nil {
+		return err
+	}
 
 	// Next message should be either success or failure.
 	authRespElName, authResp, err := nextFullElement(x.xmlDecoder)
