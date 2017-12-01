@@ -126,7 +126,9 @@ type HarmonyHubConnection struct {
 	xmlDecoder *xml.Decoder
 }
 
-func NewHarmonyHubConnection(addr string) *HarmonyHubConnection {
+func NewHarmonyHubConnection(addr string, stopper *Stopper) *HarmonyHubConnection {
+	defer stopper.Done()
+
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		log.Fatal(err)
@@ -144,11 +146,15 @@ func NewHarmonyHubConnection(addr string) *HarmonyHubConnection {
 	// keepalives (line breaks). TCP level keepalives didn't seem to work.
 	go func() {
 		for {
-			time.Sleep(30 * time.Second)
-
-			if err := x.Send("\n"); err != nil {
-				log.Printf("harmony: failed to send keepalive newline: %s", err.Error())
-				break
+			select {
+			case <-time.After(30 * time.Second):
+				if err := x.Send("\n"); err != nil {
+					log.Printf("harmony: failed to send keepalive newline: %s", err.Error())
+					break
+				}
+			case <-stopper.ShouldStop:
+				log.Println("harmony: stopping")
+				return
 			}
 		}
 	}()

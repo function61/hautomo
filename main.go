@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/function61/eventhorizon/util/clicommon"
 	"log"
 	"strings"
 )
@@ -86,8 +87,13 @@ type Application struct {
 	deviceGroupById      map[string]*DeviceGroup
 }
 
-func NewApplication() *Application {
-	harmonyHubConnection := NewHarmonyHubConnection("192.168.1.153:5222")
+func NewApplication(stopper *Stopper) *Application {
+
+	// since we don't own the stopper we got for ourselves,
+	// we should not call Add() on it
+	subStopper := NewStopper()
+
+	harmonyHubConnection := NewHarmonyHubConnection("192.168.1.153:5222", subStopper.Add())
 
 	if err := harmonyHubConnection.InitAndAuthenticate(); err != nil {
 		panic(err)
@@ -108,6 +114,15 @@ func NewApplication() *Application {
 		panic(err)
 	}
 	*/
+
+	go func() {
+		defer stopper.Done()
+		<-stopper.ShouldStop
+
+		log.Printf("Application: stopping")
+
+		subStopper.StopAll()
+	}()
 
 	return &Application{
 		harmonyHubConnection: harmonyHubConnection,
@@ -233,7 +248,8 @@ func main() {
 		return
 	}
 
-	app := NewApplication()
+	stopper := NewStopper()
+	app := NewApplication(stopper.Add())
 
 	// living room
 
@@ -248,8 +264,16 @@ func main() {
 	app.SyncToCloud()
 
 	if *irw {
-		go irwPoller(app)
+		go irwPoller(app, stopper.Add())
 	}
 
-	pollerLoop(app)
+	go sqsPollerLoop(app, stopper.Add())
+
+	clicommon.WaitForInterrupt()
+
+	log.Println("main: received interrupt")
+
+	stopper.StopAll()
+
+	log.Println("main: all components stopped")
 }

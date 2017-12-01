@@ -20,7 +20,9 @@ type TurnOffRequest struct {
 	DeviceId string `json:"id"`
 }
 
-func pollerLoop(app *Application) {
+func sqsPollerLoop(app *Application, stopper *Stopper) {
+	defer stopper.Done()
+
 	sess := session.Must(session.NewSession())
 
 	// access keys provided from command line
@@ -31,6 +33,13 @@ func pollerLoop(app *Application) {
 	})
 
 	for {
+		select {
+		case <-stopper.ShouldStop:
+			log.Println("sqsPollerLoop: stopping")
+			return
+		default:
+		}
+
 		result, receiveErr := sqsClient.ReceiveMessage(&sqs.ReceiveMessageInput{
 			MaxNumberOfMessages: aws.Int64(10),
 			QueueUrl:            &queueUrl,
@@ -38,7 +47,7 @@ func pollerLoop(app *Application) {
 		})
 
 		if receiveErr != nil {
-			log.Printf("pollerLoop: error in ReceiveMessage(): %s", receiveErr.Error())
+			log.Printf("sqsPollerLoop: error in ReceiveMessage(): %s", receiveErr.Error())
 			time.Sleep(5 * time.Second)
 			continue
 		}
@@ -55,7 +64,7 @@ func pollerLoop(app *Application) {
 
 			msgParseErr, msgType, msgJsonBody := parseMessage(*msg.Body)
 			if msgParseErr != nil {
-				log.Printf("pollerLoop: parse error: " + msgParseErr.Error())
+				log.Printf("sqsPollerLoop: parse error: " + msgParseErr.Error())
 			}
 
 			switch msgType {
@@ -74,7 +83,7 @@ func pollerLoop(app *Application) {
 
 				_ = app.TurnOff(req.DeviceId)
 			default:
-				log.Printf("pollerLoop: unknown msgType: " + msgType)
+				log.Printf("sqsPollerLoop: unknown msgType: " + msgType)
 			}
 		}
 

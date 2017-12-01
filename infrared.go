@@ -13,7 +13,9 @@ import (
 var mceUsbCommandRe = regexp.MustCompile(" 00 ([a-zA-Z_0-9]+) mceusb$")
 
 // reads LIRC's "$ irw" output
-func irwPoller(app *Application) {
+func irwPoller(app *Application, stopper *Stopper) {
+	defer stopper.Done()
+
 	log.Println("irwPoller: starting")
 
 	irw := exec.Command("irw")
@@ -65,6 +67,14 @@ func irwPoller(app *Application) {
 			}
 
 		}
+	}()
+
+	go func() {
+		<-stopper.ShouldStop
+
+		log.Println("irwPoller: asked to stop")
+
+		irw.Process.Kill()
 	}()
 
 	// wait to complete
