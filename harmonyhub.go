@@ -8,7 +8,7 @@ import (
 	"golang.org/x/net/html/charset"
 	"log"
 	"net"
-	// "github.com/mattn/go-xmpp"
+	"time"
 )
 
 // https://github.com/petele/PiHomeControl
@@ -135,10 +135,25 @@ func NewHarmonyHubConnection(addr string) *HarmonyHubConnection {
 	xmlDecoder := xml.NewDecoder(conn)
 	xmlDecoder.CharsetReader = charset.NewReaderLabel
 
-	return &HarmonyHubConnection{
+	x := &HarmonyHubConnection{
 		conn:       conn,
 		xmlDecoder: xmlDecoder,
 	}
+
+	// hub disconnects us in 60s unless we send application level
+	// keepalives (line breaks). TCP level keepalives didn't seem to work.
+	go func() {
+		for {
+			time.Sleep(30 * time.Second)
+
+			if err := x.Send("\n"); err != nil {
+				log.Printf("harmony: failed to send keepalive newline: %s", err.Error())
+				break
+			}
+		}
+	}()
+
+	return x
 }
 
 func prettyXmlName(name xml.Name) string {
