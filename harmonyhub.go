@@ -223,10 +223,9 @@ func (x *HarmonyHubConnection) InitAndAuthenticate() error {
 func (x *HarmonyHubConnection) Send(msg string) error {
 	log.Printf("> %s", msg)
 
-	// TODO: error
-	fmt.Fprintf(x.conn, msg)
+	_, err := x.conn.Write([]byte(msg))
 
-	return nil
+	return err
 }
 
 func (x *HarmonyHubConnection) StartStreamTo(to string) error {
