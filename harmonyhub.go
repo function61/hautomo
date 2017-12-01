@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -185,8 +186,8 @@ func (x *HarmonyHubConnection) InitAndAuthenticate() error {
 		return errors.New("expecting PLAIN mechanism")
 	}
 
-	// guest
-	authCreds := "Z3Vlc3RAeC5jb20AZ3Vlc3QAZ3Vlc3Q="
+	// don't know why it's OK to log in as guest to the hub...
+	authCreds := saslAuthString("guest@x.com", "guest", "guest")
 	authMsg := fmt.Sprintf("<auth xmlns='urn:ietf:params:xml:ns:xmpp-sasl' mechanism='PLAIN'>%s</auth>\n", authCreds)
 
 	if err := x.Send(authMsg); err != nil {
@@ -332,6 +333,11 @@ func (x *HarmonyHubConnection) HoldAndRelease(deviceId string, commandName strin
 	}
 
 	return nil
+}
+
+func saslAuthString(email string, login string, pwd string) string {
+	return base64.StdEncoding.EncodeToString(
+		[]byte(fmt.Sprintf("%s\x00%s\x00%s", email, login, pwd)))
 }
 
 // types
