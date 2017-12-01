@@ -187,10 +187,14 @@ func (x *HarmonyHubConnection) InitAndAuthenticate() error {
 	}
 
 	// don't know why it's OK to log in as guest to the hub...
-	authCreds := saslAuthString("guest@x.com", "guest", "guest")
-	authMsg := fmt.Sprintf("<auth xmlns='urn:ietf:params:xml:ns:xmpp-sasl' mechanism='PLAIN'>%s</auth>\n", authCreds)
+	plainAuthContent := saslAuthString("guest@x.com", "guest", "guest")
 
-	if err := x.Send(authMsg); err != nil {
+	authElXml, _ := xml.Marshal(saslAuth{
+		Mechanism: "PLAIN",
+		Content:   plainAuthContent,
+	})
+
+	if err := x.Send(string(authElXml) + "\n"); err != nil {
 		return err
 	}
 
@@ -341,6 +345,12 @@ func saslAuthString(email string, login string, pwd string) string {
 }
 
 // types
+
+type saslAuth struct {
+	XMLName   xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-sasl auth"`
+	Mechanism string   `xml:"mechanism,attr"`
+	Content   string   `xml:",chardata"`
+}
 
 // RFC 3920  C.1  Streams name space
 type streamFeatures struct {
