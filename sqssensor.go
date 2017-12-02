@@ -75,14 +75,14 @@ func sqsPollerLoop(app *Application, stopper *Stopper) {
 					panic(err)
 				}
 
-				app.powerEvent <- NewPowerEvent(req.DeviceIdOrDeviceGroupId, true)
+				app.powerEvent <- NewPowerEvent(req.DeviceIdOrDeviceGroupId, powerKindOn)
 			case "turn_off":
 				var req TurnOffRequest
 				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 					panic(err)
 				}
 
-				app.powerEvent <- NewPowerEvent(req.DeviceIdOrDeviceGroupId, false)
+				app.powerEvent <- NewPowerEvent(req.DeviceIdOrDeviceGroupId, powerKindOff)
 			default:
 				log.Printf("sqsPollerLoop: unknown msgType: " + msgType)
 			}

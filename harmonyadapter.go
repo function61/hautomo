@@ -42,6 +42,10 @@ func NewHarmonyHubAdapter(id string, addr string, stopper *Stopper) *Adapter {
 				if err := harmonyHubConnection.HoldAndRelease(powerMsg.DeviceId, powerMsg.PowerCommand); err != nil {
 					log.Printf("HarmonyHubAdapter: HoldAndRelease failed: %s", err.Error())
 				}
+			case infraredMsg := <-adapter.InfraredMsg:
+				if err := harmonyHubConnection.HoldAndRelease(infraredMsg.DeviceId, infraredMsg.Command); err != nil {
+					log.Printf("HarmonyHubAdapter: HoldAndRelease failed: %s", err.Error())
+				}
 			}
 		}
 	}()

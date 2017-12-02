@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/function61/eventhorizon/util/clicommon"
@@ -9,22 +10,29 @@ import (
 )
 
 type Application struct {
-	adapterById          map[string]*Adapter
-	deviceById           map[string]*Device
-	deviceGroupById      map[string]*DeviceGroup
-	infraredToPowerEvent map[string]PowerEvent
-	infraredEvent        chan InfraredEvent
-	powerEvent           chan PowerEvent
+	adapterById           map[string]*Adapter
+	deviceById            map[string]*Device
+	deviceGroupById       map[string]*DeviceGroup
+	infraredToPowerEvent  map[string]PowerEvent
+	infraredToInfraredMsg map[string]InfraredToInfraredWrapper
+	infraredEvent         chan InfraredEvent
+	powerEvent            chan PowerEvent
+}
+
+type InfraredToInfraredWrapper struct {
+	adapter     *Adapter
+	infraredMsg InfraredMsg
 }
 
 func NewApplication(stopper *Stopper) *Application {
 	app := &Application{
-		adapterById:          make(map[string]*Adapter),
-		deviceById:           make(map[string]*Device),
-		deviceGroupById:      make(map[string]*DeviceGroup),
-		infraredToPowerEvent: make(map[string]PowerEvent),
-		infraredEvent:        make(chan InfraredEvent, 1),
-		powerEvent:           make(chan PowerEvent, 1),
+		adapterById:           make(map[string]*Adapter),
+		deviceById:            make(map[string]*Device),
+		deviceGroupById:       make(map[string]*DeviceGroup),
+		infraredToPowerEvent:  make(map[string]PowerEvent),
+		infraredToInfraredMsg: make(map[string]InfraredToInfraredWrapper),
+		infraredEvent:         make(chan InfraredEvent, 1),
+		powerEvent:            make(chan PowerEvent, 1),
 	}
 
 	go func() {
@@ -38,16 +46,17 @@ func NewApplication(stopper *Stopper) *Application {
 				log.Println("application: stopping")
 				return
 			case power := <-app.powerEvent:
-				if power.On {
-					app.TurnOnDeviceOrDeviceGroup(power.DeviceIdOrDeviceGroupId)
-				} else {
-					app.TurnOffDeviceOrDeviceGroup(power.DeviceIdOrDeviceGroupId)
-				}
+				app.deviceOrDeviceGroupPower(power)
 			case ir := <-app.infraredEvent:
-				log.Printf("application: IR: %s", ir.Event)
 
-				if powerEvent, has := app.infraredToPowerEvent[ir.Event]; has {
+				if powerEvent, ok := app.infraredToPowerEvent[ir.Event]; ok {
+					log.Printf("application: IR: %s -> power for %s", ir.Event, powerEvent.DeviceIdOrDeviceGroupId)
+
 					app.powerEvent <- powerEvent
+				} else if i2i, ok := app.infraredToInfraredMsg[ir.Event]; ok {
+					log.Printf("application: IR passthrough: %s -> %s", ir.Event, i2i.infraredMsg.Command)
+
+					i2i.adapter.InfraredMsg <- i2i.infraredMsg
 				} else {
 					log.Println("application: IR ignored")
 				}
@@ -75,83 +84,58 @@ func (a *Application) InfraredShouldPower(key string, powerEvent PowerEvent) {
 	a.infraredToPowerEvent[key] = powerEvent
 }
 
-func (a *Application) TurnOnDeviceOrDeviceGroup(deviceId string) error {
-	device, deviceFound := a.deviceById[deviceId]
-	if deviceFound {
-		return a.TurnOn(device)
-
-	}
-
-	deviceGroup, deviceGroupFound := a.deviceGroupById[deviceId]
-	if deviceGroupFound {
-		return a.turnOnDeviceGroup(deviceGroup)
-	}
-
-	return errDeviceNotFound
-}
-
-func (a *Application) TurnOffDeviceOrDeviceGroup(deviceId string) error {
-	device, deviceFound := a.deviceById[deviceId]
-	if deviceFound {
-		return a.TurnOff(device)
-
-	}
-
-	deviceGroup, deviceGroupFound := a.deviceGroupById[deviceId]
-	if deviceGroupFound {
-		return a.turnOffDeviceGroup(deviceGroup)
-	}
-
-	return errDeviceNotFound
-}
-
-func (a *Application) TurnOn(device *Device) error {
-	log.Printf("TurnOn: %s", device.Name)
-
+func (a *Application) InfraredShouldInfrared(key string, deviceId string, command string) {
+	device := a.deviceById[deviceId]
 	adapter := a.adapterById[device.AdapterId]
-	adapter.PowerMsg <- NewPowerMsg(device.AdaptersDeviceId, device.PowerOnCmd)
 
-	device.ProbablyTurnedOn = true
-
-	return nil
+	a.infraredToInfraredMsg[key] = InfraredToInfraredWrapper{adapter, NewInfraredMsg(device.AdaptersDeviceId, command)}
 }
 
-func (a *Application) TurnOff(device *Device) error {
-	log.Printf("TurnOff: %s", device.Name)
+func (a *Application) deviceOrDeviceGroupPower(power PowerEvent) error {
+	device, deviceFound := a.deviceById[power.DeviceIdOrDeviceGroupId]
+	if deviceFound {
+		return a.devicePower(device, power)
+	}
 
-	adapter := a.adapterById[device.AdapterId]
-	adapter.PowerMsg <- NewPowerMsg(device.AdaptersDeviceId, device.PowerOffCmd)
+	deviceGroup, deviceGroupFound := a.deviceGroupById[power.DeviceIdOrDeviceGroupId]
+	if deviceGroupFound {
+		for _, deviceId := range deviceGroup.DeviceIds {
+			device := a.deviceById[deviceId]
 
-	device.ProbablyTurnedOn = false
-
-	return nil
-}
-
-func (a *Application) turnOnDeviceGroup(deviceGroup *DeviceGroup) error {
-	log.Printf("turnOnDeviceGroup: %s", deviceGroup.Name)
-
-	for _, deviceId := range deviceGroup.DeviceIds {
-		device := a.deviceById[deviceId] // FIXME: panics if not found
-
-		if device.ProbablyTurnedOn {
-			continue
+			_ = a.devicePower(device, power)
 		}
 
-		_ = a.TurnOn(device)
+		return nil
 	}
 
-	return nil
+	return errDeviceNotFound
 }
 
-func (a *Application) turnOffDeviceGroup(deviceGroup *DeviceGroup) error {
-	log.Printf("turnOffDeviceGroup: %s", deviceGroup.Name)
+func (a *Application) devicePower(device *Device, power PowerEvent) error {
+	if power.Kind == powerKindOn {
+		log.Printf("Power on: %s", device.Name)
 
-	for _, deviceId := range deviceGroup.DeviceIds {
-		device := a.deviceById[deviceId] // FIXME: panics if not found
+		adapter := a.adapterById[device.AdapterId]
+		adapter.PowerMsg <- NewPowerMsg(device.AdaptersDeviceId, device.PowerOnCmd)
 
-		// intentionally missing ProbablyTurnedOn check
+		device.ProbablyTurnedOn = true
+	} else if power.Kind == powerKindOff {
+		log.Printf("Power off: %s", device.Name)
 
-		_ = a.TurnOff(device)
+		adapter := a.adapterById[device.AdapterId]
+		adapter.PowerMsg <- NewPowerMsg(device.AdaptersDeviceId, device.PowerOffCmd)
+
+		device.ProbablyTurnedOn = false
+	} else if power.Kind == powerKindToggle {
+		log.Printf("Power toggle: %s, current state = %v", device.Name, device.ProbablyTurnedOn)
+
+		if device.ProbablyTurnedOn {
+			return a.devicePower(device, NewPowerEvent(device.Id, powerKindOff))
+		} else {
+			return a.devicePower(device, NewPowerEvent(device.Id, powerKindOn))
+		}
+	} else {
+		panic(errors.New("unknown power kind"))
 	}
 
 	return nil
@@ -205,10 +189,15 @@ func main() {
 		"98d3cb01",
 	}))
 
-	app.InfraredShouldPower("KEY_VOLUMEUP", NewPowerEvent("98d3cb01", true))
-	app.InfraredShouldPower("KEY_VOLUMEDOWN", NewPowerEvent("98d3cb01", false))
-	app.InfraredShouldPower("KEY_CHANNELUP", NewPowerEvent("d2ff0882", true))
-	app.InfraredShouldPower("KEY_CHANNELDOWN", NewPowerEvent("d2ff0882", false))
+	/*
+	app.InfraredShouldPower("KEY_VOLUMEUP", NewPowerEvent("98d3cb01", powerKindToggle))
+	app.InfraredShouldPower("KEY_VOLUMEDOWN", NewPowerEvent("98d3cb01", powerKindOff))
+	app.InfraredShouldPower("KEY_CHANNELUP", NewPowerEvent("d2ff0882", powerKindOn))
+	app.InfraredShouldPower("KEY_CHANNELDOWN", NewPowerEvent("d2ff0882", powerKindOff))
+	*/
+
+	app.InfraredShouldInfrared("KEY_VOLUMEUP", "c0730bb2", "VolumeUp")
+	app.InfraredShouldInfrared("KEY_VOLUMEDOWN", "c0730bb2", "VolumeDown")
 
 	app.SyncToCloud()
 

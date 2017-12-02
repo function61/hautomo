@@ -16,15 +16,30 @@ func NewInfraredEvent(remote string, event string) InfraredEvent {
 	}
 }
 
+type powerKind int
+
+const (
+	powerKindOn     powerKind = iota
+	powerKindOff              = iota
+	powerKindToggle           = iota
+)
+
 type PowerEvent struct {
 	DeviceIdOrDeviceGroupId string
-	On                      bool
+	Kind                    powerKind
 }
 
-func NewPowerEvent(deviceIdOrDeviceGroupId string, on bool) PowerEvent {
+func NewPowerEvent(deviceIdOrDeviceGroupId string, kind powerKind) PowerEvent {
 	return PowerEvent{
 		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
-		On: on,
+		Kind: kind,
+	}
+}
+
+func NewPowerToggleEvent(deviceIdOrDeviceGroupId string) PowerEvent {
+	return PowerEvent{
+		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
+		Kind: powerKindToggle,
 	}
 }
 
@@ -90,14 +105,28 @@ func NewPowerMsg(deviceId string, powerCommand string) PowerMsg {
 	}
 }
 
+type InfraredMsg struct {
+	DeviceId string // adapter's own id
+	Command  string
+}
+
+func NewInfraredMsg(deviceId string, command string) InfraredMsg {
+	return InfraredMsg{
+		DeviceId: deviceId,
+		Command:  command,
+	}
+}
+
 type Adapter struct {
-	Id       string
-	PowerMsg chan PowerMsg
+	Id          string
+	PowerMsg    chan PowerMsg
+	InfraredMsg chan InfraredMsg
 }
 
 func NewAdapter(id string) *Adapter {
 	return &Adapter{
-		Id:       id,
-		PowerMsg: make(chan PowerMsg),
+		Id:          id,
+		PowerMsg:    make(chan PowerMsg),
+		InfraredMsg: make(chan InfraredMsg),
 	}
 }
