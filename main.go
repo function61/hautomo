@@ -209,14 +209,8 @@ func NewAdapter(id string) *Adapter {
 
 func main() {
 	var irw *bool = flag.Bool("irw", false, "infrared reading")
-	var help *bool = flag.Bool("help", false, "help")
 
 	flag.Parse()
-
-	if *help {
-		flag.PrintDefaults()
-		return
-	}
 
 	stopper := NewStopper()
 	app := NewApplication()
