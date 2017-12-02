@@ -32,6 +32,8 @@ func sqsPollerLoop(app *Application, stopper *Stopper) {
 		Region: aws.String(endpoints.UsEast1RegionID),
 	})
 
+	log.Println("sqsPollerLoop: started")
+
 	for {
 		select {
 		case <-stopper.ShouldStop:
@@ -55,8 +57,6 @@ func sqsPollerLoop(app *Application, stopper *Stopper) {
 		ackList := []*sqs.DeleteMessageBatchRequestEntry{}
 
 		for _, msg := range result.Messages {
-			log.Printf("MessageId %s Body = %s", *msg.MessageId, *msg.Body)
-
 			ackList = append(ackList, &sqs.DeleteMessageBatchRequestEntry{
 				Id:            msg.MessageId,
 				ReceiptHandle: msg.ReceiptHandle,
@@ -89,7 +89,7 @@ func sqsPollerLoop(app *Application, stopper *Stopper) {
 		}
 
 		if len(ackList) > 0 {
-			log.Printf("deleting %d message(s)", len(ackList))
+			log.Printf("sqsPollerLoop: acking %d message(s)", len(ackList))
 
 			_, err := sqsClient.DeleteMessageBatch(&sqs.DeleteMessageBatchInput{
 				Entries:  ackList,

@@ -137,7 +137,7 @@ func NewHarmonyHubConnection(addr string, stopper *Stopper) *HarmonyHubConnectio
 	xmlDecoder := xml.NewDecoder(conn)
 	xmlDecoder.CharsetReader = charset.NewReaderLabel
 
-	x := &HarmonyHubConnection{
+	harmonyHubConnection := &HarmonyHubConnection{
 		conn:       conn,
 		xmlDecoder: xmlDecoder,
 	}
@@ -148,7 +148,9 @@ func NewHarmonyHubConnection(addr string, stopper *Stopper) *HarmonyHubConnectio
 		for {
 			select {
 			case <-time.After(30 * time.Second):
-				if err := x.Send("\n"); err != nil {
+				// not using Send() to suppress debug logging,
+				// and this is not application level stuff anyway
+				if _, err := harmonyHubConnection.conn.Write([]byte("\n")); err != nil {
 					log.Printf("harmony: failed to send keepalive newline: %s", err.Error())
 					break
 				}
@@ -159,7 +161,7 @@ func NewHarmonyHubConnection(addr string, stopper *Stopper) *HarmonyHubConnectio
 		}
 	}()
 
-	return x
+	return harmonyHubConnection
 }
 
 func prettyXmlName(name xml.Name) string {
@@ -242,7 +244,7 @@ func (x *HarmonyHubConnection) InitAndAuthenticate() error {
 }
 
 func (x *HarmonyHubConnection) Send(msg string) error {
-	log.Printf("> %s", msg)
+	log.Printf("harmony: > %s", msg)
 
 	_, err := x.conn.Write([]byte(msg))
 
