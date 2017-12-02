@@ -91,17 +91,37 @@ func (a *Application) AttachDeviceGroup(deviceGroup *DeviceGroup) {
 	a.deviceGroupById[deviceGroup.Id] = deviceGroup
 }
 
-func (a *Application) TurnOn(deviceId string) error {
+func (a *Application) TurnOnDeviceOrDeviceGroup(deviceId string) error {
 	device, deviceFound := a.deviceById[deviceId]
-	if !deviceFound {
-		deviceGroup, deviceGroupFound := a.deviceGroupById[deviceId]
-		if !deviceGroupFound {
-			return errDeviceNotFound
-		}
+	if deviceFound {
+		return a.TurnOn(device)
 
+	}
+
+	deviceGroup, deviceGroupFound := a.deviceGroupById[deviceId]
+	if deviceGroupFound {
 		return a.turnOnDeviceGroup(deviceGroup)
 	}
 
+	return errDeviceNotFound
+}
+
+func (a *Application) TurnOffDeviceOrDeviceGroup(deviceId string) error {
+	device, deviceFound := a.deviceById[deviceId]
+	if deviceFound {
+		return a.TurnOff(device)
+
+	}
+
+	deviceGroup, deviceGroupFound := a.deviceGroupById[deviceId]
+	if deviceGroupFound {
+		return a.turnOffDeviceGroup(deviceGroup)
+	}
+
+	return errDeviceNotFound
+}
+
+func (a *Application) TurnOn(device *Device) error {
 	log.Printf("TurnOn: %s", device.Name)
 
 	adapter := a.adapterById[device.AdapterId]
@@ -112,17 +132,7 @@ func (a *Application) TurnOn(deviceId string) error {
 	return nil
 }
 
-func (a *Application) TurnOff(deviceId string) error {
-	device, deviceFound := a.deviceById[deviceId]
-	if !deviceFound {
-		deviceGroup, deviceGroupFound := a.deviceGroupById[deviceId]
-		if !deviceGroupFound {
-			return errDeviceNotFound
-		}
-
-		return a.turnOffDeviceGroup(deviceGroup)
-	}
-
+func (a *Application) TurnOff(device *Device) error {
 	log.Printf("TurnOff: %s", device.Name)
 
 	adapter := a.adapterById[device.AdapterId]
@@ -137,13 +147,13 @@ func (a *Application) turnOnDeviceGroup(deviceGroup *DeviceGroup) error {
 	log.Printf("turnOnDeviceGroup: %s", deviceGroup.Name)
 
 	for _, deviceId := range deviceGroup.DeviceIds {
-		device := a.deviceById[deviceId] // TODO: panics if not found
+		device := a.deviceById[deviceId] // FIXME: panics if not found
 
 		if device.ProbablyTurnedOn {
 			continue
 		}
 
-		_ = a.TurnOn(device.Id)
+		_ = a.TurnOn(device)
 	}
 
 	return nil
@@ -153,11 +163,11 @@ func (a *Application) turnOffDeviceGroup(deviceGroup *DeviceGroup) error {
 	log.Printf("turnOffDeviceGroup: %s", deviceGroup.Name)
 
 	for _, deviceId := range deviceGroup.DeviceIds {
-		device := a.deviceById[deviceId] // TODO: panics if not found
+		device := a.deviceById[deviceId] // FIXME: panics if not found
 
 		// intentionally missing ProbablyTurnedOn check
 
-		_ = a.TurnOff(device.Id)
+		_ = a.TurnOff(device)
 	}
 
 	return nil
@@ -215,11 +225,11 @@ func main() {
 	stopper := NewStopper()
 	app := NewApplication()
 
-	app.DefineAdapter(NewHarmonyHubAdapter("harmonyHubAdapter", "192.168.1.153:5222", stopper.Add()))
+	harmonyHubAdapter := NewHarmonyHubAdapter("harmonyHubAdapter", "192.168.1.153:5222", stopper.Add())
+	particleAdapter := NewParticleAdapter("particleAdapter", "310027000647343138333038", getParticleAccessToken())
 
-	particleAccessToken := getParticleAccessToken()
-
-	app.DefineAdapter(NewParticleAdapter("particleAdapter", "310027000647343138333038", particleAccessToken))
+	app.DefineAdapter(harmonyHubAdapter)
+	app.DefineAdapter(particleAdapter)
 
 	app.AttachDevice(NewDevice("c0730bb2", "harmonyHubAdapter", "47917687", "Amplifier", "Onkyo TX-NR515", "PowerOn", "PowerOff"))
 

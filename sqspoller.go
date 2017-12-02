@@ -75,14 +75,14 @@ func sqsPollerLoop(app *Application, stopper *Stopper) {
 					panic(err)
 				}
 
-				_ = app.TurnOn(req.DeviceId)
+				_ = app.TurnOnDeviceOrDeviceGroup(req.DeviceId)
 			case "turn_off":
 				var req TurnOffRequest
 				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 					panic(err)
 				}
 
-				_ = app.TurnOff(req.DeviceId)
+				_ = app.TurnOffDeviceOrDeviceGroup(req.DeviceId)
 			default:
 				log.Printf("sqsPollerLoop: unknown msgType: " + msgType)
 			}

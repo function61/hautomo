@@ -55,13 +55,13 @@ func irwPoller(app *Application, stopper *Stopper) {
 
 			switch mceUsbCommand[1] {
 			case "KEY_VOLUMEUP":
-				app.TurnOn(speakerLight)
+				app.TurnOn(app.deviceById[speakerLight])
 			case "KEY_VOLUMEDOWN":
-				app.TurnOff(speakerLight)
+				app.TurnOff(app.deviceById[speakerLight])
 			case "KEY_CHANNELUP":
-				app.TurnOn(sofaLight)
+				app.TurnOn(app.deviceById[sofaLight])
 			case "KEY_CHANNELDOWN":
-				app.TurnOff(sofaLight)
+				app.TurnOff(app.deviceById[sofaLight])
 			default:
 				log.Println("irwPoller: command ignored")
 			}
