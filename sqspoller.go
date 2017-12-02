@@ -65,6 +65,7 @@ func sqsPollerLoop(app *Application, stopper *Stopper) {
 			msgParseErr, msgType, msgJsonBody := parseMessage(*msg.Body)
 			if msgParseErr != nil {
 				log.Printf("sqsPollerLoop: parse error: " + msgParseErr.Error())
+				continue
 			}
 
 			switch msgType {
