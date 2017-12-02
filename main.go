@@ -195,7 +195,7 @@ func main() {
 	app.AttachDevice(NewDevice("c0730bb2", "harmonyHubAdapter", "47917687", "Amplifier", "Onkyo TX-NR515", "PowerOn", "PowerOff"))
 
 	// for some reason the TV only wakes up with PowerToggle, not PowerOn
-	app.AttachDevice(NewDevice("7e7453da", "harmonyHubAdapter", "????", "TV", `Philips 55" 4K 55PUS7909`, "PowerToggle", "PowerOff"))
+	app.AttachDevice(NewDevice("7e7453da", "harmonyHubAdapter", "47918441", "TV", `Philips 55" 4K 55PUS7909`, "PowerToggle", "PowerOff"))
 
 	app.AttachDevice(NewDevice("d2ff0882", "particleAdapter", "", "Sofa light", "Floor light next the sofa", "C21", "C20"))
 	app.AttachDevice(NewDevice("98d3cb01", "particleAdapter", "", "Speaker light", "Floor light under the speaker", "C31", "C30"))
