@@ -1,10 +1,8 @@
 package main
 
 import (
-	"errors"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 )
 
@@ -22,13 +20,4 @@ func particleRequest(device string, command string, arg string, accessToken stri
 	_, err := httpClient.Do(req)
 
 	return err
-}
-
-func getParticleAccessToken() (string, error) {
-	accessToken := os.Getenv("PARTICLE_ACCESS_TOKEN")
-	if accessToken == "" {
-		return "", errors.New("getParticleAccessToken(): token not defined")
-	}
-
-	return accessToken, nil
 }

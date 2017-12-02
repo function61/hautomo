@@ -10,8 +10,6 @@ import (
 )
 
 const (
-	rfParticleId = "310027000647343138333038"
-
 	// FIXME: temporary
 	sofaLight    = "d2ff0882"
 	speakerLight = "98d3cb01"
@@ -23,21 +21,33 @@ type Device struct {
 	Id          string
 	Name        string
 	Description string
+
+	// adapter details
+	AdapterId        string
+	AdaptersDeviceId string // id by which the adapter identifies this device
+
 	// probably turned on if true
 	// might be turned on even if false,
-	ProbablyTurnedOn   bool
-	ParticleOnCommand  string
-	ParticleOffCommand string
+	ProbablyTurnedOn bool
+
+	PowerOnCmd  string
+	PowerOffCmd string
 }
 
-func NewDevice(id string, name string, description string, particleOnCommand string, particleOffCommand string) *Device {
+func NewDevice(id string, adapterId string, adaptersDeviceId string, name string, description string, powerOnCmd string, powerOffCmd string) *Device {
 	return &Device{
-		Id:                 id,
-		Name:               name,
-		Description:        description,
-		ProbablyTurnedOn:   false,
-		ParticleOnCommand:  particleOnCommand,
-		ParticleOffCommand: particleOffCommand,
+		Id:          id,
+		Name:        name,
+		Description: description,
+
+		AdapterId:        adapterId,
+		AdaptersDeviceId: adaptersDeviceId,
+
+		// state
+		ProbablyTurnedOn: false,
+
+		PowerOnCmd:  powerOnCmd,
+		PowerOffCmd: powerOffCmd,
 	}
 }
 
@@ -55,80 +65,22 @@ func NewDeviceGroup(id string, name string, deviceIds []string) *DeviceGroup {
 	}
 }
 
-func (d *Device) TurnOn(app *Application) error {
-	if d.Id == "c0730bb2" { // FIXME
-		return app.harmonyHubConnection.HoldAndRelease("47917687", "PowerOn")
-	}
-
-	particleAccessToken, err := getParticleAccessToken()
-	if err != nil {
-		return err
-	}
-
-	return particleRequest(rfParticleId, "rf", d.ParticleOnCommand, particleAccessToken)
-}
-
-func (d *Device) TurnOff(app *Application) error {
-	if d.Id == "c0730bb2" { // FIXME
-		return app.harmonyHubConnection.HoldAndRelease("47917687", "PowerOff")
-	}
-
-	particleAccessToken, err := getParticleAccessToken()
-	if err != nil {
-		return err
-	}
-
-	return particleRequest(rfParticleId, "rf", d.ParticleOffCommand, particleAccessToken)
-}
-
 type Application struct {
-	harmonyHubConnection *HarmonyHubConnection
-	deviceById           map[string]*Device
-	deviceGroupById      map[string]*DeviceGroup
+	adapterById     map[string]*Adapter
+	deviceById      map[string]*Device
+	deviceGroupById map[string]*DeviceGroup
 }
 
-func NewApplication(stopper *Stopper) *Application {
-
-	// since we don't own the stopper we got for ourselves,
-	// we should not call Add() on it
-	subStopper := NewStopper()
-
-	harmonyHubConnection := NewHarmonyHubConnection("192.168.1.153:5222", subStopper.Add())
-
-	if err := harmonyHubConnection.InitAndAuthenticate(); err != nil {
-		panic(err)
-	}
-
-	// does not actually go to that hostname/central service, but instead just the end device..
-	// (bad name for stream recipient)
-	if err := harmonyHubConnection.StartStreamTo("connect.logitech.com"); err != nil {
-		panic(err)
-	}
-
-	if err := harmonyHubConnection.Bind(); err != nil {
-		panic(err)
-	}
-
-	/* TODO: on close
-	if err := harmonyHubConnection.EndStream(); err != nil {
-		panic(err)
-	}
-	*/
-
-	go func() {
-		defer stopper.Done()
-		<-stopper.ShouldStop
-
-		log.Printf("Application: stopping")
-
-		subStopper.StopAll()
-	}()
-
+func NewApplication() *Application {
 	return &Application{
-		harmonyHubConnection: harmonyHubConnection,
-		deviceById:           make(map[string]*Device),
-		deviceGroupById:      make(map[string]*DeviceGroup),
+		adapterById:     make(map[string]*Adapter),
+		deviceById:      make(map[string]*Device),
+		deviceGroupById: make(map[string]*DeviceGroup),
 	}
+}
+
+func (a *Application) DefineAdapter(adapter *Adapter) {
+	a.adapterById[adapter.Id] = adapter
 }
 
 func (a *Application) AttachDevice(device *Device) {
@@ -152,15 +104,12 @@ func (a *Application) TurnOn(deviceId string) error {
 
 	log.Printf("TurnOn: %s", device.Name)
 
-	reqErr := device.TurnOn(a)
+	adapter := a.adapterById[device.AdapterId]
+	adapter.PowerMsg <- NewPowerMsg(device.AdaptersDeviceId, device.PowerOnCmd)
 
-	if reqErr != nil {
-		log.Printf("TurnOn error: %s", reqErr.Error())
-	} else {
-		device.ProbablyTurnedOn = true
-	}
+	device.ProbablyTurnedOn = true
 
-	return reqErr
+	return nil
 }
 
 func (a *Application) TurnOff(deviceId string) error {
@@ -176,15 +125,12 @@ func (a *Application) TurnOff(deviceId string) error {
 
 	log.Printf("TurnOff: %s", device.Name)
 
-	reqErr := device.TurnOff(a)
+	adapter := a.adapterById[device.AdapterId]
+	adapter.PowerMsg <- NewPowerMsg(device.AdaptersDeviceId, device.PowerOffCmd)
 
-	if reqErr != nil {
-		log.Printf("TurnOff error: %s", reqErr.Error())
-	} else {
-		device.ProbablyTurnedOn = false
-	}
+	device.ProbablyTurnedOn = false
 
-	return reqErr
+	return nil
 }
 
 func (a *Application) turnOnDeviceGroup(deviceGroup *DeviceGroup) error {
@@ -237,6 +183,30 @@ func (a *Application) SyncToCloud() {
 	log.Println(strings.Join(lines, "\n"))
 }
 
+type PowerMsg struct {
+	DeviceId     string
+	PowerCommand string
+}
+
+func NewPowerMsg(deviceId string, powerCommand string) PowerMsg {
+	return PowerMsg{
+		DeviceId:     deviceId,
+		PowerCommand: powerCommand,
+	}
+}
+
+type Adapter struct {
+	Id       string
+	PowerMsg chan PowerMsg
+}
+
+func NewAdapter(id string) *Adapter {
+	return &Adapter{
+		Id:       id,
+		PowerMsg: make(chan PowerMsg),
+	}
+}
+
 func main() {
 	var irw *bool = flag.Bool("irw", false, "infrared reading")
 	var help *bool = flag.Bool("help", false, "help")
@@ -249,13 +219,22 @@ func main() {
 	}
 
 	stopper := NewStopper()
-	app := NewApplication(stopper.Add())
+	app := NewApplication()
 
-	// living room
+	app.DefineAdapter(NewHarmonyHubAdapter("harmonyHubAdapter", "192.168.1.153:5222", stopper.Add()))
 
-	app.AttachDevice(NewDevice("c0730bb2", "Amplifier", "Onkyo TX-NR515", "", "")) // FIXME
-	app.AttachDevice(NewDevice("d2ff0882", "Sofa light", "Floor light next the sofa", "C21", "C20"))
-	app.AttachDevice(NewDevice("98d3cb01", "Speaker light", "Floor light under the speaker", "C31", "C30"))
+	particleAccessToken := getParticleAccessToken()
+
+	app.DefineAdapter(NewParticleAdapter("particleAdapter", "310027000647343138333038", particleAccessToken))
+
+	app.AttachDevice(NewDevice("c0730bb2", "harmonyHubAdapter", "47917687", "Amplifier", "Onkyo TX-NR515", "PowerOn", "PowerOff"))
+
+	// for some reason the TV only wakes up with PowerToggle, not PowerOn
+	app.AttachDevice(NewDevice("7e7453da", "harmonyHubAdapter", "????", "TV", `Philips 55" 4K 55PUS7909`, "PowerToggle", "PowerOff"))
+
+	app.AttachDevice(NewDevice("d2ff0882", "particleAdapter", "", "Sofa light", "Floor light next the sofa", "C21", "C20"))
+	app.AttachDevice(NewDevice("98d3cb01", "particleAdapter", "", "Speaker light", "Floor light under the speaker", "C31", "C30"))
+
 	app.AttachDeviceGroup(NewDeviceGroup("cfb1b27f", "Living room lights", []string{
 		"d2ff0882",
 		"98d3cb01",
