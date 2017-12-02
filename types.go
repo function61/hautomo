@@ -24,7 +24,7 @@ type PowerEvent struct {
 func NewPowerEvent(deviceIdOrDeviceGroupId string, on bool) PowerEvent {
 	return PowerEvent{
 		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
-		On: true,
+		On: on,
 	}
 }
 
