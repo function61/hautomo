@@ -212,6 +212,10 @@ func main() {
 
 	go sqsPollerLoop(app, stopper.Add())
 
+	if *irSimulatorKey != "" {
+		go infraredSimulator(app, *irSimulatorKey, stopper.Add())
+	}
+
 	clicommon.WaitForInterrupt()
 
 	log.Println("main: received interrupt")
