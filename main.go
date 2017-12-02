@@ -8,27 +8,23 @@ import (
 	"strings"
 )
 
-const (
-	// FIXME: temporary
-	sofaLight    = "d2ff0882"
-	speakerLight = "98d3cb01"
-)
-
 type Application struct {
-	adapterById     map[string]*Adapter
-	deviceById      map[string]*Device
-	deviceGroupById map[string]*DeviceGroup
-	infraredEvent   chan InfraredEvent
-	powerEvent      chan PowerEvent
+	adapterById          map[string]*Adapter
+	deviceById           map[string]*Device
+	deviceGroupById      map[string]*DeviceGroup
+	infraredToPowerEvent map[string]PowerEvent
+	infraredEvent        chan InfraredEvent
+	powerEvent           chan PowerEvent
 }
 
 func NewApplication(stopper *Stopper) *Application {
 	app := &Application{
-		adapterById:     make(map[string]*Adapter),
-		deviceById:      make(map[string]*Device),
-		deviceGroupById: make(map[string]*DeviceGroup),
-		infraredEvent:   make(chan InfraredEvent, 1),
-		powerEvent:      make(chan PowerEvent, 1),
+		adapterById:          make(map[string]*Adapter),
+		deviceById:           make(map[string]*Device),
+		deviceGroupById:      make(map[string]*DeviceGroup),
+		infraredToPowerEvent: make(map[string]PowerEvent),
+		infraredEvent:        make(chan InfraredEvent, 1),
+		powerEvent:           make(chan PowerEvent, 1),
 	}
 
 	go func() {
@@ -50,16 +46,9 @@ func NewApplication(stopper *Stopper) *Application {
 			case ir := <-app.infraredEvent:
 				log.Printf("application: IR: %s", ir.Event)
 
-				switch ir.Event {
-				case "KEY_VOLUMEUP":
-					app.TurnOn(app.deviceById[speakerLight])
-				case "KEY_VOLUMEDOWN":
-					app.TurnOff(app.deviceById[speakerLight])
-				case "KEY_CHANNELUP":
-					app.TurnOn(app.deviceById[sofaLight])
-				case "KEY_CHANNELDOWN":
-					app.TurnOff(app.deviceById[sofaLight])
-				default:
+				if powerEvent, has := app.infraredToPowerEvent[ir.Event]; has {
+					app.powerEvent <- powerEvent
+				} else {
 					log.Println("application: IR ignored")
 				}
 			}
@@ -80,6 +69,10 @@ func (a *Application) AttachDevice(device *Device) {
 
 func (a *Application) AttachDeviceGroup(deviceGroup *DeviceGroup) {
 	a.deviceGroupById[deviceGroup.Id] = deviceGroup
+}
+
+func (a *Application) InfraredShouldPower(key string, powerEvent PowerEvent) {
+	a.infraredToPowerEvent[key] = powerEvent
 }
 
 func (a *Application) TurnOnDeviceOrDeviceGroup(deviceId string) error {
@@ -211,6 +204,11 @@ func main() {
 		"d2ff0882",
 		"98d3cb01",
 	}))
+
+	app.InfraredShouldPower("KEY_VOLUMEUP", NewPowerEvent("98d3cb01", true))
+	app.InfraredShouldPower("KEY_VOLUMEDOWN", NewPowerEvent("98d3cb01", false))
+	app.InfraredShouldPower("KEY_CHANNELUP", NewPowerEvent("d2ff0882", true))
+	app.InfraredShouldPower("KEY_CHANNELDOWN", NewPowerEvent("d2ff0882", false))
 
 	app.SyncToCloud()
 
