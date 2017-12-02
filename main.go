@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"github.com/function61/eventhorizon/util/clicommon"
@@ -15,68 +14,52 @@ const (
 	speakerLight = "98d3cb01"
 )
 
-var errDeviceNotFound = errors.New("device not found")
-
-type Device struct {
-	Id          string
-	Name        string
-	Description string
-
-	// adapter details
-	AdapterId        string
-	AdaptersDeviceId string // id by which the adapter identifies this device
-
-	// probably turned on if true
-	// might be turned on even if false,
-	ProbablyTurnedOn bool
-
-	PowerOnCmd  string
-	PowerOffCmd string
-}
-
-func NewDevice(id string, adapterId string, adaptersDeviceId string, name string, description string, powerOnCmd string, powerOffCmd string) *Device {
-	return &Device{
-		Id:          id,
-		Name:        name,
-		Description: description,
-
-		AdapterId:        adapterId,
-		AdaptersDeviceId: adaptersDeviceId,
-
-		// state
-		ProbablyTurnedOn: false,
-
-		PowerOnCmd:  powerOnCmd,
-		PowerOffCmd: powerOffCmd,
-	}
-}
-
-type DeviceGroup struct {
-	Id        string
-	Name      string
-	DeviceIds []string
-}
-
-func NewDeviceGroup(id string, name string, deviceIds []string) *DeviceGroup {
-	return &DeviceGroup{
-		Id:        id,
-		Name:      name,
-		DeviceIds: deviceIds,
-	}
-}
-
 type Application struct {
 	adapterById     map[string]*Adapter
 	deviceById      map[string]*Device
 	deviceGroupById map[string]*DeviceGroup
+	infraredEvent   chan InfraredEvent
 }
 
-func NewApplication() *Application {
-	return &Application{
+func NewApplication(stopper *Stopper) *Application {
+	app := &Application{
 		adapterById:     make(map[string]*Adapter),
 		deviceById:      make(map[string]*Device),
 		deviceGroupById: make(map[string]*DeviceGroup),
+		infraredEvent:   make(chan InfraredEvent),
 	}
+
+	go func() {
+		defer stopper.Done()
+
+		log.Println("application: started")
+
+		for {
+			select {
+			case <-stopper.ShouldStop:
+				log.Println("application: stopping")
+				return
+			case ir := <-app.infraredEvent:
+				log.Printf("application: IR: %s", ir.Event)
+
+				switch ir.Event {
+				case "KEY_VOLUMEUP":
+					app.TurnOn(app.deviceById[speakerLight])
+				case "KEY_VOLUMEDOWN":
+					app.TurnOff(app.deviceById[speakerLight])
+				case "KEY_CHANNELUP":
+					app.TurnOn(app.deviceById[sofaLight])
+				case "KEY_CHANNELDOWN":
+					app.TurnOff(app.deviceById[sofaLight])
+				default:
+					log.Println("application: IR ignored")
+				}
+			}
+		}
+
+	}()
+
+	return app
 }
 
 func (a *Application) DefineAdapter(adapter *Adapter) {
@@ -193,37 +176,14 @@ func (a *Application) SyncToCloud() {
 	log.Println(strings.Join(lines, "\n"))
 }
 
-type PowerMsg struct {
-	DeviceId     string
-	PowerCommand string
-}
-
-func NewPowerMsg(deviceId string, powerCommand string) PowerMsg {
-	return PowerMsg{
-		DeviceId:     deviceId,
-		PowerCommand: powerCommand,
-	}
-}
-
-type Adapter struct {
-	Id       string
-	PowerMsg chan PowerMsg
-}
-
-func NewAdapter(id string) *Adapter {
-	return &Adapter{
-		Id:       id,
-		PowerMsg: make(chan PowerMsg),
-	}
-}
-
 func main() {
-	var irw *bool = flag.Bool("irw", false, "infrared reading")
+	var irw *bool = flag.Bool("irw", false, "infrared reading via LIRC")
+	var irSimulatorKey *string = flag.String("ir-simulator", "", "simulate infrared events")
 
 	flag.Parse()
 
 	stopper := NewStopper()
-	app := NewApplication()
+	app := NewApplication(stopper.Add())
 
 	harmonyHubAdapter := NewHarmonyHubAdapter("harmonyHubAdapter", "192.168.1.153:5222", stopper.Add())
 	particleAdapter := NewParticleAdapter("particleAdapter", "310027000647343138333038", getParticleAccessToken())
