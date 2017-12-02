@@ -19,6 +19,7 @@ type Application struct {
 	deviceById      map[string]*Device
 	deviceGroupById map[string]*DeviceGroup
 	infraredEvent   chan InfraredEvent
+	powerEvent      chan PowerEvent
 }
 
 func NewApplication(stopper *Stopper) *Application {
@@ -26,7 +27,8 @@ func NewApplication(stopper *Stopper) *Application {
 		adapterById:     make(map[string]*Adapter),
 		deviceById:      make(map[string]*Device),
 		deviceGroupById: make(map[string]*DeviceGroup),
-		infraredEvent:   make(chan InfraredEvent),
+		infraredEvent:   make(chan InfraredEvent, 1),
+		powerEvent:      make(chan PowerEvent, 1),
 	}
 
 	go func() {
@@ -39,6 +41,12 @@ func NewApplication(stopper *Stopper) *Application {
 			case <-stopper.ShouldStop:
 				log.Println("application: stopping")
 				return
+			case power := <-app.powerEvent:
+				if power.On {
+					app.TurnOnDeviceOrDeviceGroup(power.DeviceIdOrDeviceGroupId)
+				} else {
+					app.TurnOffDeviceOrDeviceGroup(power.DeviceIdOrDeviceGroupId)
+				}
 			case ir := <-app.infraredEvent:
 				log.Printf("application: IR: %s", ir.Event)
 

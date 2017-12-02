@@ -16,6 +16,18 @@ func NewInfraredEvent(remote string, event string) InfraredEvent {
 	}
 }
 
+type PowerEvent struct {
+	DeviceIdOrDeviceGroupId string
+	On                      bool
+}
+
+func NewPowerEvent(deviceIdOrDeviceGroupId string, on bool) PowerEvent {
+	return PowerEvent{
+		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
+		On: true,
+	}
+}
+
 var errDeviceNotFound = errors.New("device not found")
 
 type Device struct {

@@ -13,11 +13,11 @@ import (
 )
 
 type TurnOnRequest struct {
-	DeviceId string `json:"id"`
+	DeviceIdOrDeviceGroupId string `json:"id"`
 }
 
 type TurnOffRequest struct {
-	DeviceId string `json:"id"`
+	DeviceIdOrDeviceGroupId string `json:"id"`
 }
 
 func sqsPollerLoop(app *Application, stopper *Stopper) {
@@ -75,14 +75,14 @@ func sqsPollerLoop(app *Application, stopper *Stopper) {
 					panic(err)
 				}
 
-				_ = app.TurnOnDeviceOrDeviceGroup(req.DeviceId)
+				app.powerEvent <- NewPowerEvent(req.DeviceIdOrDeviceGroupId, true)
 			case "turn_off":
 				var req TurnOffRequest
 				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 					panic(err)
 				}
 
-				_ = app.TurnOffDeviceOrDeviceGroup(req.DeviceId)
+				app.powerEvent <- NewPowerEvent(req.DeviceIdOrDeviceGroupId, false)
 			default:
 				log.Printf("sqsPollerLoop: unknown msgType: " + msgType)
 			}
