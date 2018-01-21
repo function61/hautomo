@@ -179,66 +179,13 @@ func main() {
 		return
 	}
 
+	conf, confErr := readConfigurationFile()
+	if confErr != nil {
+		panic(confErr)
+	}
+
 	stopper := NewStopper()
 	app := NewApplication(stopper.Add())
-
-	conf := ConfigFile{
-		Adapters: []AdapterConfig{
-			AdapterConfig{
-				Id:                  "particleAdapter",
-				Type:                "particle",
-				ParticleId:          "310027000647343138333038",
-			},
-			/*
-				AdapterConfig{
-					Id: "harmonyHubAdapter",
-					Type: "harmony",
-					HarmonyAddr: "192.168.1.153:5222",
-				},
-			*/
-		},
-		Devices: []DeviceConfig{
-			DeviceConfig{
-				DeviceId:    "d2ff0882",
-				AdapterId:   "particleAdapter",
-				Name:        "Sofa light",
-				Description: "Floor light next the sofa",
-				PowerOnCmd:  "C21",
-				PowerOffCmd: "C20",
-			},
-			DeviceConfig{
-				DeviceId:    "98d3cb01",
-				AdapterId:   "particleAdapter",
-				Name:        "Speaker light",
-				Description: "Floor light under the speaker",
-				PowerOnCmd:  "C31",
-				PowerOffCmd: "C30",
-			},
-			DeviceConfig{
-				DeviceId:    "e97d7d4c",
-				AdapterId:   "particleAdapter",
-				Name:        "Cat light",
-				Description: "Light above the cat painting",
-				PowerOnCmd:  "B11",
-				PowerOffCmd: "B10",
-			},
-			DeviceConfig{
-				DeviceId:    "23e06f45",
-				AdapterId:   "particleAdapter",
-				Name:        "Nightstand light",
-				Description: "Light on the nightstand",
-				PowerOnCmd:  "B21",
-				PowerOffCmd: "B20",
-			},
-		},
-		DeviceGroups: []DeviceGroupConfig{
-			DeviceGroupConfig{
-				Id:        "cfb1b27f",
-				Name:      "Living room lights",
-				DeviceIds: []string{"d2ff0882", "98d3cb01"},
-			},
-		},
-	}
 
 	for _, adapter := range conf.Adapters {
 		switch adapter.Type {
