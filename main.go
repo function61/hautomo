@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./util/systemdinstaller"
 	"errors"
 	"fmt"
 	"github.com/function61/eventhorizon/util/clicommon"
@@ -162,10 +163,21 @@ func (a *Application) SyncToCloud() {
 }
 
 func main() {
-	var irw *bool = flag.Bool("irw", false, "infrared reading via LIRC")
-	var irSimulatorKey *string = flag.String("ir-simulator", "", "simulate infrared events")
-
-	flag.Parse()
+	if len(os.Args) == 2 && os.Args[1] == "--help" {
+		fmt.Printf("Usage: %s [--write-systemd-unit-file]\n", os.Args[0])
+		return
+	}
+	if len(os.Args) == 2 && os.Args[1] == "--write-systemd-unit-file" {
+		if err := systemdinstaller.InstallSystemdServiceFile("homeautomation", "home automation hub"); err != nil {
+			panic(err)
+		}
+		return
+	}
+	if len(os.Args) != 1 {
+		fmt.Printf("Invalid arguments. Run %s --help", os.Args[0])
+		os.Exit(1)
+		return
+	}
 
 	stopper := NewStopper()
 	app := NewApplication(stopper.Add())
