@@ -19,6 +19,7 @@ WantedBy=multi-user.target
 
 [Service]
 ExecStart=%s
+WorkingDirectory=%s
 Restart=always
 RestartSec=10s
 `
@@ -28,7 +29,11 @@ RestartSec=10s
 		return errAbs
 	}
 
-	unitContent := fmt.Sprintf(unitTemplate, description, selfAbsolutePath)
+	unitContent := fmt.Sprintf(
+		unitTemplate,
+		description,
+		selfAbsolutePath,
+		filepath.Dir(selfAbsolutePath))
 
 	if _, errStat := os.Stat(unitfilePath); errStat != nil && !os.IsNotExist(errStat) {
 		return errors.New("File does exist already!")
