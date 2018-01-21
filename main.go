@@ -116,14 +116,14 @@ func (a *Application) devicePower(device *Device, power PowerEvent) error {
 		log.Printf("Power on: %s", device.Name)
 
 		adapter := a.adapterById[device.AdapterId]
-		adapter.PowerMsg <- NewPowerMsg(device.AdaptersDeviceId, device.PowerOnCmd)
+		adapter.PowerMsg <- NewPowerMsg(device.AdaptersDeviceId, device.PowerOnCmd, true)
 
 		device.ProbablyTurnedOn = true
 	} else if power.Kind == powerKindOff {
 		log.Printf("Power off: %s", device.Name)
 
 		adapter := a.adapterById[device.AdapterId]
-		adapter.PowerMsg <- NewPowerMsg(device.AdaptersDeviceId, device.PowerOffCmd)
+		adapter.PowerMsg <- NewPowerMsg(device.AdaptersDeviceId, device.PowerOffCmd, false)
 
 		device.ProbablyTurnedOn = false
 	} else if power.Kind == powerKindToggle {

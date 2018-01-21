@@ -96,12 +96,14 @@ func NewDeviceGroup(id string, name string, deviceIds []string) *DeviceGroup {
 type PowerMsg struct {
 	DeviceId     string
 	PowerCommand string
+	On           bool
 }
 
-func NewPowerMsg(deviceId string, powerCommand string) PowerMsg {
+func NewPowerMsg(deviceId string, powerCommand string, on bool) PowerMsg {
 	return PowerMsg{
 		DeviceId:     deviceId,
 		PowerCommand: powerCommand,
+		On:           on,
 	}
 }
 
