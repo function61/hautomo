@@ -58,7 +58,7 @@ func NewApplication(stopper *Stopper) *Application {
 
 					i2i.adapter.InfraredMsg <- i2i.infraredMsg
 				} else {
-					log.Println("application: IR ignored")
+					log.Printf("application: IR ignored: %s", ir.Event)
 				}
 			}
 		}
