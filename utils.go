@@ -5,6 +5,7 @@ import (
 )
 
 // not thread safe
+// FIXME: extract to own module
 
 type Stopper struct {
 	ShouldStop chan bool

@@ -221,6 +221,21 @@ func main() {
 		app.AttachDeviceGroup(NewDeviceGroup(deviceGroup.Id, deviceGroup.Name, deviceGroup.DeviceIds))
 	}
 
+	supportedPowerKinds := map[string]powerKind{
+		"toggle": powerKindToggle,
+		"on":     powerKindOn,
+		"off":    powerKindOff,
+	}
+
+	for _, powerConfig := range conf.IrPowers {
+		kind, ok := supportedPowerKinds[powerConfig.PowerKind]
+		if !ok {
+			panic(fmt.Errorf("Unsupported power kind: %s", powerConfig.PowerKind))
+		}
+
+		app.InfraredShouldPower(powerConfig.RemoteKey, NewPowerEvent(powerConfig.ToDevice, kind))
+	}
+
 	app.SyncToCloud()
 
 	clicommon.WaitForInterrupt()
