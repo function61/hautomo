@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 )
 
 func NewParticleAdapter(id string, particleId string, accessToken string) *Adapter {
