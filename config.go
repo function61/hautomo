@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
-	"os"
+	"fmt"
+	"github.com/hashicorp/hcl"
+	"io/ioutil"
 )
 
 const (
-	confFilePath = "conf.json"
+	confFilePath = "conf.hcl"
 )
 
 type AdapterConfig struct {
@@ -50,30 +53,31 @@ type ConfigFile struct {
 	DeviceGroups []DeviceGroupConfig `json:"devicegroup"`
 }
 
-func writeConfigurationFile(conf *ConfigFile) error {
-	file, err := os.Create(confFilePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	enc := json.NewEncoder(file)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(&conf); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func readConfigurationFile() (*ConfigFile, error) {
-	file, err := os.Open(confFilePath)
+	// read & parse HCL to generic struct
+	input, err := ioutil.ReadFile(confFilePath)
 	if err != nil {
 		return nil, err
 	}
 
+	var v interface{}
+	errHcl := hcl.Unmarshal(input, &v)
+	if errHcl != nil {
+		return nil, fmt.Errorf("unable to parse HCL: %s", errHcl)
+	}
+
+	// re-encode the generic struct to JSON, so we can unmarshal without
+	// having both JSON and HCL struct tags
+
+	asJson, errToJson := json.MarshalIndent(v, "", "  ")
+	if errToJson != nil {
+		return nil, errToJson
+	}
+
+	// decode JSON to in-memory config struct
+
 	var conf ConfigFile
-	dec := json.NewDecoder(file)
+	dec := json.NewDecoder(bytes.NewBuffer(asJson))
 	if err := dec.Decode(&conf); err != nil {
 		return nil, err
 	}
