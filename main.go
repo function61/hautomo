@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"github.com/function61/eventhorizon/util/clicommon"
 	"log"
+	"os"
 	"strings"
 )
 
@@ -170,46 +170,97 @@ func main() {
 	stopper := NewStopper()
 	app := NewApplication(stopper.Add())
 
-	harmonyHubAdapter := NewHarmonyHubAdapter("harmonyHubAdapter", "192.168.1.153:5222", stopper.Add())
-	particleAdapter := NewParticleAdapter("particleAdapter", "310027000647343138333038", getParticleAccessToken())
+	conf := ConfigFile{
+		Adapters: []AdapterConfig{
+			AdapterConfig{
+				Id:                  "particleAdapter",
+				Type:                "particle",
+				ParticleId:          "310027000647343138333038",
+			},
+			/*
+				AdapterConfig{
+					Id: "harmonyHubAdapter",
+					Type: "harmony",
+					HarmonyAddr: "192.168.1.153:5222",
+				},
+			*/
+		},
+		Devices: []DeviceConfig{
+			DeviceConfig{
+				DeviceId:    "d2ff0882",
+				AdapterId:   "particleAdapter",
+				Name:        "Sofa light",
+				Description: "Floor light next the sofa",
+				PowerOnCmd:  "C21",
+				PowerOffCmd: "C20",
+			},
+			DeviceConfig{
+				DeviceId:    "98d3cb01",
+				AdapterId:   "particleAdapter",
+				Name:        "Speaker light",
+				Description: "Floor light under the speaker",
+				PowerOnCmd:  "C31",
+				PowerOffCmd: "C30",
+			},
+			DeviceConfig{
+				DeviceId:    "e97d7d4c",
+				AdapterId:   "particleAdapter",
+				Name:        "Cat light",
+				Description: "Light above the cat painting",
+				PowerOnCmd:  "B11",
+				PowerOffCmd: "B10",
+			},
+			DeviceConfig{
+				DeviceId:    "23e06f45",
+				AdapterId:   "particleAdapter",
+				Name:        "Nightstand light",
+				Description: "Light on the nightstand",
+				PowerOnCmd:  "B21",
+				PowerOffCmd: "B20",
+			},
+		},
+		DeviceGroups: []DeviceGroupConfig{
+			DeviceGroupConfig{
+				Id:        "cfb1b27f",
+				Name:      "Living room lights",
+				DeviceIds: []string{"d2ff0882", "98d3cb01"},
+			},
+		},
+	}
 
-	app.DefineAdapter(harmonyHubAdapter)
-	app.DefineAdapter(particleAdapter)
+	for _, adapter := range conf.Adapters {
+		switch adapter.Type {
+		case "particle":
+			app.DefineAdapter(NewParticleAdapter(adapter.Id, adapter.ParticleId, adapter.ParticleAccessToken))
+		case "harmony":
+			app.DefineAdapter(NewHarmonyHubAdapter(adapter.Id, adapter.HarmonyAddr, stopper.Add()))
+		case "irsimulator":
+			go infraredSimulator(app, adapter.IrSimulatorKey, stopper.Add())
+		case "lirc":
+			go irwPoller(app, stopper.Add())
+		case "sqs":
+			go sqsPollerLoop(app, adapter.SqsQueueUrl, adapter.SqsKeyId, adapter.SqsKeySecret, stopper.Add())
+		default:
+			panic(errors.New("unkown adapter: " + adapter.Type))
+		}
+	}
 
-	app.AttachDevice(NewDevice("c0730bb2", "harmonyHubAdapter", "47917687", "Amplifier", "Onkyo TX-NR515", "PowerOn", "PowerOff"))
+	for _, device := range conf.Devices {
+		app.AttachDevice(NewDevice(
+			device.DeviceId,
+			device.AdapterId,
+			device.AdaptersDeviceId,
+			device.Name,
+			device.Description,
+			device.PowerOnCmd,
+			device.PowerOffCmd))
+	}
 
-	// for some reason the TV only wakes up with PowerToggle, not PowerOn
-	app.AttachDevice(NewDevice("7e7453da", "harmonyHubAdapter", "47918441", "TV", `Philips 55" 4K 55PUS7909`, "PowerToggle", "PowerOff"))
-
-	app.AttachDevice(NewDevice("d2ff0882", "particleAdapter", "", "Sofa light", "Floor light next the sofa", "C21", "C20"))
-	app.AttachDevice(NewDevice("98d3cb01", "particleAdapter", "", "Speaker light", "Floor light under the speaker", "C31", "C30"))
-
-	app.AttachDeviceGroup(NewDeviceGroup("cfb1b27f", "Living room lights", []string{
-		"d2ff0882",
-		"98d3cb01",
-	}))
-
-	/*
-	app.InfraredShouldPower("KEY_VOLUMEUP", NewPowerEvent("98d3cb01", powerKindToggle))
-	app.InfraredShouldPower("KEY_VOLUMEDOWN", NewPowerEvent("98d3cb01", powerKindOff))
-	app.InfraredShouldPower("KEY_CHANNELUP", NewPowerEvent("d2ff0882", powerKindOn))
-	app.InfraredShouldPower("KEY_CHANNELDOWN", NewPowerEvent("d2ff0882", powerKindOff))
-	*/
-
-	app.InfraredShouldInfrared("KEY_VOLUMEUP", "c0730bb2", "VolumeUp")
-	app.InfraredShouldInfrared("KEY_VOLUMEDOWN", "c0730bb2", "VolumeDown")
+	for _, deviceGroup := range conf.DeviceGroups {
+		app.AttachDeviceGroup(NewDeviceGroup(deviceGroup.Id, deviceGroup.Name, deviceGroup.DeviceIds))
+	}
 
 	app.SyncToCloud()
-
-	if *irw {
-		go irwPoller(app, stopper.Add())
-	}
-
-	go sqsPollerLoop(app, stopper.Add())
-
-	if *irSimulatorKey != "" {
-		go infraredSimulator(app, *irSimulatorKey, stopper.Add())
-	}
 
 	clicommon.WaitForInterrupt()
 

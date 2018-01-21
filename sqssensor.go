@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -20,16 +21,14 @@ type TurnOffRequest struct {
 	DeviceIdOrDeviceGroupId string `json:"id"`
 }
 
-func sqsPollerLoop(app *Application, stopper *Stopper) {
+func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, accessKeySecret string, stopper *Stopper) {
 	defer stopper.Done()
 
 	sess := session.Must(session.NewSession())
 
-	// access keys provided from command line
-	queueUrl := "https://sqs.us-east-1.amazonaws.com/329074924855/JoonasHomeAutomation"
-
 	sqsClient := sqs.New(sess, &aws.Config{
-		Region: aws.String(endpoints.UsEast1RegionID),
+		Region:      aws.String(endpoints.UsEast1RegionID),
+		Credentials: credentials.NewStaticCredentials(accessKeyId, accessKeySecret, ""),
 	})
 
 	log.Println("sqsPollerLoop: started")

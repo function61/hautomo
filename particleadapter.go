@@ -27,7 +27,3 @@ func NewParticleAdapter(id string, particleId string, accessToken string) *Adapt
 
 	return adapter
 }
-
-func getParticleAccessToken() string {
-	return os.Getenv("PARTICLE_ACCESS_TOKEN")
-}
