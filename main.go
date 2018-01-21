@@ -193,6 +193,8 @@ func main() {
 			app.DefineAdapter(NewParticleAdapter(adapter.Id, adapter.ParticleId, adapter.ParticleAccessToken))
 		case "harmony":
 			app.DefineAdapter(NewHarmonyHubAdapter(adapter.Id, adapter.HarmonyAddr, stopper.Add()))
+		case "happylights":
+			app.DefineAdapter(NewHappylightsAdapter(adapter.Id, adapter.HappyLightsAddr))
 		case "irsimulator":
 			go infraredSimulator(app, adapter.IrSimulatorKey, stopper.Add())
 		case "lirc":
