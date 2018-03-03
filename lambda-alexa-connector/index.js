@@ -6,80 +6,101 @@ var sqs = new AWS.SQS({apiVersion: '2012-11-05'});
 // FIXME:
 // - https://developer.amazon.com/docs/smarthome/build-smart-home-skills-for-lights.html#choose-capabilities
 // - https://developer.amazon.com/docs/device-apis/alexa-discovery.html#capability-versions
+// - https://developer.amazon.com/docs/smarthome/smart-home-skill-api-message-reference.html
+
+function powerController() {
+	return {
+		type: "AlexaInterface",
+		interface: "Alexa.PowerController",
+		version: "3",
+		properties: {
+			supported: [
+				{ name: "powerState" },
+			],
+			proactivelyReported: false,
+			retrievable: false,
+		},
+	};
+}
+
+function brightnessController() {
+	return {
+		type: "AlexaInterface",
+		interface: "Alexa.BrightnessController",
+		version: "3",
+		properties: {
+			supported: [
+				{ name: "brightness" },
+			],
+			proactivelyReported: false,
+			retrievable: false,
+		},
+	};
+}
+
+function colorController() {
+	return {
+		type: "AlexaInterface",
+		interface: "Alexa.ColorController",
+		version: "3",
+		properties: {
+			supported: [
+				{ name: "color" },
+			],
+			proactivelyReported: false,
+			retrievable: false,
+		},
+	};
+}
 
 function createDevice(deviceId, friendlyName, friendlyDescription) {
-    return     {
-        // This id needs to be unique across all devices discovered for a given manufacturer
-        applianceId: deviceId,
-        manufacturerName: 'function61.com',
-        modelName: 'home-automation-pi proxy',
-        // Version number of the product
-        version: '1.0',
-        // The name given by the user in your application. Examples include 'Bedroom light' etc
-        friendlyName: friendlyName,
-        friendlyDescription: friendlyDescription,
-        // at time of discovery
-        isReachable: true,
-        // List the actions the device can support from our API
-        // The action should be the name of the actions listed here
-        // https://developer.amazon.com/public/solutions/alexa/alexa-skills-kit/docs/smart-home-skill-api-reference#discoverappliancesresponse
-        actions: ['turnOn', 'turnOff']
-        /*
-        additionalApplianceDetails: {
-            extraDetail1: 'optionalDetailForSkillAdapterToReferenceThisDevice',
-            extraDetail2: 'There can be multiple entries',
-            extraDetail3: 'but they should only be used for reference purposes.',
-            extraDetail4: 'This is not a suitable place to maintain current device state',
-        */
-    };
+	return     {
+		endpointId: deviceId,
+		manufacturerName: 'function61.com',
+		version: '1.0',
+		friendlyName: friendlyName,
+		description: friendlyDescription,
+		displayCategories: [ 'LIGHT' ], // where are these listed?
+		capabilities: [
+			powerController(),
+			brightnessController(),
+			colorController(),
+		],
+		/*
+		cookie: {
+			extraDetail1: 'optionalDetailForSkillAdapterToReferenceThisDevice',
+		*/
+	};
 }
 
 const queueUrl = 'https://sqs.us-east-1.amazonaws.com/329074924855/JoonasHomeAutomation';
 
-const USER_DEVICES = [
-	createDevice('d2ff0882', 'Sofa light', 'Floor light next the sofa'),
-	createDevice('98d3cb01', 'Speaker light', 'Floor light under the speaker'),
-	createDevice('e97d7d4c', 'Cat light', 'Light above the cat painting'),
-	createDevice('23e06f45', 'Nightstand light', 'Light on the nightstand'),
-	createDevice('52fe368b', 'Kitchen light', 'Under-cabinet lighting'),
-	createDevice('39664b86', 'Bar light', 'Under-cabinet lighting'),
-	createDevice('cfb1b27f', 'Living room lights', 'Device group: Living room lights'),
-];
+function getDevicesFromPartnerCloud() {
+	return [
+		createDevice('d2ff0882', 'Sofa light', 'Floor light next the sofa'),
+		createDevice('98d3cb01', 'Speaker light', 'Floor light under the speaker'),
+		createDevice('e97d7d4c', 'Cat light', 'Light above the cat painting'),
+		createDevice('23e06f45', 'Nightstand light', 'Light on the nightstand'),
+		createDevice('52fe368b', 'Kitchen light', 'Under-cabinet lighting'),
+		createDevice('39664b86', 'Bar light', 'Under-cabinet lighting'),
+		createDevice('c0730bb2', 'Amplifier', 'Onkyo TX-NR515'),
+		createDevice('7e7453da', 'TV', 'Philips 55'' 4K 55PUS7909'),
+		createDevice('cfb1b27f', 'Living room lights', 'Device group: Living room lights'),
+	];
+}
 
 function log(title, msg) {
-    console.log(`[${title}] ${msg}`);
+	console.log(`[${title}] ${msg}`);
 }
 
 function uuidv4() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
+	var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+	return v.toString(16);
   });
 }
 
-function generateMessageID() {
-    return uuidv4();
-}
-
-function generateResponse(name, payload) {
-    return {
-        header: {
-            messageId: generateMessageID(),
-            name: name,
-            namespace: 'Alexa.ConnectedHome.Control',
-            payloadVersion: '2',
-        },
-        payload: payload,
-    };
-}
-
-function getDevicesFromPartnerCloud() {
-    return USER_DEVICES;
-}
-
 function isValidToken(token) { return true; }
-
-function isDeviceOnline(applianceId) { return true; }
 
 function sendMessageToRaspberry(message) {
 	var params = {
@@ -93,6 +114,39 @@ function sendMessageToRaspberry(message) {
 	});
 }
 
+/*
+	green => 
+		"hue": 120,
+		"saturation": 1,
+		"brightness": 1
+
+*/
+function hsvToRgb (h, s, v) {
+	h /= 360;
+	v = Math.round(v * 255);
+
+	const i = Math.floor(h * 6);
+	const f = h * 6 - i;
+	const p = Math.round(v * (1 - s));
+	const q = Math.round(v * (1 - f * s));
+	const t = Math.round(v * (1 - (1 - f) * s));
+
+	switch (i % 6) {
+		case 0:
+			return [v, t, p];
+		case 1:
+			return [q, v, p];
+		case 2:
+			return [p, v, t];
+		case 3:
+			return [p, q, v];
+		case 4:
+			return [t, p, v];
+		case 5:
+			return [v, p, q];
+	}
+}
+
 function turnOnMessage(applianceId) {
 	return 'turn_on ' + JSON.stringify({ id: applianceId });
 }
@@ -101,175 +155,212 @@ function turnOffMessage(applianceId) {
 	return 'turn_off ' + JSON.stringify({ id: applianceId });
 }
 
-function turnOn(applianceId) {
-    var msg = turnOnMessage(applianceId);
-    log('DEBUG', msg);
-    sendMessageToRaspberry(msg);
-
-    return generateResponse('TurnOnConfirmation', {});
+function brightnessMessage(applianceId, brightness) {
+	return 'brightness ' + JSON.stringify({ id: applianceId, brightness: brightness });
 }
 
-function turnOff(applianceId) {
-    var msg = turnOffMessage(applianceId);
-    log('DEBUG', msg);
-    sendMessageToRaspberry(msg);
+function colorMessage(applianceId, color) {
+	const rgb = hsvToRgb(color.hue, color.saturation, color.brightness);
 
-    return generateResponse('TurnOffConfirmation', {});
-}
-
-function setPercentage(applianceId, percentage) {
-    log('DEBUG', `setPercentage (applianceId: ${applianceId}), percentage: ${percentage}`);
-
-    // Call device cloud's API to set percentage
-
-    return generateResponse('SetPercentageConfirmation', {});
-}
-
-function incrementPercentage(applianceId, delta) {
-    log('DEBUG', `incrementPercentage (applianceId: ${applianceId}), delta: ${delta}`);
-
-    // Call device cloud's API to set percentage delta
-
-    return generateResponse('IncrementPercentageConfirmation', {});
-}
-
-function decrementPercentage(applianceId, delta) {
-    log('DEBUG', `decrementPercentage (applianceId: ${applianceId}), delta: ${delta}`);
-
-    // Call device cloud's API to set percentage delta
-
-    return generateResponse('DecrementPercentageConfirmation', {});
+	return 'color ' + JSON.stringify({
+		id: applianceId,
+		red: rgb[0],
+		green: rgb[1],
+		blue: rgb[2],
+	});
 }
 
 function handleDiscovery(request, callback) {
-    log('DEBUG', `Discovery Request: ${JSON.stringify(request)}`);
+	log('DEBUG', `Discovery Request: ${JSON.stringify(request)}`);
 
-    // OAuth token
-    const userAccessToken = request.payload.accessToken.trim();
+	// OAuth token
+	const userAccessToken = request.directive.payload.scope.token;
 
-    if (!userAccessToken || !isValidToken(userAccessToken)) {
-        const errorMessage = `Discovery Request [${request.header.messageId}] failed. Invalid access token: ${userAccessToken}`;
-        log('ERROR', errorMessage);
-        callback(new Error(errorMessage));
-    }
+	if (!userAccessToken || !isValidToken(userAccessToken)) {
+		const errorMessage = `Discovery Request [${request.directive.header.messageId}] failed. Invalid access token: ${userAccessToken}`;
+		log('ERROR', errorMessage);
+		callback(new Error(errorMessage));
+	}
 
-    const response = {
-        header: {
-            messageId: generateMessageID(),
-            name: 'DiscoverAppliancesResponse',
-            namespace: 'Alexa.ConnectedHome.Discovery',
-            payloadVersion: '2',
-        },
-        payload: {
-            discoveredAppliances: getDevicesFromPartnerCloud(userAccessToken),
-        },
-    };
+	const response = {
+		event: {
+			header: {
+				namespace: 'Alexa.Discovery',
+				name: 'Discover.Response',
+				messageId: uuidv4(),
+				payloadVersion: '3',
+			},
+			payload: {
+				endpoints: getDevicesFromPartnerCloud(userAccessToken),
+			},
+		},
+	};
 
-    log('DEBUG', `Discovery Response: ${JSON.stringify(response)}`);
+	log('DEBUG', `Discovery Response: ${JSON.stringify(response)}`);
 
-    callback(null, response);
+	callback(null, response);
 }
 
-function handleControl(request, callback) {
-    log('DEBUG', `Control Request: ${JSON.stringify(request)}`);
+function handleCommonTasks(directive, callback) {
+	log('DEBUG', `Control Request: ${JSON.stringify(directive)}`);
 
-    const userAccessToken = request.payload.accessToken.trim();
+	const userAccessToken = directive.endpoint.scope.token;
 
-    if (!userAccessToken || !isValidToken(userAccessToken)) {
-        log('ERROR', `Discovery Request [${request.header.messageId}] failed. Invalid access token: ${userAccessToken}`);
-        callback(null, generateResponse('InvalidAccessTokenError', {}));
-        return;
-    }
+	if (!userAccessToken || !isValidToken(userAccessToken)) {
+		const errMsg = `Invalid access token: ${userAccessToken}`;
+		log('ERROR', errMsg);
+		callback(new Error(errMsg));
+		return false;
+	}
 
-    const applianceId = request.payload.appliance.applianceId;
+	if (!directive.endpoint.endpointId) {
+		const errMsg = 'No endpointId provided in request';
+		log('ERROR', errMsg);
+		callback(new Error(errMsg));
+		return false;
+	}
 
-    if (!applianceId) {
-        log('ERROR', 'No applianceId provided in request');
-        const payload = { faultingParameter: `applianceId: ${applianceId}` };
-        callback(null, generateResponse('UnexpectedInformationReceivedError', payload));
-        return;
-    }
+	// if (!isDeviceOnline(endpointId, userAccessToken)) { callback(new Error('TargetOfflineError'), null); return; }
 
-    if (!isDeviceOnline(applianceId, userAccessToken)) {
-        log('ERROR', `Device offline: ${applianceId}`);
-        callback(null, generateResponse('TargetOfflineError', {}));
-        return;
-    }
+	return true;
 
-    let response;
+}
 
-    switch (request.header.name) {
-        case 'TurnOnRequest':
-            response = turnOn(applianceId, userAccessToken);
-            break;
+function handlePowerControl(directive, callback) {
+	if (!handleCommonTasks(directive, callback)) {
+		return;
+	}
 
-        case 'TurnOffRequest':
-            response = turnOff(applianceId, userAccessToken);
-            break;
+	switch (directive.header.name) {
+		case 'TurnOff':
+			sendMessageToRaspberry(turnOffMessage(directive.endpoint.endpointId));
 
-        case 'SetPercentageRequest': {
-            const percentage = request.payload.percentageState.value;
-            if (!percentage) {
-                const payload = { faultingParameter: `percentageState: ${percentage}` };
-                callback(null, generateResponse('UnexpectedInformationReceivedError', payload));
-                return;
-            }
-            response = setPercentage(applianceId, userAccessToken, percentage);
-            break;
-        }
+			callback(null, generateCommonControlResponse(
+				directive,
+				'Alexa.PowerController',
+				'powerState',
+				'ON'));
+			return;
+		case 'TurnOn':
+			sendMessageToRaspberry(turnOnMessage(directive.endpoint.endpointId));
 
-        case 'IncrementPercentageRequest': {
-            const delta = request.payload.deltaPercentage.value;
-            if (!delta) {
-                const payload = { faultingParameter: `deltaPercentage: ${delta}` };
-                callback(null, generateResponse('UnexpectedInformationReceivedError', payload));
-                return;
-            }
-            response = incrementPercentage(applianceId, userAccessToken, delta);
-            break;
-        }
+			callback(null, generateCommonControlResponse(
+				directive,
+				'Alexa.PowerController',
+				'powerState',
+				'OFF'));
+			return;
+		default: {
+			const errMsg = `No supported directive name: ${directive.header.name}`;
+			log('ERROR', errMsg);
+			callback(new Error(errMsg));
+			return;
+		}
+	}
 
-        case 'DecrementPercentageRequest': {
-            const delta = request.payload.deltaPercentage.value;
-            if (!delta) {
-                const payload = { faultingParameter: `deltaPercentage: ${delta}` };
-                callback(null, generateResponse('UnexpectedInformationReceivedError', payload));
-                return;
-            }
-            response = decrementPercentage(applianceId, userAccessToken, delta);
-            break;
-        }
+	// log('DEBUG', `Control Confirmation: ${JSON.stringify(response)}`);
+}
 
-        default: {
-            log('ERROR', `No supported directive name: ${request.header.name}`);
-            callback(null, generateResponse('UnsupportedOperationError', {}));
-            return;
-        }
-    }
+function handleBrightnessControl(directive, callback) {
+	if (!handleCommonTasks(directive, callback)) {
+		return;
+	}
 
-    log('DEBUG', `Control Confirmation: ${JSON.stringify(response)}`);
+	switch (directive.header.name) {
+		case 'SetBrightness':
+			sendMessageToRaspberry(brightnessMessage(directive.endpoint.endpointId, directive.payload.brightness));
 
-    callback(null, response);
+			callback(null, generateCommonControlResponse(
+				directive,
+				'Alexa.BrightnessController',
+				'brightness',
+				directive.payload.brightness));
+			return;
+		default: {
+			const errMsg = `No supported directive name: ${directive.header.name}`;
+			log('ERROR', errMsg);
+			callback(new Error(errMsg));
+			return;
+		}
+	}
+}
+
+function handleColorControl(directive, callback) {
+	if (!handleCommonTasks(directive, callback)) {
+		return;
+	}
+
+	switch (directive.header.name) {
+		case 'SetColor':
+			sendMessageToRaspberry(colorMessage(directive.endpoint.endpointId, directive.payload.color));
+
+			callback(null, generateCommonControlResponse(
+				directive,
+				'Alexa.ColorController',
+				'color',
+				directive.payload.color));
+			return;
+		default: {
+			const errMsg = `No supported directive name: ${directive.header.name}`;
+			log('ERROR', errMsg);
+			callback(new Error(errMsg));
+			return;
+		}
+	}
+}
+
+function generateCommonControlResponse(directive, namespace, property, value) {
+	return {
+		context: {
+			properties: [ {
+				namespace: namespace,
+				name: property,
+				value: value,
+				timeOfSample: new Date().toISOString(),
+				uncertaintyInMilliseconds: 500,
+			} ]
+		},
+		event: {
+			header: {
+				namespace: "Alexa",
+				name: "Response",
+				payloadVersion: "3",
+				messageId: uuidv4(),
+				correlationToken: directive.header.correlationToken,
+			},
+			endpoint: directive.endpoint,
+			payload: {},
+		},
+	};
 }
 
 exports.handler = (request, context, callback) => {
-    switch (request.header.namespace) {
-        case 'Alexa.ConnectedHome.Discovery':
-            handleDiscovery(request, callback);
-            break;
+	log('DEBUG', JSON.stringify(request));
 
-        case 'Alexa.ConnectedHome.Control':
-            handleControl(request, callback);
-            break;
+	const directive = request.directive;
 
-        // case 'Alexa.ConnectedHome.Query':
-        //     handleQuery(request, callback);
-        //     break;
+	switch (directive.header.namespace) {
+		case 'Alexa.Discovery':
+			if (directive.header.name !== 'Discover') {
+				callback(new Error('Unsupported directive under Discovery'));
+				return;
+			}
 
-        default: { // unexpected message
-            const errorMessage = `No supported namespace: ${request.header.namespace}`;
-            log('ERROR', errorMessage);
-            callback(new Error(errorMessage));
-        }
-    }
+			handleDiscovery(request, callback);
+			break;
+		case 'Alexa.PowerController':
+			handlePowerControl(directive, callback);
+			break;
+		case 'Alexa.BrightnessController':
+			handleBrightnessControl(directive, callback);
+			break;
+		case 'Alexa.ColorController':
+			handleColorControl(directive, callback);
+			break;
+		default: { // unexpected message
+			const errorMessage = `No supported namespace: ${directive.header.namespace}`;
+			log('ERROR', errorMessage);
+			callback(new Error(errorMessage));
+		}
+	}
 };
