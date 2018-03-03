@@ -4,21 +4,33 @@ import (
 	"errors"
 )
 
-type InfraredEvent struct {
-	Remote string
-	Event  string
-}
-
 type RGB struct {
 	Red   uint8
 	Green uint8
 	Blue  uint8
 }
 
+type InfraredEvent struct {
+	Remote string
+	Event  string
+}
+
 func NewInfraredEvent(remote string, event string) InfraredEvent {
 	return InfraredEvent{
 		Remote: remote,
 		Event:  event,
+	}
+}
+
+type BrightnessEvent struct {
+	DeviceIdOrDeviceGroupId string
+	Brightness              uint
+}
+
+func NewBrightnessEvent(deviceIdOrDeviceGroupId string, brightness uint) BrightnessEvent {
+	return BrightnessEvent{
+		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
+		Brightness:              brightness,
 	}
 }
 
@@ -66,6 +78,8 @@ type Device struct {
 
 	PowerOnCmd  string
 	PowerOffCmd string
+
+	LastColor RGB
 }
 
 func NewDevice(id string, adapterId string, adaptersDeviceId string, name string, description string, powerOnCmd string, powerOffCmd string) *Device {
@@ -79,6 +93,7 @@ func NewDevice(id string, adapterId string, adaptersDeviceId string, name string
 
 		// state
 		ProbablyTurnedOn: false,
+		LastColor:        RGB{255, 255, 255},
 
 		PowerOnCmd:  powerOnCmd,
 		PowerOffCmd: powerOffCmd,

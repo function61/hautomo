@@ -21,6 +21,7 @@ type Application struct {
 	infraredEvent         chan InfraredEvent
 	powerEvent            chan PowerEvent
 	colorEvent            chan ColorMsg
+	brightnessEvent       chan BrightnessEvent
 }
 
 type InfraredToInfraredWrapper struct {
@@ -38,6 +39,7 @@ func NewApplication(stopper *Stopper) *Application {
 		infraredEvent:         make(chan InfraredEvent, 1),
 		powerEvent:            make(chan PowerEvent, 1),
 		colorEvent:            make(chan ColorMsg, 1),
+		brightnessEvent:       make(chan BrightnessEvent, 1),
 	}
 
 	go func() {
@@ -57,11 +59,24 @@ func NewApplication(stopper *Stopper) *Application {
 				device := app.deviceById[colorMsg.DeviceId]
 				adapter := app.adapterById[device.AdapterId]
 
+				device.LastColor = colorMsg.Color
+
 				adaptedColorMsg := NewColorMsg(device.AdaptersDeviceId, colorMsg.Color)
 
 				adapter.ColorMsg <- adaptedColorMsg
-			case ir := <-app.infraredEvent:
+			case brightnessEvent := <-app.brightnessEvent:
+				// TODO: device group support
+				device := app.deviceById[brightnessEvent.DeviceIdOrDeviceGroupId]
+				adapter := app.adapterById[device.AdapterId]
 
+				dimmedColor := RGB{
+					Red:   uint8(float64(device.LastColor.Red) * float64(brightnessEvent.Brightness) / 100.0),
+					Green: uint8(float64(device.LastColor.Green) * float64(brightnessEvent.Brightness) / 100.0),
+					Blue:  uint8(float64(device.LastColor.Blue) * float64(brightnessEvent.Brightness) / 100.0),
+				}
+
+				adapter.ColorMsg <- NewColorMsg(device.AdaptersDeviceId, dimmedColor)
+			case ir := <-app.infraredEvent:
 				if powerEvent, ok := app.infraredToPowerEvent[ir.Event]; ok {
 					log.Printf("application: IR: %s -> power for %s", ir.Event, powerEvent.DeviceIdOrDeviceGroupId)
 

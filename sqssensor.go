@@ -28,6 +28,11 @@ type ColorRequest struct {
 	Blue                    uint8  `json:"blue"`
 }
 
+type BrightnessRequest struct {
+	DeviceIdOrDeviceGroupId string `json:"id"`
+	Brightness              uint   `json:"brightness"` // 0-100
+}
+
 func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, accessKeySecret string, stopper *Stopper) {
 	defer stopper.Done()
 
@@ -96,6 +101,13 @@ func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, access
 				}
 
 				app.colorEvent <- NewColorMsg(req.DeviceIdOrDeviceGroupId, RGB{req.Red, req.Green, req.Blue})
+			case "brightness":
+				var req BrightnessRequest
+				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
+					panic(err)
+				}
+
+				app.brightnessEvent <- NewBrightnessEvent(req.DeviceIdOrDeviceGroupId, req.Brightness)
 			default:
 				log.Printf("sqsPollerLoop: unknown msgType: " + msgType)
 			}
