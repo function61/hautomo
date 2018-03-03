@@ -1,4 +1,4 @@
-package main
+package harmonyhub
 
 import (
 	"encoding/xml"

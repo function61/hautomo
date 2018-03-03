@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./adapters/harmonyhubadapter"
 	"./adapters/particleadapter"
 	"./hapitypes"
 	"./util/stopper"
@@ -225,7 +226,7 @@ func main() {
 				adapter.ParticleId,
 				adapter.ParticleAccessToken))
 		case "harmony":
-			app.DefineAdapter(NewHarmonyHubAdapter(
+			app.DefineAdapter(harmonyhubadapter.New(
 				adapter.Id,
 				adapter.HarmonyAddr,
 				stop.Add()))

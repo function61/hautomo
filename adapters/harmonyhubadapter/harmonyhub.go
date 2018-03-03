@@ -1,18 +1,19 @@
-package main
+package harmonyhubadapter
 
 import (
-	"./hapitypes"
-	"./util/stopper"
+	"../../hapitypes"
+	"../../libraries/harmonyhub"
+	"../../util/stopper"
 	"log"
 )
 
-func NewHarmonyHubAdapter(id string, addr string, stop *stopper.Stopper) *hapitypes.Adapter {
+func New(id string, addr string, stop *stopper.Stopper) *hapitypes.Adapter {
 	adapter := hapitypes.NewAdapter(id)
 
 	// because we don't own the given stopper, we shouldn't call Add() on it
 	subStopper := stopper.New()
 
-	harmonyHubConnection := NewHarmonyHubConnection(addr, subStopper.Add())
+	harmonyHubConnection := harmonyhub.NewHarmonyHubConnection(addr, subStopper.Add())
 
 	go func() {
 		defer stop.Done()

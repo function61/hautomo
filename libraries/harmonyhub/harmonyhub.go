@@ -1,7 +1,7 @@
-package main
+package harmonyhub
 
 import (
-	"./util/stopper"
+	"../../util/stopper"
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
