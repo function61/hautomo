@@ -3,6 +3,10 @@
 var AWS = require('aws-sdk');
 var sqs = new AWS.SQS({apiVersion: '2012-11-05'});
 
+// FIXME:
+// - https://developer.amazon.com/docs/smarthome/build-smart-home-skills-for-lights.html#choose-capabilities
+// - https://developer.amazon.com/docs/device-apis/alexa-discovery.html#capability-versions
+
 function createDevice(deviceId, friendlyName, friendlyDescription) {
     return     {
         // This id needs to be unique across all devices discovered for a given manufacturer
