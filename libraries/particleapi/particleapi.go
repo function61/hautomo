@@ -1,4 +1,4 @@
-package main
+package particleapi
 
 import (
 	"net/http"
@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func particleRequest(device string, command string, arg string, accessToken string) error {
+func Invoke(device string, command string, arg string, accessToken string) error {
 	apiEndpoint := "https://api.particle.io/v1/devices/" + device + "/" + command
 
 	urlValues := url.Values{}

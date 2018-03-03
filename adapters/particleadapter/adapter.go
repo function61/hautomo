@@ -1,11 +1,12 @@
-package main
+package particleadapter
 
 import (
-	"./hapitypes"
+	"../../hapitypes"
+	"../../libraries/particleapi"
 	"log"
 )
 
-func NewParticleAdapter(id string, particleId string, accessToken string) *hapitypes.Adapter {
+func New(id string, particleId string, accessToken string) *hapitypes.Adapter {
 	adapter := hapitypes.NewAdapter(id)
 
 	go func() {
@@ -18,7 +19,7 @@ func NewParticleAdapter(id string, particleId string, accessToken string) *hapit
 					log.Printf("ParticleAdapter: error: PARTICLE_ACCESS_TOKEN not defined")
 					continue
 				}
-				if err := particleRequest(particleId, "rf", powerMsg.PowerCommand, accessToken); err != nil {
+				if err := particleapi.Invoke(particleId, "rf", powerMsg.PowerCommand, accessToken); err != nil {
 					log.Printf("ParticleAdapter: request failed: %s", err.Error())
 				}
 			}

@@ -1,7 +1,7 @@
 package main
 
 import (
-	// "./adapters/onkyoeicsp"
+	"./adapters/particleadapter"
 	"./hapitypes"
 	"./util/stopper"
 	"./util/systemdinstaller"
@@ -220,7 +220,7 @@ func main() {
 	for _, adapter := range conf.Adapters {
 		switch adapter.Type {
 		case "particle":
-			app.DefineAdapter(NewParticleAdapter(
+			app.DefineAdapter(particleadapter.New(
 				adapter.Id,
 				adapter.ParticleId,
 				adapter.ParticleAccessToken))
