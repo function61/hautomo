@@ -203,31 +203,7 @@ func (a *Application) SyncToCloud() {
 	log.Println(strings.Join(lines, "\n"))
 }
 
-func main() {
-	if len(os.Args) == 2 && os.Args[1] == "--help" {
-		fmt.Printf("Usage: %s [--write-systemd-unit-file]\n", os.Args[0])
-		return
-	}
-	if len(os.Args) == 2 && os.Args[1] == "--write-systemd-unit-file" {
-		if err := systemdinstaller.InstallSystemdServiceFile("homeautomation", "home automation hub"); err != nil {
-			panic(err)
-		}
-		return
-	}
-	if len(os.Args) != 1 {
-		fmt.Printf("Invalid arguments. Run %s --help", os.Args[0])
-		os.Exit(1)
-		return
-	}
-
-	conf, confErr := readConfigurationFile()
-	if confErr != nil {
-		panic(confErr)
-	}
-
-	stop := stopper.New()
-	app := NewApplication(stop.Add())
-
+func configureAppAndStartAdapters(app *Application, conf *ConfigFile, stop *stopper.Stopper) error {
 	for _, adapter := range conf.Adapters {
 		switch adapter.Type {
 		case "particle":
@@ -267,7 +243,7 @@ func main() {
 				adapter.SqsKeySecret,
 				stop.Add())
 		default:
-			panic(errors.New("unkown adapter: " + adapter.Type))
+			return errors.New("unkown adapter: " + adapter.Type)
 		}
 	}
 
@@ -303,6 +279,38 @@ func main() {
 
 	for _, ir2ir := range conf.IrToIr {
 		app.InfraredShouldInfrared(ir2ir.RemoteKey, ir2ir.ToDevice, ir2ir.IrEvent)
+	}
+
+	return nil
+}
+
+func main() {
+	if len(os.Args) == 2 && os.Args[1] == "--help" {
+		fmt.Printf("Usage: %s [--write-systemd-unit-file]\n", os.Args[0])
+		return
+	}
+	if len(os.Args) == 2 && os.Args[1] == "--write-systemd-unit-file" {
+		if err := systemdinstaller.InstallSystemdServiceFile("homeautomation", "home automation hub"); err != nil {
+			panic(err)
+		}
+		return
+	}
+	if len(os.Args) != 1 {
+		fmt.Printf("Invalid arguments. Run %s --help", os.Args[0])
+		os.Exit(1)
+		return
+	}
+
+	conf, confErr := readConfigurationFile()
+	if confErr != nil {
+		panic(confErr)
+	}
+
+	stop := stopper.New()
+	app := NewApplication(stop.Add())
+
+	if err := configureAppAndStartAdapters(app, conf, stop); err != nil {
+		panic(err)
 	}
 
 	go func(stop *stopper.Stopper) {
