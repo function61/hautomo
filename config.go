@@ -28,6 +28,9 @@ type AdapterConfig struct {
 	SqsKeySecret string `json:"sqs_key_secret,omitempty"`
 
 	IrSimulatorKey string `json:"irsimulator_button,omitempty"`
+
+	EventghostAddr   string `json:"eventghost_addr,omitempty"`
+	EventghostSecret string `json:"eventghost_secret,omitempty"`
 }
 
 type DeviceConfig struct {

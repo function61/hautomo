@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./adapters/eventghostnetworkclientadapter"
 	"./adapters/happylightsadapter"
 	"./adapters/harmonyhubadapter"
 	"./adapters/particleadapter"
@@ -243,6 +244,12 @@ func main() {
 			app.DefineAdapter(happylightsadapter.New(
 				adapter.Id,
 				adapter.HappyLightsAddr))
+		case "eventghostnetworkclient":
+			app.DefineAdapter(eventghostnetworkclientadapter.New(
+				adapter.Id,
+				adapter.EventghostAddr,
+				adapter.EventghostSecret,
+				stop.Add()))
 		case "irsimulator":
 			go infraredSimulator(
 				app,
