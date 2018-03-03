@@ -2,10 +2,12 @@ package main
 
 import (
 	"./util/systemdinstaller"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/function61/eventhorizon/util/clicommon"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 )
@@ -249,6 +251,30 @@ func main() {
 	for _, ir2ir := range conf.IrToIr {
 		app.InfraredShouldInfrared(ir2ir.RemoteKey, ir2ir.ToDevice, ir2ir.IrEvent)
 	}
+
+	go func(stopper *Stopper) {
+		defer stopper.Done()
+		srv := &http.Server{Addr: ":8080"}
+
+		go func() {
+			<-stopper.ShouldStop
+
+			log.Printf("httpserver: requesting stop")
+
+			_ = srv.Shutdown(nil)
+		}()
+
+		http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
+			enc := json.NewEncoder(w)
+			enc.SetIndent("", "  ")
+			enc.Encode(conf)
+		})
+
+		if err := srv.ListenAndServe(); err != nil {
+			// cannot panic, because this probably is an intentional close
+			log.Printf("httpserver: stopped because: %s", err)
+		}
+	}(stopper.Add())
 
 	app.SyncToCloud()
 
