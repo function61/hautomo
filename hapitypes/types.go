@@ -34,6 +34,18 @@ func NewBrightnessEvent(deviceIdOrDeviceGroupId string, brightness uint) Brightn
 	}
 }
 
+type PlaybackEvent struct {
+	DeviceIdOrDeviceGroupId string
+	Action                  string
+}
+
+func NewPlaybackEvent(deviceIdOrDeviceGroupId string, action string) PlaybackEvent {
+	return PlaybackEvent{
+		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
+		Action:                  action,
+	}
+}
+
 type PowerKind int
 
 const (
@@ -157,6 +169,7 @@ type Adapter struct {
 	PowerMsg    chan PowerMsg
 	ColorMsg    chan ColorMsg
 	InfraredMsg chan InfraredMsg
+	PlaybackMsg chan PlaybackEvent
 }
 
 func NewAdapter(id string) *Adapter {
@@ -165,5 +178,6 @@ func NewAdapter(id string) *Adapter {
 		PowerMsg:    make(chan PowerMsg),
 		ColorMsg:    make(chan ColorMsg),
 		InfraredMsg: make(chan InfraredMsg),
+		PlaybackMsg: make(chan PlaybackEvent),
 	}
 }

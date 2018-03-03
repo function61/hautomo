@@ -53,19 +53,31 @@ function colorController() {
 	};
 }
 
-function createDevice(deviceId, friendlyName, friendlyDescription) {
+function playbackController() {
+	return {
+		type: "AlexaInterface",
+		interface: "Alexa.PlaybackController",
+		version: "3",
+		supportedOperations: ["Play", "Pause", "Stop"],
+	};
+}
+
+const cats = {
+	LIGHT: 'LIGHT',
+	TV: 'TV',
+	OTHER: 'OTHER',
+	SPEAKER: 'SPEAKER',
+};
+
+function createDevice(deviceId, friendlyName, friendlyDescription, cats, caps) {
 	return     {
 		endpointId: deviceId,
 		manufacturerName: 'function61.com',
 		version: '1.0',
 		friendlyName: friendlyName,
 		description: friendlyDescription,
-		displayCategories: [ 'LIGHT' ], // where are these listed?
-		capabilities: [
-			powerController(),
-			brightnessController(),
-			colorController(),
-		],
+		displayCategories: cats, // https://developer.amazon.com/docs/device-apis/alexa-discovery.html#display-categories
+		capabilities: caps,
 		/*
 		cookie: {
 			extraDetail1: 'optionalDetailForSkillAdapterToReferenceThisDevice',
@@ -77,15 +89,18 @@ const queueUrl = 'https://sqs.us-east-1.amazonaws.com/329074924855/JoonasHomeAut
 
 function getDevicesFromPartnerCloud() {
 	return [
-		createDevice('d2ff0882', 'Sofa light', 'Floor light next the sofa'),
-		createDevice('98d3cb01', 'Speaker light', 'Floor light under the speaker'),
-		createDevice('e97d7d4c', 'Cat light', 'Light above the cat painting'),
-		createDevice('23e06f45', 'Nightstand light', 'Light on the nightstand'),
-		createDevice('52fe368b', 'Kitchen light', 'Under-cabinet lighting'),
-		createDevice('39664b86', 'Bar light', 'Under-cabinet lighting'),
-		createDevice('c0730bb2', 'Amplifier', 'Onkyo TX-NR515'),
-		createDevice('7e7453da', 'TV', 'Philips 55'' 4K 55PUS7909'),
-		createDevice('cfb1b27f', 'Living room lights', 'Device group: Living room lights'),
+		// WARNING: do not replace directly with copy-pasted,
+		// as it does not autogenerate caps
+		createDevice('d2ff0882', 'Sofa light', 'Floor light next the sofa', [ cats.LIGHT ], [ powerController() ]),
+		createDevice('98d3cb01', 'Speaker light', 'Floor light under the speaker', [ cats.LIGHT ], [ powerController() ]),
+		createDevice('e97d7d4c', 'Cat light', 'Light above the cat painting', [ cats.LIGHT ], [ powerController() ]),
+		createDevice('23e06f45', 'Nightstand light', 'Light on the nightstand', [ cats.LIGHT ], [ powerController() ]),
+		createDevice('52fe368b', 'Kitchen light', 'Under-cabinet lighting', [ cats.LIGHT ], [ powerController(), brightnessController(), colorController() ]),
+		createDevice('39664b86', 'Bar light', 'Under-cabinet lighting', [ cats.LIGHT ], [ powerController(), brightnessController(), colorController() ]),
+		createDevice('c0730bb2', 'Amplifier', 'Onkyo TX-NR515', [ cats.SPEAKER ], [ powerController() ]),
+		createDevice('7e7453da', 'TV', 'Philips 55" 4K 55PUS7909', [ cats.TV ], [ powerController() ]),
+		createDevice('cfb1b27f', 'Living room lights', 'Device group: Living room lights', [ cats.LIGHT ], [ powerController() ]),
+		createDevice('7ff0f653', 'Computer', 'Desktop computer', [ cats.OTHER ], [ playbackController() ]),
 	];
 }
 
@@ -168,6 +183,10 @@ function colorMessage(applianceId, color) {
 		green: rgb[1],
 		blue: rgb[2],
 	});
+}
+
+function playbackControlMessage(applianceId, action) {
+	return 'playback ' + JSON.stringify({ id: applianceId, action: action });
 }
 
 function handleDiscovery(request, callback) {
@@ -309,16 +328,36 @@ function handleColorControl(directive, callback) {
 	}
 }
 
+function handlePlaybackControl(directive, callback) {
+	if (!handleCommonTasks(directive, callback)) {
+		return;
+	}
+
+	sendMessageToRaspberry(playbackControlMessage(directive.endpoint.endpointId, directive.header.name));
+
+	callback(null, generateCommonControlResponse(
+		directive,
+		'Alexa.PlaybackController',
+		null,
+		null));
+}
+
 function generateCommonControlResponse(directive, namespace, property, value) {
+	const properties = [];
+
+	if (property !== null) {
+		properties.push({
+			namespace: namespace,
+			name: property,
+			value: value,
+			timeOfSample: new Date().toISOString(),
+			uncertaintyInMilliseconds: 500,
+		});
+	}
+
 	return {
 		context: {
-			properties: [ {
-				namespace: namespace,
-				name: property,
-				value: value,
-				timeOfSample: new Date().toISOString(),
-				uncertaintyInMilliseconds: 500,
-			} ]
+			properties: properties,
 		},
 		event: {
 			header: {
@@ -356,6 +395,9 @@ exports.handler = (request, context, callback) => {
 			break;
 		case 'Alexa.ColorController':
 			handleColorControl(directive, callback);
+			break;
+		case 'Alexa.PlaybackController':
+			handlePlaybackControl(directive, callback);
 			break;
 		default: { // unexpected message
 			const errorMessage = `No supported namespace: ${directive.header.namespace}`;

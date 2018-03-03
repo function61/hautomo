@@ -35,6 +35,11 @@ type BrightnessRequest struct {
 	Brightness              uint   `json:"brightness"` // 0-100
 }
 
+type PlaybackRequest struct {
+	DeviceIdOrDeviceGroupId string `json:"id"`
+	Action                  string `json:"action"`
+}
+
 func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, accessKeySecret string, stopper *stopper.Stopper) {
 	defer stopper.Done()
 
@@ -110,6 +115,13 @@ func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, access
 				}
 
 				app.brightnessEvent <- hapitypes.NewBrightnessEvent(req.DeviceIdOrDeviceGroupId, req.Brightness)
+			case "playback":
+				var req PlaybackRequest
+				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
+					panic(err)
+				}
+
+				app.playbackEvent <- hapitypes.NewPlaybackEvent(req.DeviceIdOrDeviceGroupId, req.Action)
 			default:
 				log.Printf("sqsPollerLoop: unknown msgType: " + msgType)
 			}

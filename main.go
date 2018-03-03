@@ -27,6 +27,7 @@ type Application struct {
 	powerEvent            chan hapitypes.PowerEvent
 	colorEvent            chan hapitypes.ColorMsg
 	brightnessEvent       chan hapitypes.BrightnessEvent
+	playbackEvent         chan hapitypes.PlaybackEvent
 }
 
 type InfraredToInfraredWrapper struct {
@@ -45,6 +46,7 @@ func NewApplication(stop *stopper.Stopper) *Application {
 		powerEvent:            make(chan hapitypes.PowerEvent, 1),
 		colorEvent:            make(chan hapitypes.ColorMsg, 1),
 		brightnessEvent:       make(chan hapitypes.BrightnessEvent, 1),
+		playbackEvent:         make(chan hapitypes.PlaybackEvent, 1),
 	}
 
 	go func() {
@@ -81,6 +83,12 @@ func NewApplication(stop *stopper.Stopper) *Application {
 				}
 
 				adapter.ColorMsg <- hapitypes.NewColorMsg(device.AdaptersDeviceId, dimmedColor)
+			case playbackEvent := <-app.playbackEvent:
+				// TODO: device group support
+				device := app.deviceById[playbackEvent.DeviceIdOrDeviceGroupId]
+				adapter := app.adapterById[device.AdapterId]
+
+				adapter.PlaybackMsg <- hapitypes.NewPlaybackEvent(device.AdaptersDeviceId, playbackEvent.Action)
 			case ir := <-app.infraredEvent:
 				if powerEvent, ok := app.infraredToPowerEvent[ir.Event]; ok {
 					log.Printf("application: IR: %s -> power for %s", ir.Event, powerEvent.DeviceIdOrDeviceGroupId)
