@@ -47,7 +47,7 @@ func NewEventghostConnection(addr string, secret string) *EventghostConnection {
 	// keepalive thread
 	go func() {
 		for {
-			time.Sleep(5 * time.Second)
+			time.Sleep(30 * time.Second)
 
 			if egc.connected {
 				egc.Send("keepalive", nil)
