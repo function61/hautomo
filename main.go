@@ -236,6 +236,10 @@ func main() {
 		app.InfraredShouldPower(powerConfig.RemoteKey, NewPowerEvent(powerConfig.ToDevice, kind))
 	}
 
+	for _, ir2ir := range conf.IrToIr {
+		app.InfraredShouldInfrared(ir2ir.RemoteKey, ir2ir.ToDevice, ir2ir.IrEvent)
+	}
+
 	app.SyncToCloud()
 
 	clicommon.WaitForInterrupt()

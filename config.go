@@ -53,11 +53,18 @@ type IrPowerConfig struct {
 	PowerKind string `json:"power_kind"`
 }
 
+type IrToIr struct {
+	RemoteKey string `json:"remote_key"`
+	ToDevice  string `json:"to_device"`
+	IrEvent   string `json:"ir"`
+}
+
 type ConfigFile struct {
 	Adapters     []AdapterConfig     `json:"adapter"`
 	Devices      []DeviceConfig      `json:"device"`
 	DeviceGroups []DeviceGroupConfig `json:"devicegroup"`
 	IrPowers     []IrPowerConfig     `json:"ir_powers"`
+	IrToIr       []IrToIr            `json:"ir2ir"`
 }
 
 func readConfigurationFile() (*ConfigFile, error) {
