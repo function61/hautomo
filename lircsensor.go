@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./hapitypes"
 	"bufio"
 	"io"
 	"log"
@@ -51,7 +52,7 @@ func irwPoller(app *Application, stopper *Stopper) {
 				continue
 			}
 
-			ir := NewInfraredEvent("mceusb", mceUsbCommand[1])
+			ir := hapitypes.NewInfraredEvent("mceusb", mceUsbCommand[1])
 
 			log.Printf("irwPoller: received %s", ir.Event)
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./hapitypes"
 	"encoding/json"
 	"errors"
 	"github.com/aws/aws-sdk-go/aws"
@@ -86,28 +87,28 @@ func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, access
 					panic(err)
 				}
 
-				app.powerEvent <- NewPowerEvent(req.DeviceIdOrDeviceGroupId, powerKindOn)
+				app.powerEvent <- hapitypes.NewPowerEvent(req.DeviceIdOrDeviceGroupId, hapitypes.PowerKindOn)
 			case "turn_off":
 				var req TurnOffRequest
 				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 					panic(err)
 				}
 
-				app.powerEvent <- NewPowerEvent(req.DeviceIdOrDeviceGroupId, powerKindOff)
+				app.powerEvent <- hapitypes.NewPowerEvent(req.DeviceIdOrDeviceGroupId, hapitypes.PowerKindOff)
 			case "color":
 				var req ColorRequest
 				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 					panic(err)
 				}
 
-				app.colorEvent <- NewColorMsg(req.DeviceIdOrDeviceGroupId, RGB{req.Red, req.Green, req.Blue})
+				app.colorEvent <- hapitypes.NewColorMsg(req.DeviceIdOrDeviceGroupId, hapitypes.RGB{req.Red, req.Green, req.Blue})
 			case "brightness":
 				var req BrightnessRequest
 				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 					panic(err)
 				}
 
-				app.brightnessEvent <- NewBrightnessEvent(req.DeviceIdOrDeviceGroupId, req.Brightness)
+				app.brightnessEvent <- hapitypes.NewBrightnessEvent(req.DeviceIdOrDeviceGroupId, req.Brightness)
 			default:
 				log.Printf("sqsPollerLoop: unknown msgType: " + msgType)
 			}

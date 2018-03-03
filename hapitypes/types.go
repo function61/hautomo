@@ -1,4 +1,4 @@
-package main
+package hapitypes
 
 import (
 	"errors"
@@ -34,20 +34,20 @@ func NewBrightnessEvent(deviceIdOrDeviceGroupId string, brightness uint) Brightn
 	}
 }
 
-type powerKind int
+type PowerKind int
 
 const (
-	powerKindOn     powerKind = iota
-	powerKindOff              = iota
-	powerKindToggle           = iota
+	PowerKindOn     PowerKind = iota
+	PowerKindOff              = iota
+	PowerKindToggle           = iota
 )
 
 type PowerEvent struct {
 	DeviceIdOrDeviceGroupId string
-	Kind                    powerKind
+	Kind                    PowerKind
 }
 
-func NewPowerEvent(deviceIdOrDeviceGroupId string, kind powerKind) PowerEvent {
+func NewPowerEvent(deviceIdOrDeviceGroupId string, kind PowerKind) PowerEvent {
 	return PowerEvent{
 		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
 		Kind: kind,
@@ -57,11 +57,11 @@ func NewPowerEvent(deviceIdOrDeviceGroupId string, kind powerKind) PowerEvent {
 func NewPowerToggleEvent(deviceIdOrDeviceGroupId string) PowerEvent {
 	return PowerEvent{
 		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
-		Kind: powerKindToggle,
+		Kind: PowerKindToggle,
 	}
 }
 
-var errDeviceNotFound = errors.New("device not found")
+var ErrDeviceNotFound = errors.New("device not found")
 
 type Device struct {
 	Id          string

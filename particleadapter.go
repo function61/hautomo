@@ -1,11 +1,12 @@
 package main
 
 import (
+	"./hapitypes"
 	"log"
 )
 
-func NewParticleAdapter(id string, particleId string, accessToken string) *Adapter {
-	adapter := NewAdapter(id)
+func NewParticleAdapter(id string, particleId string, accessToken string) *hapitypes.Adapter {
+	adapter := hapitypes.NewAdapter(id)
 
 	go func() {
 		log.Println("ParticleAdapter: started")

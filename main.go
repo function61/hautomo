@@ -1,6 +1,8 @@
 package main
 
 import (
+	// "./adapters/onkyoeicsp"
+	"./hapitypes"
 	"./util/systemdinstaller"
 	"encoding/json"
 	"errors"
@@ -13,33 +15,33 @@ import (
 )
 
 type Application struct {
-	adapterById           map[string]*Adapter
-	deviceById            map[string]*Device
-	deviceGroupById       map[string]*DeviceGroup
-	infraredToPowerEvent  map[string]PowerEvent
+	adapterById           map[string]*hapitypes.Adapter
+	deviceById            map[string]*hapitypes.Device
+	deviceGroupById       map[string]*hapitypes.DeviceGroup
+	infraredToPowerEvent  map[string]hapitypes.PowerEvent
 	infraredToInfraredMsg map[string]InfraredToInfraredWrapper
-	infraredEvent         chan InfraredEvent
-	powerEvent            chan PowerEvent
-	colorEvent            chan ColorMsg
-	brightnessEvent       chan BrightnessEvent
+	infraredEvent         chan hapitypes.InfraredEvent
+	powerEvent            chan hapitypes.PowerEvent
+	colorEvent            chan hapitypes.ColorMsg
+	brightnessEvent       chan hapitypes.BrightnessEvent
 }
 
 type InfraredToInfraredWrapper struct {
-	adapter     *Adapter
-	infraredMsg InfraredMsg
+	adapter     *hapitypes.Adapter
+	infraredMsg hapitypes.InfraredMsg
 }
 
 func NewApplication(stopper *Stopper) *Application {
 	app := &Application{
-		adapterById:           make(map[string]*Adapter),
-		deviceById:            make(map[string]*Device),
-		deviceGroupById:       make(map[string]*DeviceGroup),
-		infraredToPowerEvent:  make(map[string]PowerEvent),
+		adapterById:           make(map[string]*hapitypes.Adapter),
+		deviceById:            make(map[string]*hapitypes.Device),
+		deviceGroupById:       make(map[string]*hapitypes.DeviceGroup),
+		infraredToPowerEvent:  make(map[string]hapitypes.PowerEvent),
 		infraredToInfraredMsg: make(map[string]InfraredToInfraredWrapper),
-		infraredEvent:         make(chan InfraredEvent, 1),
-		powerEvent:            make(chan PowerEvent, 1),
-		colorEvent:            make(chan ColorMsg, 1),
-		brightnessEvent:       make(chan BrightnessEvent, 1),
+		infraredEvent:         make(chan hapitypes.InfraredEvent, 1),
+		powerEvent:            make(chan hapitypes.PowerEvent, 1),
+		colorEvent:            make(chan hapitypes.ColorMsg, 1),
+		brightnessEvent:       make(chan hapitypes.BrightnessEvent, 1),
 	}
 
 	go func() {
@@ -61,7 +63,7 @@ func NewApplication(stopper *Stopper) *Application {
 
 				device.LastColor = colorMsg.Color
 
-				adaptedColorMsg := NewColorMsg(device.AdaptersDeviceId, colorMsg.Color)
+				adaptedColorMsg := hapitypes.NewColorMsg(device.AdaptersDeviceId, colorMsg.Color)
 
 				adapter.ColorMsg <- adaptedColorMsg
 			case brightnessEvent := <-app.brightnessEvent:
@@ -69,13 +71,13 @@ func NewApplication(stopper *Stopper) *Application {
 				device := app.deviceById[brightnessEvent.DeviceIdOrDeviceGroupId]
 				adapter := app.adapterById[device.AdapterId]
 
-				dimmedColor := RGB{
+				dimmedColor := hapitypes.RGB{
 					Red:   uint8(float64(device.LastColor.Red) * float64(brightnessEvent.Brightness) / 100.0),
 					Green: uint8(float64(device.LastColor.Green) * float64(brightnessEvent.Brightness) / 100.0),
 					Blue:  uint8(float64(device.LastColor.Blue) * float64(brightnessEvent.Brightness) / 100.0),
 				}
 
-				adapter.ColorMsg <- NewColorMsg(device.AdaptersDeviceId, dimmedColor)
+				adapter.ColorMsg <- hapitypes.NewColorMsg(device.AdaptersDeviceId, dimmedColor)
 			case ir := <-app.infraredEvent:
 				if powerEvent, ok := app.infraredToPowerEvent[ir.Event]; ok {
 					log.Printf("application: IR: %s -> power for %s", ir.Event, powerEvent.DeviceIdOrDeviceGroupId)
@@ -96,19 +98,19 @@ func NewApplication(stopper *Stopper) *Application {
 	return app
 }
 
-func (a *Application) DefineAdapter(adapter *Adapter) {
+func (a *Application) DefineAdapter(adapter *hapitypes.Adapter) {
 	a.adapterById[adapter.Id] = adapter
 }
 
-func (a *Application) AttachDevice(device *Device) {
+func (a *Application) AttachDevice(device *hapitypes.Device) {
 	a.deviceById[device.Id] = device
 }
 
-func (a *Application) AttachDeviceGroup(deviceGroup *DeviceGroup) {
+func (a *Application) AttachDeviceGroup(deviceGroup *hapitypes.DeviceGroup) {
 	a.deviceGroupById[deviceGroup.Id] = deviceGroup
 }
 
-func (a *Application) InfraredShouldPower(key string, powerEvent PowerEvent) {
+func (a *Application) InfraredShouldPower(key string, powerEvent hapitypes.PowerEvent) {
 	a.infraredToPowerEvent[key] = powerEvent
 }
 
@@ -116,10 +118,10 @@ func (a *Application) InfraredShouldInfrared(key string, deviceId string, comman
 	device := a.deviceById[deviceId]
 	adapter := a.adapterById[device.AdapterId]
 
-	a.infraredToInfraredMsg[key] = InfraredToInfraredWrapper{adapter, NewInfraredMsg(device.AdaptersDeviceId, command)}
+	a.infraredToInfraredMsg[key] = InfraredToInfraredWrapper{adapter, hapitypes.NewInfraredMsg(device.AdaptersDeviceId, command)}
 }
 
-func (a *Application) deviceOrDeviceGroupPower(power PowerEvent) error {
+func (a *Application) deviceOrDeviceGroupPower(power hapitypes.PowerEvent) error {
 	device, deviceFound := a.deviceById[power.DeviceIdOrDeviceGroupId]
 	if deviceFound {
 		return a.devicePower(device, power)
@@ -136,31 +138,31 @@ func (a *Application) deviceOrDeviceGroupPower(power PowerEvent) error {
 		return nil
 	}
 
-	return errDeviceNotFound
+	return hapitypes.ErrDeviceNotFound
 }
 
-func (a *Application) devicePower(device *Device, power PowerEvent) error {
-	if power.Kind == powerKindOn {
+func (a *Application) devicePower(device *hapitypes.Device, power hapitypes.PowerEvent) error {
+	if power.Kind == hapitypes.PowerKindOn {
 		log.Printf("Power on: %s", device.Name)
 
 		adapter := a.adapterById[device.AdapterId]
-		adapter.PowerMsg <- NewPowerMsg(device.AdaptersDeviceId, device.PowerOnCmd, true)
+		adapter.PowerMsg <- hapitypes.NewPowerMsg(device.AdaptersDeviceId, device.PowerOnCmd, true)
 
 		device.ProbablyTurnedOn = true
-	} else if power.Kind == powerKindOff {
+	} else if power.Kind == hapitypes.PowerKindOff {
 		log.Printf("Power off: %s", device.Name)
 
 		adapter := a.adapterById[device.AdapterId]
-		adapter.PowerMsg <- NewPowerMsg(device.AdaptersDeviceId, device.PowerOffCmd, false)
+		adapter.PowerMsg <- hapitypes.NewPowerMsg(device.AdaptersDeviceId, device.PowerOffCmd, false)
 
 		device.ProbablyTurnedOn = false
-	} else if power.Kind == powerKindToggle {
+	} else if power.Kind == hapitypes.PowerKindToggle {
 		log.Printf("Power toggle: %s, current state = %v", device.Name, device.ProbablyTurnedOn)
 
 		if device.ProbablyTurnedOn {
-			return a.devicePower(device, NewPowerEvent(device.Id, powerKindOff))
+			return a.devicePower(device, hapitypes.NewPowerEvent(device.Id, hapitypes.PowerKindOff))
 		} else {
-			return a.devicePower(device, NewPowerEvent(device.Id, powerKindOn))
+			return a.devicePower(device, hapitypes.NewPowerEvent(device.Id, hapitypes.PowerKindOn))
 		}
 	} else {
 		panic(errors.New("unknown power kind"))
@@ -234,7 +236,7 @@ func main() {
 	}
 
 	for _, device := range conf.Devices {
-		app.AttachDevice(NewDevice(
+		app.AttachDevice(hapitypes.NewDevice(
 			device.DeviceId,
 			device.AdapterId,
 			device.AdaptersDeviceId,
@@ -245,13 +247,13 @@ func main() {
 	}
 
 	for _, deviceGroup := range conf.DeviceGroups {
-		app.AttachDeviceGroup(NewDeviceGroup(deviceGroup.Id, deviceGroup.Name, deviceGroup.DeviceIds))
+		app.AttachDeviceGroup(hapitypes.NewDeviceGroup(deviceGroup.Id, deviceGroup.Name, deviceGroup.DeviceIds))
 	}
 
-	supportedPowerKinds := map[string]powerKind{
-		"toggle": powerKindToggle,
-		"on":     powerKindOn,
-		"off":    powerKindOff,
+	supportedPowerKinds := map[string]hapitypes.PowerKind{
+		"toggle": hapitypes.PowerKindToggle,
+		"on":     hapitypes.PowerKindOn,
+		"off":    hapitypes.PowerKindOff,
 	}
 
 	for _, powerConfig := range conf.IrPowers {
@@ -260,7 +262,7 @@ func main() {
 			panic(fmt.Errorf("Unsupported power kind: %s", powerConfig.PowerKind))
 		}
 
-		app.InfraredShouldPower(powerConfig.RemoteKey, NewPowerEvent(powerConfig.ToDevice, kind))
+		app.InfraredShouldPower(powerConfig.RemoteKey, hapitypes.NewPowerEvent(powerConfig.ToDevice, kind))
 	}
 
 	for _, ir2ir := range conf.IrToIr {

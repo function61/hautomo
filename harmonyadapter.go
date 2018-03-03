@@ -1,11 +1,12 @@
 package main
 
 import (
+	"./hapitypes"
 	"log"
 )
 
-func NewHarmonyHubAdapter(id string, addr string, stopper *Stopper) *Adapter {
-	adapter := NewAdapter(id)
+func NewHarmonyHubAdapter(id string, addr string, stopper *Stopper) *hapitypes.Adapter {
+	adapter := hapitypes.NewAdapter(id)
 
 	// because we don't own the given stopper, we shouldn't call Add() on it
 	subStopper := NewStopper()
