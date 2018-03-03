@@ -3,6 +3,7 @@ package main
 import (
 	// "./adapters/onkyoeicsp"
 	"./hapitypes"
+	"./util/stopper"
 	"./util/systemdinstaller"
 	"encoding/json"
 	"errors"
@@ -31,7 +32,7 @@ type InfraredToInfraredWrapper struct {
 	infraredMsg hapitypes.InfraredMsg
 }
 
-func NewApplication(stopper *Stopper) *Application {
+func NewApplication(stop *stopper.Stopper) *Application {
 	app := &Application{
 		adapterById:           make(map[string]*hapitypes.Adapter),
 		deviceById:            make(map[string]*hapitypes.Device),
@@ -45,13 +46,13 @@ func NewApplication(stopper *Stopper) *Application {
 	}
 
 	go func() {
-		defer stopper.Done()
+		defer stop.Done()
 
 		log.Println("application: started")
 
 		for {
 			select {
-			case <-stopper.ShouldStop:
+			case <-stop.ShouldStop:
 				log.Println("application: stopping")
 				return
 			case power := <-app.powerEvent:
@@ -213,23 +214,41 @@ func main() {
 		panic(confErr)
 	}
 
-	stopper := NewStopper()
-	app := NewApplication(stopper.Add())
+	stop := stopper.New()
+	app := NewApplication(stop.Add())
 
 	for _, adapter := range conf.Adapters {
 		switch adapter.Type {
 		case "particle":
-			app.DefineAdapter(NewParticleAdapter(adapter.Id, adapter.ParticleId, adapter.ParticleAccessToken))
+			app.DefineAdapter(NewParticleAdapter(
+				adapter.Id,
+				adapter.ParticleId,
+				adapter.ParticleAccessToken))
 		case "harmony":
-			app.DefineAdapter(NewHarmonyHubAdapter(adapter.Id, adapter.HarmonyAddr, stopper.Add()))
+			app.DefineAdapter(NewHarmonyHubAdapter(
+				adapter.Id,
+				adapter.HarmonyAddr,
+				stop.Add()))
 		case "happylights":
-			app.DefineAdapter(NewHappylightsAdapter(adapter.Id, adapter.HappyLightsAddr))
+			app.DefineAdapter(NewHappylightsAdapter(
+				adapter.Id,
+				adapter.HappyLightsAddr))
 		case "irsimulator":
-			go infraredSimulator(app, adapter.IrSimulatorKey, stopper.Add())
+			go infraredSimulator(
+				app,
+				adapter.IrSimulatorKey,
+				stop.Add())
 		case "lirc":
-			go irwPoller(app, stopper.Add())
+			go irwPoller(
+				app,
+				stop.Add())
 		case "sqs":
-			go sqsPollerLoop(app, adapter.SqsQueueUrl, adapter.SqsKeyId, adapter.SqsKeySecret, stopper.Add())
+			go sqsPollerLoop(
+				app,
+				adapter.SqsQueueUrl,
+				adapter.SqsKeyId,
+				adapter.SqsKeySecret,
+				stop.Add())
 		default:
 			panic(errors.New("unkown adapter: " + adapter.Type))
 		}
@@ -269,12 +288,12 @@ func main() {
 		app.InfraredShouldInfrared(ir2ir.RemoteKey, ir2ir.ToDevice, ir2ir.IrEvent)
 	}
 
-	go func(stopper *Stopper) {
-		defer stopper.Done()
+	go func(stop *stopper.Stopper) {
+		defer stop.Done()
 		srv := &http.Server{Addr: ":8080"}
 
 		go func() {
-			<-stopper.ShouldStop
+			<-stop.ShouldStop
 
 			log.Printf("httpserver: requesting stop")
 
@@ -291,7 +310,7 @@ func main() {
 			// cannot panic, because this probably is an intentional close
 			log.Printf("httpserver: stopped because: %s", err)
 		}
-	}(stopper.Add())
+	}(stop.Add())
 
 	app.SyncToCloud()
 
@@ -299,7 +318,7 @@ func main() {
 
 	log.Println("main: received interrupt")
 
-	stopper.StopAll()
+	stop.StopAll()
 
 	log.Println("main: all components stopped")
 }

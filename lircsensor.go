@@ -2,6 +2,7 @@ package main
 
 import (
 	"./hapitypes"
+	"./util/stopper"
 	"bufio"
 	"io"
 	"log"
@@ -14,7 +15,7 @@ import (
 var mceUsbCommandRe = regexp.MustCompile(" 00 ([a-zA-Z_0-9]+) mceusb$")
 
 // reads LIRC's "$ irw" output
-func irwPoller(app *Application, stopper *Stopper) {
+func irwPoller(app *Application, stopper *stopper.Stopper) {
 	defer stopper.Done()
 
 	log.Println("irwPoller: starting")

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./util/stopper"
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
@@ -166,7 +167,7 @@ func (h *HarmonyHubConnection) connectAndDoTheDance() error {
 	return nil
 }
 
-func NewHarmonyHubConnection(addr string, stopper *Stopper) *HarmonyHubConnection {
+func NewHarmonyHubConnection(addr string, stopper *stopper.Stopper) *HarmonyHubConnection {
 	defer stopper.Done()
 
 	harmonyHubConnection := &HarmonyHubConnection{

@@ -2,25 +2,26 @@ package main
 
 import (
 	"./hapitypes"
+	"./util/stopper"
 	"log"
 )
 
-func NewHarmonyHubAdapter(id string, addr string, stopper *Stopper) *hapitypes.Adapter {
+func NewHarmonyHubAdapter(id string, addr string, stop *stopper.Stopper) *hapitypes.Adapter {
 	adapter := hapitypes.NewAdapter(id)
 
 	// because we don't own the given stopper, we shouldn't call Add() on it
-	subStopper := NewStopper()
+	subStopper := stopper.New()
 
 	harmonyHubConnection := NewHarmonyHubConnection(addr, subStopper.Add())
 
 	go func() {
-		defer stopper.Done()
+		defer stop.Done()
 
 		log.Println("HarmonyHubAdapter: started")
 
 		for {
 			select {
-			case <-stopper.ShouldStop:
+			case <-stop.ShouldStop:
 				log.Println("HarmonyHubAdapter: stopping")
 				subStopper.StopAll()
 				return

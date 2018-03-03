@@ -2,6 +2,7 @@ package main
 
 import (
 	"./hapitypes"
+	"./util/stopper"
 	"encoding/json"
 	"errors"
 	"github.com/aws/aws-sdk-go/aws"
@@ -34,7 +35,7 @@ type BrightnessRequest struct {
 	Brightness              uint   `json:"brightness"` // 0-100
 }
 
-func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, accessKeySecret string, stopper *Stopper) {
+func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, accessKeySecret string, stopper *stopper.Stopper) {
 	defer stopper.Done()
 
 	sess := session.Must(session.NewSession())

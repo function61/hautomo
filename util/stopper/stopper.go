@@ -1,4 +1,4 @@
-package main
+package stopper
 
 import (
 	"sync"
@@ -13,7 +13,7 @@ type Stopper struct {
 	wg         sync.WaitGroup
 }
 
-func NewStopper() *Stopper {
+func New() *Stopper {
 	return &Stopper{
 		ShouldStop: make(chan bool, 16),
 		numToStop:  0,

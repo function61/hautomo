@@ -2,11 +2,12 @@ package main
 
 import (
 	"./hapitypes"
+	"./util/stopper"
 	"log"
 	"time"
 )
 
-func infraredSimulator(app *Application, key string, stopper *Stopper) {
+func infraredSimulator(app *Application, key string, stopper *stopper.Stopper) {
 	defer stopper.Done()
 
 	log.Println("IR simulator: started")
