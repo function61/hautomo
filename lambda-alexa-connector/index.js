@@ -39,7 +39,11 @@ const queueUrl = 'https://sqs.us-east-1.amazonaws.com/329074924855/JoonasHomeAut
 const USER_DEVICES = [
 	createDevice('d2ff0882', 'Sofa light', 'Floor light next the sofa'),
 	createDevice('98d3cb01', 'Speaker light', 'Floor light under the speaker'),
-	createDevice('cfb1b27f', 'Living room', 'Device group: Living room'),
+	createDevice('e97d7d4c', 'Cat light', 'Light above the cat painting'),
+	createDevice('23e06f45', 'Nightstand light', 'Light on the nightstand'),
+	createDevice('52fe368b', 'Kitchen light', 'Under-cabinet lighting'),
+	createDevice('39664b86', 'Bar light', 'Under-cabinet lighting'),
+	createDevice('cfb1b27f', 'Living room lights', 'Device group: Living room lights'),
 ];
 
 function log(title, msg) {
