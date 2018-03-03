@@ -6,12 +6,6 @@ import (
 	"testing"
 )
 
-func EqualString(t *testing.T, actual string, expected string) {
-	if actual != expected {
-		t.Fatalf("exp=%v; got=%v", expected, actual)
-	}
-}
-
 func TestSaslAuth(t *testing.T) {
 	auth := saslAuth{
 		Mechanism: "PLAIN",

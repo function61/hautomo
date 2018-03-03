@@ -12,20 +12,6 @@ func NewHarmonyHubAdapter(id string, addr string, stopper *Stopper) *Adapter {
 
 	harmonyHubConnection := NewHarmonyHubConnection(addr, subStopper.Add())
 
-	if err := harmonyHubConnection.InitAndAuthenticate(); err != nil {
-		panic(err)
-	}
-
-	// does not actually go to that hostname/central service, but instead just the end device..
-	// (bad name for stream recipient)
-	if err := harmonyHubConnection.StartStreamTo("connect.logitech.com"); err != nil {
-		panic(err)
-	}
-
-	if err := harmonyHubConnection.Bind(); err != nil {
-		panic(err)
-	}
-
 	go func() {
 		defer stopper.Done()
 
@@ -35,7 +21,6 @@ func NewHarmonyHubAdapter(id string, addr string, stopper *Stopper) *Adapter {
 			select {
 			case <-stopper.ShouldStop:
 				log.Println("HarmonyHubAdapter: stopping")
-				harmonyHubConnection.EndStream()
 				subStopper.StopAll()
 				return
 			case powerMsg := <-adapter.PowerMsg:
