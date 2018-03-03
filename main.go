@@ -18,6 +18,7 @@ type Application struct {
 	infraredToInfraredMsg map[string]InfraredToInfraredWrapper
 	infraredEvent         chan InfraredEvent
 	powerEvent            chan PowerEvent
+	colorEvent            chan ColorMsg
 }
 
 type InfraredToInfraredWrapper struct {
@@ -34,6 +35,7 @@ func NewApplication(stopper *Stopper) *Application {
 		infraredToInfraredMsg: make(map[string]InfraredToInfraredWrapper),
 		infraredEvent:         make(chan InfraredEvent, 1),
 		powerEvent:            make(chan PowerEvent, 1),
+		colorEvent:            make(chan ColorMsg, 1),
 	}
 
 	go func() {
@@ -48,6 +50,14 @@ func NewApplication(stopper *Stopper) *Application {
 				return
 			case power := <-app.powerEvent:
 				app.deviceOrDeviceGroupPower(power)
+			case colorMsg := <-app.colorEvent:
+				// TODO: device group support
+				device := app.deviceById[colorMsg.DeviceId]
+				adapter := app.adapterById[device.AdapterId]
+
+				adaptedColorMsg := NewColorMsg(device.AdaptersDeviceId, colorMsg.Color)
+
+				adapter.ColorMsg <- adaptedColorMsg
 			case ir := <-app.infraredEvent:
 
 				if powerEvent, ok := app.infraredToPowerEvent[ir.Event]; ok {

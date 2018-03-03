@@ -21,6 +21,13 @@ type TurnOffRequest struct {
 	DeviceIdOrDeviceGroupId string `json:"id"`
 }
 
+type ColorRequest struct {
+	DeviceIdOrDeviceGroupId string `json:"id"`
+	Red                     uint8  `json:"red"`
+	Green                   uint8  `json:"green"`
+	Blue                    uint8  `json:"blue"`
+}
+
 func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, accessKeySecret string, stopper *Stopper) {
 	defer stopper.Done()
 
@@ -82,6 +89,13 @@ func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, access
 				}
 
 				app.powerEvent <- NewPowerEvent(req.DeviceIdOrDeviceGroupId, powerKindOff)
+			case "color":
+				var req ColorRequest
+				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
+					panic(err)
+				}
+
+				app.colorEvent <- NewColorMsg(req.DeviceIdOrDeviceGroupId, RGB{req.Red, req.Green, req.Blue})
 			default:
 				log.Printf("sqsPollerLoop: unknown msgType: " + msgType)
 			}

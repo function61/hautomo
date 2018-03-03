@@ -9,6 +9,12 @@ type InfraredEvent struct {
 	Event  string
 }
 
+type RGB struct {
+	Red   uint8
+	Green uint8
+	Blue  uint8
+}
+
 func NewInfraredEvent(remote string, event string) InfraredEvent {
 	return InfraredEvent{
 		Remote: remote,
@@ -107,6 +113,18 @@ func NewPowerMsg(deviceId string, powerCommand string, on bool) PowerMsg {
 	}
 }
 
+type ColorMsg struct {
+	DeviceId string
+	Color    RGB
+}
+
+func NewColorMsg(deviceId string, color RGB) ColorMsg {
+	return ColorMsg{
+		DeviceId: deviceId,
+		Color:    color,
+	}
+}
+
 type InfraredMsg struct {
 	DeviceId string // adapter's own id
 	Command  string
@@ -122,6 +140,7 @@ func NewInfraredMsg(deviceId string, command string) InfraredMsg {
 type Adapter struct {
 	Id          string
 	PowerMsg    chan PowerMsg
+	ColorMsg    chan ColorMsg
 	InfraredMsg chan InfraredMsg
 }
 
@@ -129,6 +148,7 @@ func NewAdapter(id string) *Adapter {
 	return &Adapter{
 		Id:          id,
 		PowerMsg:    make(chan PowerMsg),
+		ColorMsg:    make(chan ColorMsg),
 		InfraredMsg: make(chan InfraredMsg),
 	}
 }

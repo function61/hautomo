@@ -28,6 +28,19 @@ func NewHappylightsAdapter(id string, serverAddr string) *Adapter {
 				if err := client.SendRequest(serverAddr, req); err != nil {
 					log.Printf("HappyLightsAdapter: error %s", err.Error())
 				}
+			case colorMsg := <-adapter.ColorMsg:
+				bluetoothAddr := colorMsg.DeviceId
+
+				// convert to happylights request
+				hlreq := types.LightRequestColor(
+					bluetoothAddr,
+					colorMsg.Color.Red,
+					colorMsg.Color.Green,
+					colorMsg.Color.Blue)
+
+				if err := client.SendRequest(serverAddr, hlreq); err != nil {
+					log.Printf("HappyLightsAdapter: error %s", err.Error())
+				}
 			}
 		}
 	}()

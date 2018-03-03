@@ -7,16 +7,28 @@ type LightRequest struct {
 	BluetoothAddr string
 }
 
-func LightRequestNew(bluetoothAddr string, r uint8, g uint8, b uint8) LightRequest {
+func lightRequestNew(bluetoothAddr string, r uint8, g uint8, b uint8) LightRequest {
 	return LightRequest{r, g, b, bluetoothAddr}
 }
 
+func LightRequestColor(bluetoothAddr string, r uint8, g uint8, b uint8) LightRequest {
+	req := lightRequestNew(bluetoothAddr, r, g, b)
+
+	// full white? this would be understood as "turn on", using previous color.
+	// use almost full white to tell that we actually mean white
+	if req.IsOn() {
+		return lightRequestNew(bluetoothAddr, 255, 255, 254)
+	}
+
+	return req
+}
+
 func LightRequestOn(bluetoothAddr string) LightRequest {
-	return LightRequestNew(bluetoothAddr, 255, 255, 255)
+	return lightRequestNew(bluetoothAddr, 255, 255, 255)
 }
 
 func LightRequestOff(bluetoothAddr string) LightRequest {
-	return LightRequestNew(bluetoothAddr, 0, 0, 0)
+	return lightRequestNew(bluetoothAddr, 0, 0, 0)
 }
 
 func (l *LightRequest) IsOff() bool {
