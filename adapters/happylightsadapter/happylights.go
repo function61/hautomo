@@ -1,13 +1,13 @@
-package main
+package happylightsadapter
 
 import (
-	"./hapitypes"
-	"./happylights/client"
-	"./happylights/types"
+	"../../hapitypes"
+	"../../libraries/happylights/client"
+	"../../libraries/happylights/types"
 	"log"
 )
 
-func NewHappylightsAdapter(id string, serverAddr string) *hapitypes.Adapter {
+func New(id string, serverAddr string) *hapitypes.Adapter {
 	adapter := hapitypes.NewAdapter(id)
 
 	go func() {

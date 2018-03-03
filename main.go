@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./adapters/happylightsadapter"
 	"./adapters/harmonyhubadapter"
 	"./adapters/particleadapter"
 	"./hapitypes"
@@ -231,7 +232,7 @@ func main() {
 				adapter.HarmonyAddr,
 				stop.Add()))
 		case "happylights":
-			app.DefineAdapter(NewHappylightsAdapter(
+			app.DefineAdapter(happylightsadapter.New(
 				adapter.Id,
 				adapter.HappyLightsAddr))
 		case "irsimulator":
