@@ -1,0 +1,42 @@
+digraph G {
+	home_automation_hub [shape=box];
+	Adapters [shape=box];
+	home_automation_hub -> Adapters;
+	Sensors [shape=box];
+	home_automation_hub -> Sensors;
+
+	ir_simulator;
+	Sensors -> ir_simulator;
+	lirc;
+	Sensors -> lirc;
+	alexa;
+	Sensors -> alexa;
+	echo_dot;
+	alexa -> echo_dot;
+
+	HarmonyHub;
+	Adapters -> HarmonyHub;
+	TV;
+	HarmonyHub -> TV;
+	Onkyo_amplifier;
+	HarmonyHub -> Onkyo_amplifier;
+
+	Particle;
+	Adapters -> Particle;
+	Light1;
+	Particle -> Light1;
+	Light2;
+	Particle -> Light2;
+
+	EventGhost;
+	Adapters -> EventGhost;
+	PC;
+	EventGhost -> PC;
+
+	HappyLights;
+	Adapters -> HappyLights;
+	LedLightStrip1;
+	HappyLights -> LedLightStrip1;
+	LedLightStrip2;
+	HappyLights -> LedLightStrip2;
+}
