@@ -139,7 +139,7 @@ type HarmonyHubConnection struct {
 func (h *HarmonyHubConnection) connectAndDoTheDance() error {
 	conn, err := net.Dial("tcp", h.addr)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	xmlDecoder := xml.NewDecoder(conn)
