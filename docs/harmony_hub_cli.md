@@ -15,6 +15,7 @@ $ apt update && apt install --yes nodejs npm git \
 	&& npm install
 ```
 
+
 List devices
 ------------
 
@@ -30,7 +31,9 @@ List commands for device
 $ nodejs harmonyHubCli.js -l 192.168.1.153 -d 'Onkyo AV Receiver' -r commands
 ```
 
+
 Trigger command for device
+--------------------------
 
 ```
 $ nodejs harmonyHubCli.js -l 192.168.1.153 -d 'Onkyo AV Receiver' -c VolumeDown
