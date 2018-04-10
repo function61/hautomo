@@ -201,6 +201,10 @@ func NewHarmonyHubConnection(addr string, stopper *stopper.Stopper) *HarmonyHubC
 					}
 				}
 			case <-keepaliveTicker.C:
+				if !harmonyHubConnection.connected {
+					continue
+				}
+
 				// not using Send() to suppress debug logging,
 				// and this is not application level stuff anyway
 				if _, err := harmonyHubConnection.conn.Write([]byte("\n")); err != nil {
