@@ -376,6 +376,12 @@ function generateCommonControlResponse(directive, namespace, property, value) {
 exports.handler = (request, context, callback) => {
 	log('DEBUG', JSON.stringify(request));
 
+	// cloudwatch events: warmup (to keep Lambda function warm)
+	if (request.warmup) {
+		callback(null, 'ok');
+		return;
+	}
+
 	const directive = request.directive;
 
 	switch (directive.header.namespace) {
