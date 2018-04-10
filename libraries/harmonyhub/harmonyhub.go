@@ -373,6 +373,7 @@ func (x *HarmonyHubConnection) Bind() error {
 	return nil
 }
 
+/*
 func (x *HarmonyHubConnection) Recv() error {
 	xmlName, _, err := nextFullElement(x.xmlDecoder)
 	if err != nil {
@@ -383,6 +384,7 @@ func (x *HarmonyHubConnection) Recv() error {
 
 	return nil
 }
+*/
 
 func (x *HarmonyHubConnection) HoldAndRelease(deviceId string, commandName string) error {
 	if !x.connected {
