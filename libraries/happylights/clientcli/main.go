@@ -29,7 +29,7 @@ func main() {
 		panic(err)
 	}
 
-	req := types.LightRequestNew(btAddr, uint8(r), uint8(g), uint8(b))
+	req := types.LightRequestColor(btAddr, uint8(r), uint8(g), uint8(b))
 
 	if err := client.SendRequest(serverAddr, req); err != nil {
 		panic(err)

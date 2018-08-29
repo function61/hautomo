@@ -1,7 +1,7 @@
 package main
 
 import (
-	"../../util/systemdinstaller"
+	"../../../util/systemdinstaller"
 	"../types"
 	"bytes"
 	"encoding/gob"
