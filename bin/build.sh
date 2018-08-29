@@ -9,8 +9,7 @@ run() {
 }
 
 downloadDependencies() {
-	go get -d ./...
-	# dep ensure
+	dep ensure
 }
 
 unitTests() {
