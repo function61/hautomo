@@ -1,8 +1,8 @@
 package particleadapter
 
 import (
-	"../../hapitypes"
-	"../../libraries/particleapi"
+	"github.com/function61/home-automation-hub/hapitypes"
+	"github.com/function61/home-automation-hub/libraries/particleapi"
 	"log"
 )
 

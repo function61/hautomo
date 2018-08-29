@@ -1,9 +1,9 @@
 package main
 
 import (
-	"./hapitypes"
-	"./util/stopper"
 	"bufio"
+	"github.com/function61/home-automation-hub/hapitypes"
+	"github.com/function61/home-automation-hub/util/stopper"
 	"io"
 	"log"
 	"os/exec"

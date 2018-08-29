@@ -1,9 +1,9 @@
 package happylightsadapter
 
 import (
-	"../../hapitypes"
-	"../../libraries/happylights/client"
-	"../../libraries/happylights/types"
+	"github.com/function61/home-automation-hub/hapitypes"
+	"github.com/function61/home-automation-hub/libraries/happylights/client"
+	"github.com/function61/home-automation-hub/libraries/happylights/types"
 	"log"
 )
 

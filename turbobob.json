@@ -5,7 +5,7 @@
 	"builders": [
 		{
 			"name": "default",
-			"mount_destination": "/app",
+			"mount_destination": "/go/src/github.com/function61/home-automation-hub",
 			"dev_command": [],
 			"pass_envs": ["BINTRAY_APIKEY"]
 		}

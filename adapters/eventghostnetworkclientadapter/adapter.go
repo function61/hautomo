@@ -1,9 +1,9 @@
 package eventghostnetworkclientadapter
 
 import (
-	"../../hapitypes"
-	"../../libraries/eventghostnetworkclient"
-	"../../util/stopper"
+	"github.com/function61/home-automation-hub/hapitypes"
+	"github.com/function61/home-automation-hub/libraries/eventghostnetworkclient"
+	"github.com/function61/home-automation-hub/util/stopper"
 	"log"
 )
 

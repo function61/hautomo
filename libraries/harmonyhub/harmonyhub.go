@@ -1,11 +1,11 @@
 package harmonyhub
 
 import (
-	"../../util/stopper"
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/function61/home-automation-hub/util/stopper"
 	"golang.org/x/net/html/charset"
 	"log"
 	"net"

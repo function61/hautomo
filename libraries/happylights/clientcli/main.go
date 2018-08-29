@@ -1,8 +1,8 @@
 package main
 
 import (
-	"../client"
-	"../types"
+	"github.com/function61/home-automation-hub/libraries/happylights/client"
+	"github.com/function61/home-automation-hub/libraries/happylights/types"
 	"log"
 	"os"
 	"strconv"

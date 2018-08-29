@@ -1,11 +1,11 @@
 package main
 
 import (
-	"../../../util/systemdinstaller"
-	"../types"
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"github.com/function61/home-automation-hub/libraries/happylights/types"
+	"github.com/function61/home-automation-hub/util/systemdinstaller"
 	"log"
 	"net"
 	"os"

@@ -1,7 +1,6 @@
 FROM golang:1.10.0
 
-WORKDIR /app
-# WORKDIR /go/src/github.com/function61/home-automation-hub
+WORKDIR /go/src/github.com/function61/home-automation-hub
 
 CMD bin/build.sh
 
