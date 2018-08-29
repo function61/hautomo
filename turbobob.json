@@ -1,0 +1,13 @@
+{
+	"for_description_of_this_file_see": "https://github.com/function61/turbobob",
+	"version_major": 1,
+	"project_name": "home-automation-hub",
+	"builders": [
+		{
+			"name": "default",
+			"mount_destination": "/app",
+			"dev_command": [],
+			"pass_envs": ["BINTRAY_APIKEY"]
+		}
+	]
+}
