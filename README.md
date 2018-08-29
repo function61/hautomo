@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/function61/home-automation-hub.svg?branch=master)](https://travis-ci.org/function61/home-automation-hub)
 [![Download](https://api.bintray.com/packages/function61/home-automation-hub/main/images/download.svg)](https://bintray.com/function61/home-automation-hub/main/_latestVersion#files)
 
-Home automation hub written in Golang.
+Home automation hub built to serve my specific requirements.
 
 Due to Golang runs pretty much anywhere, but some specifics work best with a Raspberry Pi.
 
