@@ -107,7 +107,7 @@ func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, access
 					panic(err)
 				}
 
-				app.colorEvent <- hapitypes.NewColorMsg(req.DeviceIdOrDeviceGroupId, hapitypes.RGB{req.Red, req.Green, req.Blue})
+				app.colorEvent <- hapitypes.NewColorMsg(req.DeviceIdOrDeviceGroupId, hapitypes.RGB{Red: req.Red, Green: req.Green, Blue: req.Blue})
 			case "brightness":
 				var req BrightnessRequest
 				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
