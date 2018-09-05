@@ -23,9 +23,10 @@ type AdapterConfig struct {
 
 	HarmonyAddr string `json:"harmony_addr,omitempty"`
 
-	SqsQueueUrl  string `json:"sqs_queue_url,omitempty"`
-	SqsKeyId     string `json:"sqs_key_id,omitempty"`
-	SqsKeySecret string `json:"sqs_key_secret,omitempty"`
+	SqsQueueUrl           string `json:"sqs_queue_url,omitempty"`
+	SqsKeyId              string `json:"sqs_key_id,omitempty"`
+	SqsKeySecret          string `json:"sqs_key_secret,omitempty"`
+	SqsAlexaUsertokenHash string `json:"sqs_alexa_usertoken_hash,omitempty"`
 
 	IrSimulatorKey string `json:"irsimulator_button,omitempty"`
 
@@ -38,10 +39,12 @@ type DeviceConfig struct {
 	AdapterId        string `json:"adapter"`
 	AdaptersDeviceId string `json:"adapters_device_id,omitempty"`
 	// used for Alexa
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	PowerOnCmd  string `json:"power_on_cmd,omitempty"`
-	PowerOffCmd string `json:"power_off_cmd,omitempty"`
+	Name              string   `json:"name"`
+	Description       string   `json:"description"`
+	PowerOnCmd        string   `json:"power_on_cmd,omitempty"`
+	PowerOffCmd       string   `json:"power_off_cmd,omitempty"`
+	AlexaCategory     string   `json:"alexa_category,omitempty"`
+	AlexaCapabilities []string `json:"alexa_capabilities,omitempty"`
 }
 
 type DeviceGroupConfig struct {

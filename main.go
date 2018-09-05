@@ -15,7 +15,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 )
 
 type Application struct {
@@ -183,26 +182,6 @@ func (a *Application) devicePower(device *hapitypes.Device, power hapitypes.Powe
 	return nil
 }
 
-func (a *Application) SyncToCloud() {
-	lines := []string{""} // empty line to start output from next log line
-
-	for _, device := range a.deviceById {
-		lines = append(lines, fmt.Sprintf("createDevice('%s', '%s', '%s'),",
-			device.Id,
-			device.Name,
-			device.Description))
-	}
-
-	for _, deviceGroup := range a.deviceGroupById {
-		lines = append(lines, fmt.Sprintf("createDevice('%s', '%s', '%s'),",
-			deviceGroup.Id,
-			deviceGroup.Name,
-			"Device group: "+deviceGroup.Name))
-	}
-
-	log.Println(strings.Join(lines, "\n"))
-}
-
 func configureAppAndStartAdapters(app *Application, conf *ConfigFile, stop *stopper.Stopper) error {
 	for _, adapter := range conf.Adapters {
 		switch adapter.Type {
@@ -337,7 +316,9 @@ func main() {
 		}
 	}(stop.Add())
 
-	app.SyncToCloud()
+	if err := SyncToAlexaConnector(conf); err != nil {
+		log.Printf("SyncToAlexaConnector: %s", err.Error())
+	}
 
 	clicommon.WaitForInterrupt()
 
