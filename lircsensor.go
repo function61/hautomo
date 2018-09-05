@@ -12,7 +12,7 @@ import (
 
 // match lines like this: "000000037ff07bee 00 KEY_VOLUMEDOWN mceusb"
 
-var mceUsbCommandRe = regexp.MustCompile(" 00 ([a-zA-Z_0-9]+) mceusb$")
+var mceUsbCommandRe = regexp.MustCompile(" 00 ([a-zA-Z_0-9]+) devinput$")
 
 // reads LIRC's "$ irw" output
 func irwPoller(app *Application, stopper *stopper.Stopper) {
