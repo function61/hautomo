@@ -8,22 +8,21 @@ import (
 )
 
 func SendRequest(serverAddr string, req types.LightRequest) error {
-	conn, err := net.Dial("udp", serverAddr+":9092")
-	if err != nil {
-		return err
+	conn, errDial := net.Dial("udp", serverAddr+":9092")
+	if errDial != nil {
+		return errDial
 	}
 	defer conn.Close()
 
-	var network bytes.Buffer
-
-	enc := gob.NewEncoder(&network)
+	var reqAsGob bytes.Buffer
+	enc := gob.NewEncoder(&reqAsGob)
 
 	errEnc := enc.Encode(req)
 	if errEnc != nil {
 		return errEnc
 	}
 
-	conn.Write(network.Bytes())
+	_, err := conn.Write(reqAsGob.Bytes())
 
-	return nil
+	return err
 }
