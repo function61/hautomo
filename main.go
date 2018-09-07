@@ -8,6 +8,7 @@ import (
 	"github.com/function61/home-automation-hub/adapters/eventghostnetworkclientadapter"
 	"github.com/function61/home-automation-hub/adapters/happylightsadapter"
 	"github.com/function61/home-automation-hub/adapters/harmonyhubadapter"
+	"github.com/function61/home-automation-hub/adapters/ikeatradfriadapter"
 	"github.com/function61/home-automation-hub/adapters/particleadapter"
 	"github.com/function61/home-automation-hub/hapitypes"
 	"github.com/function61/home-automation-hub/libraries/happylights/happylightsserver"
@@ -197,6 +198,9 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 				adapter.Id,
 				adapter.HarmonyAddr,
 				stop.Add()))
+		case "ikea_tradfri":
+			app.DefineAdapter(
+				ikeatradfriadapter.New(hapitypes.NewAdapter(adapter.Id), adapter))
 		case "happylights":
 			app.DefineAdapter(happylightsadapter.New(
 				adapter.Id,

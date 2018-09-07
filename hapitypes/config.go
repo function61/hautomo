@@ -20,6 +20,10 @@ type AdapterConfig struct {
 
 	EventghostAddr   string `json:"eventghost_addr,omitempty"`
 	EventghostSecret string `json:"eventghost_secret,omitempty"`
+
+	TradfriUrl  string `json:"tradfri_url"`
+	TradfriUser string `json:"tradfri_user"`
+	TradfriPsk  string `json:"tradfri_psk"`
 }
 
 type DeviceConfig struct {
