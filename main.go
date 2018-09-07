@@ -10,8 +10,10 @@ import (
 	"github.com/function61/home-automation-hub/adapters/harmonyhubadapter"
 	"github.com/function61/home-automation-hub/adapters/particleadapter"
 	"github.com/function61/home-automation-hub/hapitypes"
+	"github.com/function61/home-automation-hub/libraries/happylights/happylightsserver"
 	"github.com/function61/home-automation-hub/util/stopper"
 	"github.com/function61/home-automation-hub/util/systemdinstaller"
+	"github.com/spf13/cobra"
 	"log"
 	"net/http"
 	"os"
@@ -263,23 +265,12 @@ func configureAppAndStartAdapters(app *Application, conf *ConfigFile, stop *stop
 	return nil
 }
 
-func main() {
-	if len(os.Args) == 2 && os.Args[1] == "--help" {
-		fmt.Printf("Usage: %s [--write-systemd-unit-file]\n", os.Args[0])
-		return
-	}
-	if len(os.Args) == 2 && os.Args[1] == "--write-systemd-unit-file" {
-		if err := systemdinstaller.InstallSystemdServiceFile("homeautomation", "home automation hub"); err != nil {
-			panic(err)
-		}
-		return
-	}
-	if len(os.Args) != 1 {
-		fmt.Printf("Invalid arguments. Run %s --help", os.Args[0])
-		os.Exit(1)
-		return
-	}
+var rootCmd = &cobra.Command{
+	Use:   os.Args[0],
+	Short: "Home automation hub from function61.com",
+}
 
+func startServer() {
 	conf, confErr := readConfigurationFile()
 	if confErr != nil {
 		panic(confErr)
@@ -327,4 +318,38 @@ func main() {
 	stop.StopAll()
 
 	log.Println("main: all components stopped")
+}
+
+func serverEntry() *cobra.Command {
+	server := &cobra.Command{
+		Use:   "server",
+		Short: "Starts the server",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			startServer()
+		},
+	}
+
+	server.AddCommand(&cobra.Command{
+		Use:   "write-systemd-unit-file",
+		Short: "Install unit file to start this on startup",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := systemdinstaller.InstallSystemdServiceFile("homeautomation", []string{"server"}, "home automation hub"); err != nil {
+				panic(err)
+			}
+		},
+	})
+
+	return server
+}
+
+func main() {
+	rootCmd.AddCommand(serverEntry())
+	rootCmd.AddCommand(happylightsserver.Entrypoint())
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }

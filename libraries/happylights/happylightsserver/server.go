@@ -1,19 +1,14 @@
-package main
+package happylightsserver
 
 import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
 	"github.com/function61/home-automation-hub/libraries/happylights/types"
-	"github.com/function61/home-automation-hub/util/systemdinstaller"
 	"log"
 	"net"
-	"os"
 	"os/exec"
 )
-
-// compile this with:
-// $ GOOS=linux GOARCH=arm go build -o server_arm
 
 // controls happylights over Bluetooth BLE
 func buildHappylightBluetoothRequestCmd(req types.LightRequest) *exec.Cmd {
@@ -42,24 +37,12 @@ func buildHappylightBluetoothRequestCmd(req types.LightRequest) *exec.Cmd {
 		"-n", reqHex)
 }
 
-func main() {
-	if len(os.Args) == 2 && os.Args[1] == "--help" {
-		fmt.Printf("Usage: %s [--write-systemd-unit-file]\n", os.Args[0])
-		return
-	}
-	if len(os.Args) == 2 && os.Args[1] == "--write-systemd-unit-file" {
-		if err := systemdinstaller.InstallSystemdServiceFile("happylights", "happylights server daemon"); err != nil {
-			panic(err)
-		}
-		return
-	}
-	if len(os.Args) != 1 {
-		fmt.Printf("Unknown args, please run %s --help\n", os.Args[0])
-		os.Exit(1)
-	}
+func runServer() {
+	listenAddr := "0.0.0.0:9092"
 
-	// listen to incoming udp packets
-	pc, err := net.ListenPacket("udp", "0.0.0.0:9092")
+	log.Printf("Starting to listen on %s", listenAddr)
+
+	pc, err := net.ListenPacket("udp", listenAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
