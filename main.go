@@ -11,6 +11,7 @@ import (
 	"github.com/function61/home-automation-hub/adapters/ikeatradfriadapter"
 	"github.com/function61/home-automation-hub/adapters/particleadapter"
 	"github.com/function61/home-automation-hub/hapitypes"
+	"github.com/function61/home-automation-hub/libraries/happylights/happylightsclientcli"
 	"github.com/function61/home-automation-hub/libraries/happylights/happylightsserver"
 	"github.com/function61/home-automation-hub/util/stopper"
 	"github.com/function61/home-automation-hub/util/systemdinstaller"
@@ -353,7 +354,7 @@ func serverEntry() *cobra.Command {
 
 func main() {
 	rootCmd.AddCommand(serverEntry())
-	rootCmd.AddCommand(happylightsserver.Entrypoint())
+	rootCmd.AddCommand(happylightsclientcli.BindEntrypoint(happylightsserver.Entrypoint()))
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "version",
 		Short: "Shows version number of this app",
