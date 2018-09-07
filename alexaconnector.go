@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/function61/home-automation-hub/hapitypes"
 	"log"
 )
 
@@ -26,8 +27,8 @@ type AlexaConnectorSpec struct {
 	Devices       []AlexaConnectorDevice `json:"devices"`
 }
 
-func SyncToAlexaConnector(conf *ConfigFile) error {
-	var sqsAdapter *AdapterConfig = nil
+func SyncToAlexaConnector(conf *hapitypes.ConfigFile) error {
+	var sqsAdapter *hapitypes.AdapterConfig = nil
 
 	for _, adapter := range conf.Adapters {
 		if adapter.SqsQueueUrl != "" {

@@ -184,7 +184,7 @@ func (a *Application) devicePower(device *hapitypes.Device, power hapitypes.Powe
 	return nil
 }
 
-func configureAppAndStartAdapters(app *Application, conf *ConfigFile, stop *stopper.Stopper) error {
+func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, stop *stopper.Stopper) error {
 	for _, adapter := range conf.Adapters {
 		switch adapter.Type {
 		case "particle":
