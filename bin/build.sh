@@ -12,6 +12,16 @@ downloadDependencies() {
 	dep ensure
 }
 
+checkFormatting() {
+	# unfortunately we need to list formattable directories because "." would include vendor/
+	local offenders=$(gofmt -l main.go adapters/ hapitypes/ libraries/ util/)
+
+	if [ ! -z "$offenders" ]; then
+		>&2 echo "formatting errors: $offenders"
+		exit 1
+	fi
+}
+
 unitTests() {
 	go test ./...
 }
@@ -45,6 +55,8 @@ rm -rf rel
 mkdir rel
 
 run downloadDependencies
+
+run checkFormatting
 
 run staticAnalysis
 
