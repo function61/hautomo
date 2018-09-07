@@ -31,11 +31,11 @@ staticAnalysis() {
 }
 
 buildLinuxArm() {
-	GOOS=linux GOARCH=arm go build -o rel/home-automation-hub_linux-arm
+	GOOS=linux GOARCH=arm go build -o rel/home-automation-hub_linux-arm -ldflags "-X main.version=$FRIENDLY_REV_ID"
 }
 
 buildLinuxAmd64() {
-	GOOS=linux GOARCH=amd64 go build -o rel/home-automation-hub_linux-amd64
+	GOOS=linux GOARCH=amd64 go build -o rel/home-automation-hub_linux-amd64 -ldflags "-X main.version=$FRIENDLY_REV_ID"
 }
 
 uploadBuildArtefacts() {

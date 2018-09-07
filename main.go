@@ -20,6 +20,9 @@ import (
 	"os"
 )
 
+// replaced in build process with actual version
+var version = "dev"
+
 type Application struct {
 	adapterById           map[string]*hapitypes.Adapter
 	deviceById            map[string]*hapitypes.Device
@@ -351,6 +354,13 @@ func serverEntry() *cobra.Command {
 func main() {
 	rootCmd.AddCommand(serverEntry())
 	rootCmd.AddCommand(happylightsserver.Entrypoint())
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "version",
+		Short: "Shows version number of this app",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("%s\n", version)
+		},
+	})
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
