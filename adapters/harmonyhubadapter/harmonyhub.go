@@ -7,13 +7,11 @@ import (
 	"log"
 )
 
-func New(id string, addr string, stop *stopper.Stopper) *hapitypes.Adapter {
-	adapter := hapitypes.NewAdapter(id)
-
+func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopper.Stopper) *hapitypes.Adapter {
 	// because we don't own the given stopper, we shouldn't call Add() on it
 	subStopper := stopper.New()
 
-	harmonyHubConnection := harmonyhub.NewHarmonyHubConnection(addr, subStopper.Add())
+	harmonyHubConnection := harmonyhub.NewHarmonyHubConnection(config.HarmonyAddr, subStopper.Add())
 
 	go func() {
 		defer stop.Done()

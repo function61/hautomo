@@ -6,22 +6,19 @@ import (
 	"log"
 )
 
-func New(id string, particleId string, accessToken string) *hapitypes.Adapter {
-	adapter := hapitypes.NewAdapter(id)
-
+func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) *hapitypes.Adapter {
 	go func() {
 		log.Println("particleadapter: started")
 
 		for {
 			select {
 			case powerMsg := <-adapter.PowerMsg:
-				log.Printf("particleadapter: got PowerMsg")
-
-				if accessToken == "" {
-					log.Printf("particleadapter: error: accessToken not defined")
+				if config.ParticleAccessToken == "" || config.ParticleId == "" {
+					log.Printf("particleadapter: error: ParticleAccessToken or ParticleId not defined")
 					continue
 				}
-				if err := particleapi.Invoke(particleId, "rf", powerMsg.PowerCommand, accessToken); err != nil {
+
+				if err := particleapi.Invoke(config.ParticleId, "rf", powerMsg.PowerCommand, config.ParticleId); err != nil {
 					log.Printf("particleadapter: request failed: %s", err.Error())
 				}
 			}

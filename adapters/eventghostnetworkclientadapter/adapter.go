@@ -7,10 +7,10 @@ import (
 	"log"
 )
 
-func New(id string, addr string, secret string, stopper *stopper.Stopper) *hapitypes.Adapter {
-	adapter := hapitypes.NewAdapter(id)
-
-	conn := eventghostnetworkclient.NewEventghostConnection(addr, secret)
+func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stopper *stopper.Stopper) *hapitypes.Adapter {
+	conn := eventghostnetworkclient.NewEventghostConnection(
+		config.EventghostAddr,
+		config.EventghostSecret)
 
 	go func() {
 		defer stopper.Done()

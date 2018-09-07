@@ -7,9 +7,7 @@ import (
 	"log"
 )
 
-func New(id string, serverAddr string) *hapitypes.Adapter {
-	adapter := hapitypes.NewAdapter(id)
-
+func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) *hapitypes.Adapter {
 	go func() {
 		log.Println("HappyLightsAdapter: started")
 
@@ -26,7 +24,7 @@ func New(id string, serverAddr string) *hapitypes.Adapter {
 					req = types.LightRequestOff(bluetoothAddr)
 				}
 
-				if err := client.SendRequest(serverAddr, req); err != nil {
+				if err := client.SendRequest(config.HappyLightsAddr, req); err != nil {
 					log.Printf("HappyLightsAdapter: error %s", err.Error())
 				}
 			case colorMsg := <-adapter.ColorMsg:
@@ -39,7 +37,7 @@ func New(id string, serverAddr string) *hapitypes.Adapter {
 					colorMsg.Color.Green,
 					colorMsg.Color.Blue)
 
-				if err := client.SendRequest(serverAddr, hlreq); err != nil {
+				if err := client.SendRequest(config.HappyLightsAddr, hlreq); err != nil {
 					log.Printf("HappyLightsAdapter: error %s", err.Error())
 				}
 			}

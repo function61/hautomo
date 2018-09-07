@@ -193,28 +193,16 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 	for _, adapter := range conf.Adapters {
 		switch adapter.Type {
 		case "particle":
-			app.DefineAdapter(particleadapter.New(
-				adapter.Id,
-				adapter.ParticleId,
-				adapter.ParticleAccessToken))
+			app.DefineAdapter(particleadapter.New(hapitypes.NewAdapter(adapter.Id), adapter))
 		case "harmony":
-			app.DefineAdapter(harmonyhubadapter.New(
-				adapter.Id,
-				adapter.HarmonyAddr,
-				stop.Add()))
+			app.DefineAdapter(harmonyhubadapter.New(hapitypes.NewAdapter(adapter.Id), adapter, stop.Add()))
 		case "ikea_tradfri":
 			app.DefineAdapter(
 				ikeatradfriadapter.New(hapitypes.NewAdapter(adapter.Id), adapter))
 		case "happylights":
-			app.DefineAdapter(happylightsadapter.New(
-				adapter.Id,
-				adapter.HappyLightsAddr))
+			app.DefineAdapter(happylightsadapter.New(hapitypes.NewAdapter(adapter.Id), adapter))
 		case "eventghostnetworkclient":
-			app.DefineAdapter(eventghostnetworkclientadapter.New(
-				adapter.Id,
-				adapter.EventghostAddr,
-				adapter.EventghostSecret,
-				stop.Add()))
+			app.DefineAdapter(eventghostnetworkclientadapter.New(hapitypes.NewAdapter(adapter.Id), adapter, stop.Add()))
 		case "irsimulator":
 			go infraredSimulator(
 				app,
