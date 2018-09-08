@@ -140,6 +140,20 @@ func NewPowerMsg(deviceId string, powerCommand string, on bool) PowerMsg {
 	}
 }
 
+type BrightnessMsg struct {
+	DeviceId   string
+	Brightness uint
+	LastColor  RGB
+}
+
+func NewBrightnessMsg(deviceId string, brightness uint, lastColor RGB) BrightnessMsg {
+	return BrightnessMsg{
+		DeviceId:   deviceId,
+		Brightness: brightness,
+		LastColor:  lastColor,
+	}
+}
+
 type ColorMsg struct {
 	DeviceId string
 	Color    RGB
@@ -165,19 +179,21 @@ func NewInfraredMsg(deviceId string, command string) InfraredMsg {
 }
 
 type Adapter struct {
-	Id          string
-	PowerMsg    chan PowerMsg
-	ColorMsg    chan ColorMsg
-	InfraredMsg chan InfraredMsg
-	PlaybackMsg chan PlaybackEvent
+	Id            string
+	PowerMsg      chan PowerMsg
+	BrightnessMsg chan BrightnessMsg
+	ColorMsg      chan ColorMsg
+	InfraredMsg   chan InfraredMsg
+	PlaybackMsg   chan PlaybackEvent
 }
 
 func NewAdapter(id string) *Adapter {
 	return &Adapter{
-		Id:          id,
-		PowerMsg:    make(chan PowerMsg),
-		ColorMsg:    make(chan ColorMsg),
-		InfraredMsg: make(chan InfraredMsg),
-		PlaybackMsg: make(chan PlaybackEvent),
+		Id:            id,
+		PowerMsg:      make(chan PowerMsg),
+		BrightnessMsg: make(chan BrightnessMsg),
+		ColorMsg:      make(chan ColorMsg),
+		InfraredMsg:   make(chan InfraredMsg),
+		PlaybackMsg:   make(chan PlaybackEvent),
 	}
 }

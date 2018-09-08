@@ -83,13 +83,10 @@ func NewApplication(stop *stopper.Stopper) *Application {
 				device := app.deviceById[brightnessEvent.DeviceIdOrDeviceGroupId]
 				adapter := app.adapterById[device.AdapterId]
 
-				dimmedColor := hapitypes.RGB{
-					Red:   uint8(float64(device.LastColor.Red) * float64(brightnessEvent.Brightness) / 100.0),
-					Green: uint8(float64(device.LastColor.Green) * float64(brightnessEvent.Brightness) / 100.0),
-					Blue:  uint8(float64(device.LastColor.Blue) * float64(brightnessEvent.Brightness) / 100.0),
-				}
-
-				adapter.ColorMsg <- hapitypes.NewColorMsg(device.AdaptersDeviceId, dimmedColor)
+				adapter.BrightnessMsg <- hapitypes.NewBrightnessMsg(
+					device.AdaptersDeviceId,
+					brightnessEvent.Brightness,
+					device.LastColor)
 			case playbackEvent := <-app.playbackEvent:
 				// TODO: device group support
 				device := app.deviceById[playbackEvent.DeviceIdOrDeviceGroupId]

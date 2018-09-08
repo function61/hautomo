@@ -29,6 +29,13 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) *hapitypes.
 				if responseErr != nil {
 					log.Printf("ikeatradfriadapter: error %s", responseErr.Error())
 				}
+			case brightnessMsg := <-adapter.BrightnessMsg:
+				// 0-100 => 0-254
+				to := int(float64(brightnessMsg.Brightness) * 2.54)
+
+				if err := ikeatradfri.DimWithoutFading(brightnessMsg.DeviceId, to, coapClient); err != nil {
+					log.Printf("ikeatradfriadapter: brightness request error: %s", err.Error())
+				}
 			}
 		}
 	}()
