@@ -62,14 +62,14 @@ type PowerEvent struct {
 func NewPowerEvent(deviceIdOrDeviceGroupId string, kind PowerKind) PowerEvent {
 	return PowerEvent{
 		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
-		Kind: kind,
+		Kind:                    kind,
 	}
 }
 
 func NewPowerToggleEvent(deviceIdOrDeviceGroupId string) PowerEvent {
 	return PowerEvent{
 		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
-		Kind: PowerKindToggle,
+		Kind:                    PowerKindToggle,
 	}
 }
 
