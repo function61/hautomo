@@ -7,7 +7,7 @@
 			"name": "default",
 			"mount_destination": "/go/src/github.com/function61/home-automation-hub",
 			"dev_command": ["bash"],
-			"pass_envs": ["BINTRAY_APIKEY"]
+			"pass_envs": ["BINTRAY_CREDS"]
 		}
 	]
 }
