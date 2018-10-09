@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/function61/home-automation-hub.svg?branch=master)](https://travis-ci.org/function61/home-automation-hub)
-[![Download](https://api.bintray.com/packages/function61/home-automation-hub/main/images/download.svg)](https://bintray.com/function61/home-automation-hub/main/_latestVersion#files)
+[![Build Status](https://img.shields.io/travis/function61/home-automation-hub.svg?style=for-the-badge)](https://travis-ci.org/function61/home-automation-hub)
+[![Download](https://img.shields.io/bintray/v/function61/home-automation-hub/main.svg?style=for-the-badge&label=Download)](https://bintray.com/function61/home-automation-hub/main/_latestVersion#files)
 
 Home automation hub built to serve my specific requirements.
 
