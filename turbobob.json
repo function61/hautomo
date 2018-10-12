@@ -10,6 +10,15 @@
 			"dev_command": ["bash"],
 			"pass_envs": ["BINTRAY_CREDS"],
 			"contextless_build": true
+		},
+		{
+			"name": "alexaconnector",
+			"dockerfile_path": "build-alexaconnector.Dockerfile",
+			"mount_source": "lambda-alexa-connector",
+			"mount_destination": "/app",
+			"dev_command": ["bash"],
+			"pass_envs": ["BINTRAY_CREDS"],
+			"contextless_build": true
 		}
 	]
 }
