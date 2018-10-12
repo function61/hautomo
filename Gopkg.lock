@@ -54,6 +54,14 @@
   version = "v0.2.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:357bc4aae99387bf8d59336baa08d21b4a3cf40e8266a801e545b66796717351"
+  name = "github.com/function61/gokit"
+  packages = ["systemdinstaller"]
+  pruneopts = "UT"
+  revision = "51be2dcaf7627c3d0119999cfbc6e690180ed2f1"
+
+[[projects]]
   digest = "1:5abd6a22805b1919f6a6bca0ae58b13cef1f3412812f38569978f43ef02743d4"
   name = "github.com/go-ini/ini"
   packages = ["."]
@@ -160,6 +168,7 @@
     "github.com/aws/aws-sdk-go/service/sqs",
     "github.com/function61/eventhorizon/util/ass",
     "github.com/function61/eventhorizon/util/clicommon",
+    "github.com/function61/gokit/systemdinstaller",
     "github.com/hashicorp/hcl",
     "github.com/spf13/cobra",
     "golang.org/x/net/html/charset",

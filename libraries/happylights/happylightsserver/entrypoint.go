@@ -1,7 +1,8 @@
 package happylightsserver
 
 import (
-	"github.com/function61/home-automation-hub/util/systemdinstaller"
+	"fmt"
+	"github.com/function61/gokit/systemdinstaller"
 	"github.com/spf13/cobra"
 )
 
@@ -20,9 +21,12 @@ func Entrypoint() *cobra.Command {
 		Short: "Install unit file to start this on startup",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := systemdinstaller.InstallSystemdServiceFile("happylights", []string{"happylights", "server"}, "Happylights RGB lightstrip daemon"); err != nil {
+			systemdHints, err := systemdinstaller.InstallSystemdServiceFile("happylights", []string{"happylights", "server"}, "Happylights RGB lightstrip daemon")
+			if err != nil {
 				panic(err)
 			}
+
+			fmt.Println(systemdHints)
 		},
 	})
 

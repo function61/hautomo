@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/function61/eventhorizon/util/clicommon"
+	"github.com/function61/gokit/systemdinstaller"
 	"github.com/function61/home-automation-hub/adapters/eventghostnetworkclientadapter"
 	"github.com/function61/home-automation-hub/adapters/happylightsadapter"
 	"github.com/function61/home-automation-hub/adapters/harmonyhubadapter"
@@ -14,7 +15,6 @@ import (
 	"github.com/function61/home-automation-hub/libraries/happylights/happylightsclientcli"
 	"github.com/function61/home-automation-hub/libraries/happylights/happylightsserver"
 	"github.com/function61/home-automation-hub/util/stopper"
-	"github.com/function61/home-automation-hub/util/systemdinstaller"
 	"github.com/spf13/cobra"
 	"log"
 	"net/http"
@@ -323,9 +323,12 @@ func serverEntry() *cobra.Command {
 		Short: "Install unit file to start this on startup",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := systemdinstaller.InstallSystemdServiceFile("homeautomation", []string{"server"}, "home automation hub"); err != nil {
+			systemdHints, err := systemdinstaller.InstallSystemdServiceFile("homeautomation", []string{"server"}, "home automation hub")
+			if err != nil {
 				panic(err)
 			}
+
+			fmt.Println(systemdHints)
 		},
 	})
 
