@@ -4,10 +4,6 @@
   version = "1.15.23"
 
 [[constraint]]
-  name = "github.com/function61/eventhorizon"
-  version = "0.2.0"
-
-[[constraint]]
   name = "github.com/hashicorp/hcl"
   version = "1.0.0"
 

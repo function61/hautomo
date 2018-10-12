@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/function61/eventhorizon/util/clicommon"
+	"github.com/function61/gokit/ossignal"
+	"github.com/function61/gokit/stopper"
 	"github.com/function61/gokit/systemdinstaller"
 	"github.com/function61/home-automation-hub/adapters/eventghostnetworkclientadapter"
 	"github.com/function61/home-automation-hub/adapters/happylightsadapter"
@@ -14,7 +15,6 @@ import (
 	"github.com/function61/home-automation-hub/hapitypes"
 	"github.com/function61/home-automation-hub/libraries/happylights/happylightsclientcli"
 	"github.com/function61/home-automation-hub/libraries/happylights/happylightsserver"
-	"github.com/function61/home-automation-hub/util/stopper"
 	"github.com/spf13/cobra"
 	"log"
 	"net/http"
@@ -63,7 +63,7 @@ func NewApplication(stop *stopper.Stopper) *Application {
 
 		for {
 			select {
-			case <-stop.ShouldStop:
+			case <-stop.Signal:
 				log.Println("application: stopping")
 				return
 			case power := <-app.powerEvent:
@@ -186,36 +186,36 @@ func (a *Application) devicePower(device *hapitypes.Device, power hapitypes.Powe
 	return nil
 }
 
-func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, stop *stopper.Stopper) error {
+func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, stopManager *stopper.Manager) error {
 	for _, adapter := range conf.Adapters {
 		switch adapter.Type {
 		case "particle":
 			app.DefineAdapter(particleadapter.New(hapitypes.NewAdapter(adapter.Id), adapter))
 		case "harmony":
-			app.DefineAdapter(harmonyhubadapter.New(hapitypes.NewAdapter(adapter.Id), adapter, stop.Add()))
+			app.DefineAdapter(harmonyhubadapter.New(hapitypes.NewAdapter(adapter.Id), adapter, stopManager.Stopper()))
 		case "ikea_tradfri":
 			app.DefineAdapter(
 				ikeatradfriadapter.New(hapitypes.NewAdapter(adapter.Id), adapter))
 		case "happylights":
 			app.DefineAdapter(happylightsadapter.New(hapitypes.NewAdapter(adapter.Id), adapter))
 		case "eventghostnetworkclient":
-			app.DefineAdapter(eventghostnetworkclientadapter.New(hapitypes.NewAdapter(adapter.Id), adapter, stop.Add()))
+			app.DefineAdapter(eventghostnetworkclientadapter.New(hapitypes.NewAdapter(adapter.Id), adapter, stopManager.Stopper()))
 		case "irsimulator":
 			go infraredSimulator(
 				app,
 				adapter.IrSimulatorKey,
-				stop.Add())
+				stopManager.Stopper())
 		case "lirc":
 			go irwPoller(
 				app,
-				stop.Add())
+				stopManager.Stopper())
 		case "sqs":
 			go sqsPollerLoop(
 				app,
 				adapter.SqsQueueUrl,
 				adapter.SqsKeyId,
 				adapter.SqsKeySecret,
-				stop.Add())
+				stopManager.Stopper())
 		default:
 			return errors.New("unkown adapter: " + adapter.Type)
 		}
@@ -264,10 +264,11 @@ func startServer() {
 		panic(confErr)
 	}
 
-	stop := stopper.New()
-	app := NewApplication(stop.Add())
+	stopManager := stopper.NewManager()
 
-	if err := configureAppAndStartAdapters(app, conf, stop); err != nil {
+	app := NewApplication(stopManager.Stopper())
+
+	if err := configureAppAndStartAdapters(app, conf, stopManager); err != nil {
 		panic(err)
 	}
 
@@ -276,7 +277,7 @@ func startServer() {
 		srv := &http.Server{Addr: ":8080"}
 
 		go func() {
-			<-stop.ShouldStop
+			<-stop.Signal
 
 			log.Printf("httpserver: requesting stop")
 
@@ -293,17 +294,17 @@ func startServer() {
 			// cannot panic, because this probably is an intentional close
 			log.Printf("httpserver: stopped because: %s", err)
 		}
-	}(stop.Add())
+	}(stopManager.Stopper())
 
 	if err := SyncToAlexaConnector(conf); err != nil {
 		log.Printf("SyncToAlexaConnector: %s", err.Error())
 	}
 
-	clicommon.WaitForInterrupt()
+	ossignal.WaitForInterruptOrTerminate()
 
 	log.Println("main: received interrupt")
 
-	stop.StopAll()
+	stopManager.StopAllWorkersAndWait()
 
 	log.Println("main: all components stopped")
 }

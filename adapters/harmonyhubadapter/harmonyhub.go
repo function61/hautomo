@@ -1,17 +1,18 @@
 package harmonyhubadapter
 
 import (
+	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/hapitypes"
 	"github.com/function61/home-automation-hub/libraries/harmonyhub"
-	"github.com/function61/home-automation-hub/util/stopper"
 	"log"
 )
 
 func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopper.Stopper) *hapitypes.Adapter {
-	// because we don't own the given stopper, we shouldn't call Add() on it
-	subStopper := stopper.New()
+	// we cannot make hierarchical stoppers, but we can have "stop manager" inside a
+	// stopper - it achieves the same thing
+	stopManager := stopper.NewManager()
 
-	harmonyHubConnection := harmonyhub.NewHarmonyHubConnection(config.HarmonyAddr, subStopper.Add())
+	harmonyHubConnection := harmonyhub.NewHarmonyHubConnection(config.HarmonyAddr, stopManager.Stopper())
 
 	go func() {
 		defer stop.Done()
@@ -20,9 +21,9 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopp
 
 		for {
 			select {
-			case <-stop.ShouldStop:
+			case <-stop.Signal:
 				log.Println("HarmonyHubAdapter: stopping")
-				subStopper.StopAll()
+				stopManager.StopAllWorkersAndWait()
 				return
 			case powerMsg := <-adapter.PowerMsg:
 				if err := harmonyHubConnection.HoldAndRelease(powerMsg.DeviceId, powerMsg.PowerCommand); err != nil {

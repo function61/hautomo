@@ -8,8 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/hapitypes"
-	"github.com/function61/home-automation-hub/util/stopper"
 	"log"
 	"regexp"
 	"time"
@@ -40,8 +40,8 @@ type PlaybackRequest struct {
 	Action                  string `json:"action"`
 }
 
-func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, accessKeySecret string, stopper *stopper.Stopper) {
-	defer stopper.Done()
+func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, accessKeySecret string, stop *stopper.Stopper) {
+	defer stop.Done()
 
 	sess := session.Must(session.NewSession())
 
@@ -54,7 +54,7 @@ func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, access
 
 	for {
 		select {
-		case <-stopper.ShouldStop:
+		case <-stop.Signal:
 			log.Println("sqsPollerLoop: stopping")
 			return
 		default:

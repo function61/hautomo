@@ -1,25 +1,25 @@
 package eventghostnetworkclientadapter
 
 import (
+	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/hapitypes"
 	"github.com/function61/home-automation-hub/libraries/eventghostnetworkclient"
-	"github.com/function61/home-automation-hub/util/stopper"
 	"log"
 )
 
-func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stopper *stopper.Stopper) *hapitypes.Adapter {
+func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopper.Stopper) *hapitypes.Adapter {
 	conn := eventghostnetworkclient.NewEventghostConnection(
 		config.EventghostAddr,
 		config.EventghostSecret)
 
 	go func() {
-		defer stopper.Done()
+		defer stop.Done()
 
 		log.Println("eventghostnetworkclientadapter: started")
 
 		for {
 			select {
-			case <-stopper.ShouldStop:
+			case <-stop.Signal:
 				log.Println("eventghostnetworkclientadapter: stopping")
 				return
 			case playbackMsg := <-adapter.PlaybackMsg:

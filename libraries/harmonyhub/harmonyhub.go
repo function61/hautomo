@@ -5,7 +5,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/function61/home-automation-hub/util/stopper"
+	"github.com/function61/gokit/stopper"
 	"golang.org/x/net/html/charset"
 	"log"
 	"net"
@@ -167,8 +167,8 @@ func (h *HarmonyHubConnection) connectAndDoTheDance() error {
 	return nil
 }
 
-func NewHarmonyHubConnection(addr string, stopper *stopper.Stopper) *HarmonyHubConnection {
-	defer stopper.Done()
+func NewHarmonyHubConnection(addr string, stop *stopper.Stopper) *HarmonyHubConnection {
+	defer stop.Done()
 
 	harmonyHubConnection := &HarmonyHubConnection{
 		addr:      addr,
@@ -182,7 +182,7 @@ func NewHarmonyHubConnection(addr string, stopper *stopper.Stopper) *HarmonyHubC
 	go func() {
 		for {
 			select {
-			case <-stopper.ShouldStop:
+			case <-stop.Signal:
 				log.Println("harmony: stopping")
 				keepaliveTicker.Stop()
 

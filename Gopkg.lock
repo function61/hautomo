@@ -43,21 +43,15 @@
   version = "v1.15.23"
 
 [[projects]]
-  digest = "1:1cf513fdb6e7a25216caf712a60b6812eeff0b8c2782153ac29f8d021322ac12"
-  name = "github.com/function61/eventhorizon"
-  packages = [
-    "util/ass",
-    "util/clicommon",
-  ]
-  pruneopts = "UT"
-  revision = "8ab4b738919ae8053db332e97b44090dcf40fbab"
-  version = "v0.2.0"
-
-[[projects]]
   branch = "master"
-  digest = "1:357bc4aae99387bf8d59336baa08d21b4a3cf40e8266a801e545b66796717351"
+  digest = "1:1d30c4f60761c56b0c08121e521d9e9d434b2bfa505a65c77ea0668f794990a9"
   name = "github.com/function61/gokit"
-  packages = ["systemdinstaller"]
+  packages = [
+    "assert",
+    "ossignal",
+    "stopper",
+    "systemdinstaller",
+  ]
   pruneopts = "UT"
   revision = "51be2dcaf7627c3d0119999cfbc6e690180ed2f1"
 
@@ -166,8 +160,9 @@
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/s3",
     "github.com/aws/aws-sdk-go/service/sqs",
-    "github.com/function61/eventhorizon/util/ass",
-    "github.com/function61/eventhorizon/util/clicommon",
+    "github.com/function61/gokit/assert",
+    "github.com/function61/gokit/ossignal",
+    "github.com/function61/gokit/stopper",
     "github.com/function61/gokit/systemdinstaller",
     "github.com/hashicorp/hcl",
     "github.com/spf13/cobra",

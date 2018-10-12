@@ -2,8 +2,8 @@ package main
 
 import (
 	"bufio"
+	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/hapitypes"
-	"github.com/function61/home-automation-hub/util/stopper"
 	"io"
 	"log"
 	"os/exec"
@@ -15,8 +15,8 @@ import (
 var mceUsbCommandRe = regexp.MustCompile(" 00 ([a-zA-Z_0-9]+) devinput$")
 
 // reads LIRC's "$ irw" output
-func irwPoller(app *Application, stopper *stopper.Stopper) {
-	defer stopper.Done()
+func irwPoller(app *Application, stop *stopper.Stopper) {
+	defer stop.Done()
 
 	log.Println("irwPoller: starting")
 
@@ -62,7 +62,7 @@ func irwPoller(app *Application, stopper *stopper.Stopper) {
 	}()
 
 	go func() {
-		<-stopper.ShouldStop
+		<-stop.Signal
 
 		log.Println("irwPoller: asked to stop")
 
