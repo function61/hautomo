@@ -34,13 +34,13 @@ func readConfigurationFile() (*hapitypes.ConfigFile, error) {
 		return nil, errToJson
 	}
 
-	// decode JSON to in-memory config struct
+	jsonDecoder := json.NewDecoder(bytes.NewBuffer(asJson))
+	jsonDecoder.DisallowUnknownFields()
 
-	var conf hapitypes.ConfigFile
-	dec := json.NewDecoder(bytes.NewBuffer(asJson))
-	if err := dec.Decode(&conf); err != nil {
+	conf := &hapitypes.ConfigFile{}
+	if err := jsonDecoder.Decode(conf); err != nil {
 		return nil, err
 	}
 
-	return &conf, nil
+	return conf, nil
 }
