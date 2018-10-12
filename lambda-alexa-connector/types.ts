@@ -214,9 +214,3 @@ export function playbackController(): AlexaInterface {
 		supportedOperations: ['Play', 'Pause', 'Stop'],
 	};
 }
-
-/*
-	BrightnessController = 'Alexa.BrightnessController',
-	ColorController = 'Alexa.ColorController',
-	PlaybackController = 'Alexa.PlaybackController',
-*/
