@@ -1,3 +1,4 @@
+import * as http from 'http';
 import * as https from 'https';
 
 interface AmazonUserProfile {
@@ -11,27 +12,9 @@ export function resolveUser(bearerToken: string): Promise<AmazonUserProfile> {
 	return new Promise((resolve, reject) => {
 		const bearerTokenEscaped = encodeURIComponent(bearerToken);
 
-		/*
-		const url = new URL(`https://api.amazon.com/user/profile?access_token=${bearerTokenEscaped}`);
+		const url = `https://api.amazon.com/user/profile?access_token=${bearerTokenEscaped}`;
 
-		const reqParams = {
-		  protocol: url.protocol,
-		  host: url.host,
-		  port: url.port,
-		  path: url.pathname + url.search,
-		  method: 'GET'
-		};
-		*/
-		// FIXME: stupid Node in Lambda does not have this API
-		const reqParams = {
-			protocol: 'https:',
-			host: 'api.amazon.com',
-			port: '',
-			path: `/user/profile?access_token=${bearerTokenEscaped}`,
-			method: 'GET',
-		};
-
-		const req = https.request(reqParams, (res: any) => {
+		const req = https.request(url, (res: http.IncomingMessage) => {
 			let responseBodyRaw = '';
 
 			res.on('error', (err: Error) => {
