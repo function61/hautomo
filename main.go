@@ -258,12 +258,6 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 	return nil
 }
 
-var rootCmd = &cobra.Command{
-	Use:     os.Args[0],
-	Short:   "Home automation hub from function61.com",
-	Version: version,
-}
-
 func startServer() {
 	conf, confErr := readConfigurationFile()
 	if confErr != nil {
@@ -339,6 +333,11 @@ func serverEntry() *cobra.Command {
 }
 
 func main() {
+	rootCmd := &cobra.Command{
+		Use:     os.Args[0],
+		Short:   "Home automation hub from function61.com",
+		Version: version,
+	}
 	rootCmd.AddCommand(serverEntry())
 	rootCmd.AddCommand(happylightsclientcli.BindEntrypoint(happylightsserver.Entrypoint()))
 
