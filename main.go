@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/ossignal"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/gokit/systemdinstaller"
@@ -21,10 +22,11 @@ import (
 	"github.com/function61/home-automation-hub/pkg/adapters/lircadapter"
 	"github.com/function61/home-automation-hub/pkg/signalfabric"
 	"github.com/spf13/cobra"
-	"log"
 	"net/http"
 	"os"
 )
+
+var log = logger.New("main")
 
 // replaced in build process with actual version
 var version = "dev"
@@ -56,14 +58,14 @@ func NewApplication(stop *stopper.Stopper) *Application {
 	go func() {
 		defer stop.Done()
 
-		log.Println("application: started")
+		log.Info("started")
+		defer log.Info("stopped")
 
 		fabric := app.fabric
 
 		for {
 			select {
 			case <-stop.Signal:
-				log.Println("application: stopping")
 				return
 			case power := <-fabric.PowerEvent:
 				app.deviceOrDeviceGroupPower(power)
@@ -94,15 +96,15 @@ func NewApplication(stop *stopper.Stopper) *Application {
 				adapter.PlaybackMsg <- hapitypes.NewPlaybackEvent(device.AdaptersDeviceId, playbackEvent.Action)
 			case ir := <-fabric.InfraredEvent:
 				if powerEvent, ok := app.infraredToPowerEvent[ir.Event]; ok {
-					log.Printf("application: IR: %s -> power for %s", ir.Event, powerEvent.DeviceIdOrDeviceGroupId)
+					log.Debug(fmt.Sprintf("IR: %s -> power for %s", ir.Event, powerEvent.DeviceIdOrDeviceGroupId))
 
 					fabric.PowerEvent <- powerEvent
 				} else if i2i, ok := app.infraredToInfraredMsg[ir.Event]; ok {
-					log.Printf("application: IR passthrough: %s -> %s", ir.Event, i2i.infraredMsg.Command)
+					log.Debug(fmt.Sprintf("IR passthrough: %s -> %s", ir.Event, i2i.infraredMsg.Command))
 
 					i2i.adapter.InfraredMsg <- i2i.infraredMsg
 				} else {
-					log.Printf("application: IR ignored: %s", ir.Event)
+					log.Debug(fmt.Sprintf("IR ignored: %s", ir.Event))
 				}
 			}
 		}
@@ -157,21 +159,21 @@ func (a *Application) deviceOrDeviceGroupPower(power hapitypes.PowerEvent) error
 
 func (a *Application) devicePower(device *hapitypes.Device, power hapitypes.PowerEvent) error {
 	if power.Kind == hapitypes.PowerKindOn {
-		log.Printf("Power on: %s", device.Name)
+		log.Debug(fmt.Sprintf("Power on: %s", device.Name))
 
 		adapter := a.adapterById[device.AdapterId]
 		adapter.PowerMsg <- hapitypes.NewPowerMsg(device.AdaptersDeviceId, device.PowerOnCmd, true)
 
 		device.ProbablyTurnedOn = true
 	} else if power.Kind == hapitypes.PowerKindOff {
-		log.Printf("Power off: %s", device.Name)
+		log.Debug(fmt.Sprintf("Power off: %s", device.Name))
 
 		adapter := a.adapterById[device.AdapterId]
 		adapter.PowerMsg <- hapitypes.NewPowerMsg(device.AdaptersDeviceId, device.PowerOffCmd, false)
 
 		device.ProbablyTurnedOn = false
 	} else if power.Kind == hapitypes.PowerKindToggle {
-		log.Printf("Power toggle: %s, current state = %v", device.Name, device.ProbablyTurnedOn)
+		log.Debug(fmt.Sprintf("Power toggle: %s, current state = %v", device.Name, device.ProbablyTurnedOn))
 
 		if device.ProbablyTurnedOn {
 			return a.devicePower(device, hapitypes.NewPowerEvent(device.Id, hapitypes.PowerKindOff))
@@ -263,10 +265,34 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 	return nil
 }
 
-func startServer() {
+func handleHttp(conf *hapitypes.ConfigFile, stop *stopper.Stopper) {
+	defer stop.Done()
+	srv := &http.Server{Addr: ":8080"}
+
+	go func() {
+		<-stop.Signal
+
+		log.Info("stopping HTTP")
+
+		_ = srv.Shutdown(nil)
+	}()
+
+	http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		enc.Encode(conf)
+	})
+
+	if err := srv.ListenAndServe(); err != nil {
+		// cannot panic, because this probably is an intentional close
+		log.Error(fmt.Sprintf("ListenAndServe() stopped: %s", err.Error()))
+	}
+}
+
+func runServer() error {
 	conf, confErr := readConfigurationFile()
 	if confErr != nil {
-		panic(confErr)
+		return confErr
 	}
 
 	stopManager := stopper.NewManager()
@@ -274,44 +300,24 @@ func startServer() {
 	app := NewApplication(stopManager.Stopper())
 
 	if err := configureAppAndStartAdapters(app, conf, stopManager); err != nil {
-		panic(err)
+		return err
 	}
 
-	go func(stop *stopper.Stopper) {
-		defer stop.Done()
-		srv := &http.Server{Addr: ":8080"}
+	go handleHttp(conf, stopManager.Stopper())
 
-		go func() {
-			<-stop.Signal
-
-			log.Printf("httpserver: requesting stop")
-
-			_ = srv.Shutdown(nil)
-		}()
-
-		http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
-			enc := json.NewEncoder(w)
-			enc.SetIndent("", "  ")
-			enc.Encode(conf)
-		})
-
-		if err := srv.ListenAndServe(); err != nil {
-			// cannot panic, because this probably is an intentional close
-			log.Printf("httpserver: stopped because: %s", err)
-		}
-	}(stopManager.Stopper())
-
-	if err := SyncToAlexaConnector(conf); err != nil {
-		log.Printf("SyncToAlexaConnector: %s", err.Error())
+	if err := alexadevicesync.Sync(conf); err != nil {
+		log.Error(fmt.Sprintf("alexadevicesync: %s", err.Error()))
 	}
 
-	ossignal.WaitForInterruptOrTerminate()
+	log.Info("alexadevicesync completed")
 
-	log.Println("main: received interrupt")
+	log.Info(fmt.Sprintf("stopping due to signal %s", ossignal.WaitForInterruptOrTerminate()))
 
 	stopManager.StopAllWorkersAndWait()
 
-	log.Println("main: all components stopped")
+	log.Info("all components stopped")
+
+	return nil
 }
 
 func serverEntry() *cobra.Command {
@@ -320,7 +326,9 @@ func serverEntry() *cobra.Command {
 		Short: "Starts the server",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			startServer()
+			if err := runServer(); err != nil {
+				panic(err)
+			}
 		},
 	}
 

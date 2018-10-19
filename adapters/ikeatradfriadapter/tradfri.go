@@ -1,14 +1,18 @@
 package ikeatradfriadapter
 
 import (
+	"fmt"
+	"github.com/function61/gokit/logger"
 	"github.com/function61/home-automation-hub/hapitypes"
 	"github.com/function61/home-automation-hub/libraries/ikeatradfri"
-	"log"
 )
+
+var log = logger.New("ikeatradfriadapter")
 
 func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 	go func() {
-		log.Println("ikeatradfriadapter: started")
+		log.Info("started")
+		defer log.Info("stopped")
 
 		coapClient := ikeatradfri.NewCoapClient(
 			config.TradfriUrl,
@@ -27,14 +31,14 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 				}
 
 				if responseErr != nil {
-					log.Printf("ikeatradfriadapter: error %s", responseErr.Error())
+					log.Error(responseErr.Error())
 				}
 			case brightnessMsg := <-adapter.BrightnessMsg:
 				// 0-100 => 0-254
 				to := int(float64(brightnessMsg.Brightness) * 2.54)
 
 				if err := ikeatradfri.DimWithoutFading(brightnessMsg.DeviceId, to, coapClient); err != nil {
-					log.Printf("ikeatradfriadapter: brightness request error: %s", err.Error())
+					log.Error(fmt.Sprintf("DimWithoutFading: %s", err.Error()))
 				}
 			}
 		}

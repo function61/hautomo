@@ -2,14 +2,17 @@ package lircadapter
 
 import (
 	"bufio"
+	"fmt"
+	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/hapitypes"
 	"github.com/function61/home-automation-hub/pkg/signalfabric"
 	"io"
-	"log"
 	"os/exec"
 	"regexp"
 )
+
+var log = logger.New("lircadapter")
 
 // match lines like this: "000000037ff07bee 00 KEY_VOLUMEDOWN mceusb"
 
@@ -19,7 +22,8 @@ var mceUsbCommandRe = regexp.MustCompile(" 00 ([a-zA-Z_0-9]+) devinput$")
 func StartSensor(fabric *signalfabric.Fabric, stop *stopper.Stopper) {
 	defer stop.Done()
 
-	log.Println("irwPoller: starting")
+	log.Info("started")
+	defer log.Info("stopped")
 
 	irw := exec.Command("irw")
 
@@ -50,22 +54,23 @@ func StartSensor(fabric *signalfabric.Fabric, stop *stopper.Stopper) {
 			// "000000037ff07bee 00 KEY_VOLUMEDOWN mceusb" => "KEY_VOLUMEDOWN"
 			mceUsbCommand := mceUsbCommandRe.FindStringSubmatch(string(line))
 			if mceUsbCommand == nil {
-				log.Println("irwPoller: mismatched command format")
+				log.Error("mismatched command format")
 				continue
 			}
 
 			ir := hapitypes.NewInfraredEvent("mceusb", mceUsbCommand[1])
 
-			log.Printf("irwPoller: received %s", ir.Event)
+			log.Debug(fmt.Sprintf("received %s", ir.Event))
 
 			fabric.InfraredEvent <- ir
 		}
 	}()
 
+	// TODO: do this via context cancel?
 	go func() {
 		<-stop.Signal
 
-		log.Println("irwPoller: asked to stop")
+		log.Info("stopping")
 
 		irw.Process.Kill()
 	}()
@@ -73,5 +78,5 @@ func StartSensor(fabric *signalfabric.Fabric, stop *stopper.Stopper) {
 	// wait to complete
 	err := irw.Wait()
 
-	log.Printf("irwPoller: child exited, error: %s", err.Error())
+	log.Error(fmt.Sprintf("$ irw exited, error: %s", err.Error()))
 }

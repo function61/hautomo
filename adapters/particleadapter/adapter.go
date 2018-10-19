@@ -1,25 +1,27 @@
 package particleadapter
 
 import (
+	"github.com/function61/gokit/logger"
 	"github.com/function61/home-automation-hub/hapitypes"
 	"github.com/function61/home-automation-hub/libraries/particleapi"
-	"log"
 )
+
+var log = logger.New("particleadapter")
 
 func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 	go func() {
-		log.Println("particleadapter: started")
+		log.Info("started")
 
 		for {
 			select {
 			case powerMsg := <-adapter.PowerMsg:
 				if config.ParticleAccessToken == "" || config.ParticleId == "" {
-					log.Printf("particleadapter: error: ParticleAccessToken or ParticleId not defined")
+					log.Error("ParticleAccessToken or ParticleId not defined")
 					continue
 				}
 
 				if err := particleapi.Invoke(config.ParticleId, "rf", powerMsg.PowerCommand, config.ParticleId); err != nil {
-					log.Printf("particleadapter: request failed: %s", err.Error())
+					log.Error(err.Error())
 				}
 			}
 		}

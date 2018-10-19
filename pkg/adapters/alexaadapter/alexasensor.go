@@ -3,18 +3,21 @@ package alexaadapter
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/hapitypes"
 	"github.com/function61/home-automation-hub/pkg/signalfabric"
-	"log"
 	"regexp"
 	"time"
 )
+
+var log = logger.New("alexa")
 
 type TurnOnRequest struct {
 	DeviceIdOrDeviceGroupId string `json:"id"`
@@ -54,8 +57,8 @@ func StartSensor(fabric *signalfabric.Fabric, adapterConf hapitypes.AdapterConfi
 			""),
 	})
 
-	log.Println("sqsPollerLoop: started")
-	defer log.Println("sqsPollerLoop: stopping")
+	log.Info("started")
+	defer log.Info("stopped")
 
 	for {
 		select {
@@ -71,7 +74,7 @@ func StartSensor(fabric *signalfabric.Fabric, adapterConf hapitypes.AdapterConfi
 		})
 
 		if receiveErr != nil {
-			log.Printf("sqsPollerLoop: error in ReceiveMessage(): %s", receiveErr.Error())
+			log.Error(fmt.Sprintf("ReceiveMessage(): %s", receiveErr.Error()))
 			time.Sleep(5 * time.Second)
 			continue
 		}
@@ -86,7 +89,7 @@ func StartSensor(fabric *signalfabric.Fabric, adapterConf hapitypes.AdapterConfi
 
 			msgParseErr, msgType, msgJsonBody := parseMessage(*msg.Body)
 			if msgParseErr != nil {
-				log.Printf("sqsPollerLoop: parse error: " + msgParseErr.Error())
+				log.Error(fmt.Sprintf("parseMessage: %s", msgParseErr.Error()))
 				continue
 			}
 
@@ -127,12 +130,12 @@ func StartSensor(fabric *signalfabric.Fabric, adapterConf hapitypes.AdapterConfi
 
 				fabric.PlaybackEvent <- hapitypes.NewPlaybackEvent(req.DeviceIdOrDeviceGroupId, req.Action)
 			default:
-				log.Printf("sqsPollerLoop: unknown msgType: " + msgType)
+				log.Error("unknown msgType: " + msgType)
 			}
 		}
 
 		if len(ackList) > 0 {
-			log.Printf("sqsPollerLoop: acking %d message(s)", len(ackList))
+			log.Debug(fmt.Sprintf("acking %d message(s)", len(ackList)))
 
 			_, err := sqsClient.DeleteMessageBatch(&sqs.DeleteMessageBatchInput{
 				Entries:  ackList,

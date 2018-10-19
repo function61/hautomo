@@ -1,11 +1,13 @@
 package happylightsadapter
 
 import (
+	"github.com/function61/gokit/logger"
 	"github.com/function61/home-automation-hub/hapitypes"
 	"github.com/function61/home-automation-hub/libraries/happylights/client"
 	"github.com/function61/home-automation-hub/libraries/happylights/types"
-	"log"
 )
+
+var log = logger.New("HappyLights")
 
 func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 	handleColorMsg := func(colorMsg hapitypes.ColorMsg) {
@@ -18,12 +20,12 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 			colorMsg.Color.Blue)
 
 		if err := client.SendRequest(config.HappyLightsAddr, hlreq); err != nil {
-			log.Printf("HappyLightsAdapter: error %s", err.Error())
+			log.Error(err.Error())
 		}
 	}
 
 	go func() {
-		log.Println("HappyLightsAdapter: started")
+		log.Info("started")
 
 		for {
 			select {
@@ -39,7 +41,7 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 				}
 
 				if err := client.SendRequest(config.HappyLightsAddr, req); err != nil {
-					log.Printf("HappyLightsAdapter: error %s", err.Error())
+					log.Error(err.Error())
 				}
 			case brightnessMsg := <-adapter.BrightnessMsg:
 				lastColor := brightnessMsg.LastColor
@@ -58,6 +60,4 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 			}
 		}
 	}()
-
-	return adapter
 }

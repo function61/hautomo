@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/function61/home-automation-hub/hapitypes"
-	"log"
 )
 
 type AlexaConnectorDevice struct {
@@ -84,8 +83,6 @@ func uploadAlexaConnectorSpec(spec AlexaConnectorSpec, accessKeyId string, acces
 		Credentials: credentials.NewStaticCredentials(accessKeyId, accessKeySecret, ""),
 	})
 
-	log.Printf("uploadAlexaConnectorSpec: uploading discovery spec")
-
 	_, err := svc.PutObject(&s3.PutObjectInput{
 		Bucket:      aws.String("homeautomation.function61.com"),
 		Key:         aws.String("discovery/" + spec.UserTokenHash + ".json"),
@@ -93,11 +90,5 @@ func uploadAlexaConnectorSpec(spec AlexaConnectorSpec, accessKeyId string, acces
 		ContentType: aws.String("application/json"),
 	})
 
-	if err != nil {
-		return err
-	}
-
-	log.Printf("uploadAlexaConnectorSpec: uploading complete")
-
-	return nil
+	return err
 }
