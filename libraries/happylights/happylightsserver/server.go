@@ -14,7 +14,7 @@ import (
 )
 
 // controls happylights over Bluetooth BLE
-func buildHappylightBluetoothRequestCmd(ctx context.Context, req types.LightRequest) *exec.Cmd {
+func lightRequestToGattToolArgs(req types.LightRequest) []string {
 	reqHex := ""
 
 	if req.IsOff() {
@@ -31,18 +31,14 @@ func buildHappylightBluetoothRequestCmd(ctx context.Context, req types.LightRequ
 	// if running into errors:
 	// https://stackoverflow.com/questions/22062037/hcitool-lescan-shows-i-o-error
 
-	// do not let one attempt last more than this
-	ctxCmd, cancel := context.WithTimeout(ctx, 3*time.Second)
-	defer cancel()
-
-	return exec.CommandContext(
-		ctxCmd,
+	return []string{
 		"gatttool",
 		"-i", "hci0",
 		"-b", req.BluetoothAddr,
 		"--char-write-req",
 		"-a", "0x0021", // known handle for light request
-		"-n", reqHex)
+		"-n", reqHex,
+	}
 }
 
 func runServer() {
@@ -82,7 +78,16 @@ func runServer() {
 		defer cancel()
 
 		retry.Retry(ctx, func(ctx context.Context) error {
-			happylightCmd := buildHappylightBluetoothRequestCmd(ctx, lightRequest)
+			happylightCmdArgs := lightRequestToGattToolArgs(lightRequest)
+
+			// do not let one attempt last more than this
+			ctxCmd, cancel := context.WithTimeout(ctx, 3*time.Second)
+			defer cancel()
+
+			happylightCmd := exec.CommandContext(
+				ctxCmd,
+				happylightCmdArgs[0],
+				happylightCmdArgs[1:]...)
 
 			output, err := happylightCmd.CombinedOutput()
 			if err != nil {
