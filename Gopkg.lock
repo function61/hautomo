@@ -44,16 +44,18 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:1d30c4f60761c56b0c08121e521d9e9d434b2bfa505a65c77ea0668f794990a9"
+  digest = "1:6bc33d92a301a7aed8e49c0118521d7635b8916352c644bd7ff7155f23d61d4f"
   name = "github.com/function61/gokit"
   packages = [
     "assert",
+    "backoff",
     "ossignal",
+    "retry",
     "stopper",
     "systemdinstaller",
   ]
   pruneopts = "UT"
-  revision = "51be2dcaf7627c3d0119999cfbc6e690180ed2f1"
+  revision = "e7028df216ed18bed66b872cba81f2472b7fd919"
 
 [[projects]]
   digest = "1:5abd6a22805b1919f6a6bca0ae58b13cef1f3412812f38569978f43ef02743d4"
@@ -162,6 +164,7 @@
     "github.com/aws/aws-sdk-go/service/sqs",
     "github.com/function61/gokit/assert",
     "github.com/function61/gokit/ossignal",
+    "github.com/function61/gokit/retry",
     "github.com/function61/gokit/stopper",
     "github.com/function61/gokit/systemdinstaller",
     "github.com/hashicorp/hcl",

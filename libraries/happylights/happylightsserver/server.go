@@ -2,16 +2,19 @@ package happylightsserver
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 	"fmt"
+	"github.com/function61/gokit/retry"
 	"github.com/function61/home-automation-hub/libraries/happylights/types"
 	"log"
 	"net"
 	"os/exec"
+	"time"
 )
 
 // controls happylights over Bluetooth BLE
-func buildHappylightBluetoothRequestCmd(req types.LightRequest) *exec.Cmd {
+func buildHappylightBluetoothRequestCmd(ctx context.Context, req types.LightRequest) *exec.Cmd {
 	reqHex := ""
 
 	if req.IsOff() {
@@ -28,7 +31,12 @@ func buildHappylightBluetoothRequestCmd(req types.LightRequest) *exec.Cmd {
 	// if running into errors:
 	// https://stackoverflow.com/questions/22062037/hcitool-lescan-shows-i-o-error
 
-	return exec.Command(
+	// do not let one attempt last more than this
+	ctxCmd, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	return exec.CommandContext(
+		ctxCmd,
 		"gatttool",
 		"-i", "hci0",
 		"-b", req.BluetoothAddr,
@@ -42,31 +50,49 @@ func runServer() {
 
 	log.Printf("Starting to listen on %s", listenAddr)
 
-	pc, err := net.ListenPacket("udp", listenAddr)
+	happylightIncomingCmdSock, err := net.ListenPacket("udp", listenAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer pc.Close()
+	defer happylightIncomingCmdSock.Close()
 
 	for {
 		bytesRaw := make([]byte, 4096)
 
-		_, _, err := pc.ReadFrom(bytesRaw)
+		_, _, err := happylightIncomingCmdSock.ReadFrom(bytesRaw)
 		if err != nil {
-			panic(err)
+			log.Printf("runServer: ReadFrom() failed: %s", err.Error())
+			time.Sleep(500 * time.Millisecond) // prevent hot loop
+			continue
 		}
 
-		dec := gob.NewDecoder(bytes.NewBuffer(bytesRaw))
-		var lightRequest types.LightRequest
-		if err := dec.Decode(&lightRequest); err != nil {
-			panic(err)
+		gobDecoder := gob.NewDecoder(bytes.NewBuffer(bytesRaw))
+		lightRequest := types.LightRequest{}
+		if err := gobDecoder.Decode(&lightRequest); err != nil {
+			log.Printf("runServer: GOB Decode() failed: %s", err.Error())
+			continue
 		}
 
-		happylightCmd := buildHappylightBluetoothRequestCmd(lightRequest)
-
-		output, err := happylightCmd.CombinedOutput()
-		if err != nil {
-			log.Printf("Error %s, stdout: %s", err.Error(), output)
+		ifFails := func(err error) {
+			log.Printf("happylightCmd %s", err.Error())
 		}
+
+		// try for 15 seconds
+		ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
+		defer cancel()
+
+		retry.Retry(ctx, func(ctx context.Context) error {
+			happylightCmd := buildHappylightBluetoothRequestCmd(ctx, lightRequest)
+
+			output, err := happylightCmd.CombinedOutput()
+			if err != nil {
+				return fmt.Errorf( // retryer adds sufficient log prefix
+					"%s, stdout: %s",
+					err.Error(),
+					output)
+			}
+
+			return nil
+		}, retry.DefaultBackoff(), ifFails)
 	}
 }
