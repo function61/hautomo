@@ -1,8 +1,8 @@
 package happylightsclientcli
 
 import (
-	"github.com/function61/home-automation-hub/libraries/happylights/client"
-	"github.com/function61/home-automation-hub/libraries/happylights/types"
+	"github.com/function61/home-automation-hub/pkg/happylights/client"
+	"github.com/function61/home-automation-hub/pkg/happylights/types"
 	"github.com/spf13/cobra"
 	"strconv"
 )

@@ -3,7 +3,7 @@ package client
 import (
 	"bytes"
 	"encoding/gob"
-	"github.com/function61/home-automation-hub/libraries/happylights/types"
+	"github.com/function61/home-automation-hub/pkg/happylights/types"
 	"net"
 )
 

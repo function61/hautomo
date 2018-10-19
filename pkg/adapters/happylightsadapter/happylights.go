@@ -2,9 +2,9 @@ package happylightsadapter
 
 import (
 	"github.com/function61/gokit/logger"
-	"github.com/function61/home-automation-hub/hapitypes"
-	"github.com/function61/home-automation-hub/libraries/happylights/client"
-	"github.com/function61/home-automation-hub/libraries/happylights/types"
+	"github.com/function61/home-automation-hub/pkg/hapitypes"
+	"github.com/function61/home-automation-hub/pkg/happylights/client"
+	"github.com/function61/home-automation-hub/pkg/happylights/types"
 )
 
 var log = logger.New("HappyLights")

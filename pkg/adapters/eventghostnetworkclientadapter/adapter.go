@@ -3,8 +3,8 @@ package eventghostnetworkclientadapter
 import (
 	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
-	"github.com/function61/home-automation-hub/hapitypes"
-	"github.com/function61/home-automation-hub/libraries/eventghostnetworkclient"
+	"github.com/function61/home-automation-hub/pkg/eventghostnetworkclient"
+	"github.com/function61/home-automation-hub/pkg/hapitypes"
 )
 
 var log = logger.New("EventGhost")

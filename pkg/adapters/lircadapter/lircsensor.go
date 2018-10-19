@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
-	"github.com/function61/home-automation-hub/hapitypes"
+	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"github.com/function61/home-automation-hub/pkg/signalfabric"
 	"io"
 	"os/exec"

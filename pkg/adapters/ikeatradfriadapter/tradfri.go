@@ -3,8 +3,8 @@ package ikeatradfriadapter
 import (
 	"fmt"
 	"github.com/function61/gokit/logger"
-	"github.com/function61/home-automation-hub/hapitypes"
-	"github.com/function61/home-automation-hub/libraries/ikeatradfri"
+	"github.com/function61/home-automation-hub/pkg/hapitypes"
+	"github.com/function61/home-automation-hub/pkg/ikeatradfri"
 )
 
 var log = logger.New("ikeatradfriadapter")

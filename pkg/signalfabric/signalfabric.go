@@ -1,7 +1,7 @@
 package signalfabric
 
 import (
-	"github.com/function61/home-automation-hub/hapitypes"
+	"github.com/function61/home-automation-hub/pkg/hapitypes"
 )
 
 type Fabric struct {

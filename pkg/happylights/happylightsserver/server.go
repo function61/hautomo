@@ -6,7 +6,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"github.com/function61/gokit/retry"
-	"github.com/function61/home-automation-hub/libraries/happylights/types"
+	"github.com/function61/home-automation-hub/pkg/happylights/types"
 	"log"
 	"net"
 	"os/exec"

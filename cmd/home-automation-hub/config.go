@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/function61/home-automation-hub/hapitypes"
+	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"github.com/hashicorp/hcl"
 	"io/ioutil"
 )

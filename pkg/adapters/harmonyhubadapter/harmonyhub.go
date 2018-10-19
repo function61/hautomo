@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
-	"github.com/function61/home-automation-hub/hapitypes"
-	"github.com/function61/home-automation-hub/libraries/harmonyhub"
+	"github.com/function61/home-automation-hub/pkg/hapitypes"
+	"github.com/function61/home-automation-hub/pkg/harmonyhub"
 )
 
 var log = logger.New("HarmonyHubAdapter")
