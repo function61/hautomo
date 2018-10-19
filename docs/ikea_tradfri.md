@@ -38,9 +38,18 @@ Response of above command creates a new PSK for you.
 From now on, you can make requests with `-u IDENTITY -k NEW_PSK`.
 
 
-Links
------
+Enumerate device IDs
+--------------------
 
+```
+$ coap-client -u IDENTITY -k NEW_PSK coaps://IP_OF_HUB:5684/15011
+```
+
+
+Links & hat tips
+----------------
+
+- https://github.com/AlCalzone/node-tradfri-client
 - https://github.com/glenndehaan/ikea-tradfri-coap-docs
 - https://github.com/ggravlingen/pytradfri/issues/90
 - https://github.com/jesper-lindberg/homebridge-tradfri
