@@ -15,6 +15,11 @@ import (
 	"github.com/function61/home-automation-hub/hapitypes"
 	"github.com/function61/home-automation-hub/libraries/happylights/happylightsclientcli"
 	"github.com/function61/home-automation-hub/libraries/happylights/happylightsserver"
+	"github.com/function61/home-automation-hub/pkg/adapters/alexaadapter"
+	"github.com/function61/home-automation-hub/pkg/adapters/alexaadapter/alexadevicesync"
+	"github.com/function61/home-automation-hub/pkg/adapters/irsimulatoradapter"
+	"github.com/function61/home-automation-hub/pkg/adapters/lircadapter"
+	"github.com/function61/home-automation-hub/pkg/signalfabric"
 	"github.com/spf13/cobra"
 	"log"
 	"net/http"
@@ -30,11 +35,7 @@ type Application struct {
 	deviceGroupById       map[string]*hapitypes.DeviceGroup
 	infraredToPowerEvent  map[string]hapitypes.PowerEvent
 	infraredToInfraredMsg map[string]InfraredToInfraredWrapper
-	infraredEvent         chan hapitypes.InfraredEvent
-	powerEvent            chan hapitypes.PowerEvent
-	colorEvent            chan hapitypes.ColorMsg
-	brightnessEvent       chan hapitypes.BrightnessEvent
-	playbackEvent         chan hapitypes.PlaybackEvent
+	fabric                *signalfabric.Fabric
 }
 
 type InfraredToInfraredWrapper struct {
@@ -49,11 +50,7 @@ func NewApplication(stop *stopper.Stopper) *Application {
 		deviceGroupById:       make(map[string]*hapitypes.DeviceGroup),
 		infraredToPowerEvent:  make(map[string]hapitypes.PowerEvent),
 		infraredToInfraredMsg: make(map[string]InfraredToInfraredWrapper),
-		infraredEvent:         make(chan hapitypes.InfraredEvent, 1),
-		powerEvent:            make(chan hapitypes.PowerEvent, 1),
-		colorEvent:            make(chan hapitypes.ColorMsg, 1),
-		brightnessEvent:       make(chan hapitypes.BrightnessEvent, 1),
-		playbackEvent:         make(chan hapitypes.PlaybackEvent, 1),
+		fabric:                signalfabric.New(),
 	}
 
 	go func() {
@@ -61,14 +58,16 @@ func NewApplication(stop *stopper.Stopper) *Application {
 
 		log.Println("application: started")
 
+		fabric := app.fabric
+
 		for {
 			select {
 			case <-stop.Signal:
 				log.Println("application: stopping")
 				return
-			case power := <-app.powerEvent:
+			case power := <-fabric.PowerEvent:
 				app.deviceOrDeviceGroupPower(power)
-			case colorMsg := <-app.colorEvent:
+			case colorMsg := <-fabric.ColorEvent:
 				// TODO: device group support
 				device := app.deviceById[colorMsg.DeviceId]
 				adapter := app.adapterById[device.AdapterId]
@@ -78,7 +77,7 @@ func NewApplication(stop *stopper.Stopper) *Application {
 				adaptedColorMsg := hapitypes.NewColorMsg(device.AdaptersDeviceId, colorMsg.Color)
 
 				adapter.ColorMsg <- adaptedColorMsg
-			case brightnessEvent := <-app.brightnessEvent:
+			case brightnessEvent := <-fabric.BrightnessEvent:
 				// TODO: device group support
 				device := app.deviceById[brightnessEvent.DeviceIdOrDeviceGroupId]
 				adapter := app.adapterById[device.AdapterId]
@@ -87,17 +86,17 @@ func NewApplication(stop *stopper.Stopper) *Application {
 					device.AdaptersDeviceId,
 					brightnessEvent.Brightness,
 					device.LastColor)
-			case playbackEvent := <-app.playbackEvent:
+			case playbackEvent := <-fabric.PlaybackEvent:
 				// TODO: device group support
 				device := app.deviceById[playbackEvent.DeviceIdOrDeviceGroupId]
 				adapter := app.adapterById[device.AdapterId]
 
 				adapter.PlaybackMsg <- hapitypes.NewPlaybackEvent(device.AdaptersDeviceId, playbackEvent.Action)
-			case ir := <-app.infraredEvent:
+			case ir := <-fabric.InfraredEvent:
 				if powerEvent, ok := app.infraredToPowerEvent[ir.Event]; ok {
 					log.Printf("application: IR: %s -> power for %s", ir.Event, powerEvent.DeviceIdOrDeviceGroupId)
 
-					app.powerEvent <- powerEvent
+					fabric.PowerEvent <- powerEvent
 				} else if i2i, ok := app.infraredToInfraredMsg[ir.Event]; ok {
 					log.Printf("application: IR passthrough: %s -> %s", ir.Event, i2i.infraredMsg.Command)
 
@@ -187,37 +186,43 @@ func (a *Application) devicePower(device *hapitypes.Device, power hapitypes.Powe
 }
 
 func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, stopManager *stopper.Manager) error {
-	for _, adapter := range conf.Adapters {
-		switch adapter.Type {
+	// TODO: map[string]InitFn
+
+	for _, adapterConf := range conf.Adapters {
+		adapter := hapitypes.NewAdapter(adapterConf.Id)
+
+		switch adapterConf.Type {
 		case "particle":
-			app.DefineAdapter(particleadapter.New(hapitypes.NewAdapter(adapter.Id), adapter))
+			particleadapter.New(adapter, adapterConf)
+			app.DefineAdapter(adapter)
 		case "harmony":
-			app.DefineAdapter(harmonyhubadapter.New(hapitypes.NewAdapter(adapter.Id), adapter, stopManager.Stopper()))
+			harmonyhubadapter.New(adapter, adapterConf, stopManager.Stopper())
+			app.DefineAdapter(adapter)
 		case "ikea_tradfri":
-			app.DefineAdapter(
-				ikeatradfriadapter.New(hapitypes.NewAdapter(adapter.Id), adapter))
+			ikeatradfriadapter.New(adapter, adapterConf)
+			app.DefineAdapter(adapter)
 		case "happylights":
-			app.DefineAdapter(happylightsadapter.New(hapitypes.NewAdapter(adapter.Id), adapter))
+			happylightsadapter.New(adapter, adapterConf)
+			app.DefineAdapter(adapter)
 		case "eventghostnetworkclient":
-			app.DefineAdapter(eventghostnetworkclientadapter.New(hapitypes.NewAdapter(adapter.Id), adapter, stopManager.Stopper()))
+			eventghostnetworkclientadapter.New(adapter, adapterConf, stopManager.Stopper())
+			app.DefineAdapter(adapter)
 		case "irsimulator":
-			go infraredSimulator(
-				app,
-				adapter.IrSimulatorKey,
-				stopManager.Stopper())
+			irsimulatoradapter.StartSensor(adapter, adapterConf, app.fabric, stopManager.Stopper())
+			app.DefineAdapter(adapter)
 		case "lirc":
-			go irwPoller(
-				app,
+			go lircadapter.StartSensor(
+				app.fabric,
 				stopManager.Stopper())
+			// FIXME: app.DefineAdapter() intentionally not called
 		case "sqs":
-			go sqsPollerLoop(
-				app,
-				adapter.SqsQueueUrl,
-				adapter.SqsKeyId,
-				adapter.SqsKeySecret,
+			go alexaadapter.StartSensor(
+				app.fabric,
+				adapterConf,
 				stopManager.Stopper())
+			// FIXME: app.DefineAdapter() intentionally not called
 		default:
-			return errors.New("unkown adapter: " + adapter.Type)
+			return errors.New("unkown adapter: " + adapterConf.Type)
 		}
 	}
 

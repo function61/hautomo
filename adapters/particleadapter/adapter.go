@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) *hapitypes.Adapter {
+func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 	go func() {
 		log.Println("particleadapter: started")
 
@@ -24,6 +24,4 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) *hapitypes.
 			}
 		}
 	}()
-
-	return adapter
 }

@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) *hapitypes.Adapter {
+func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 	handleColorMsg := func(colorMsg hapitypes.ColorMsg) {
 		bluetoothAddr := colorMsg.DeviceId
 

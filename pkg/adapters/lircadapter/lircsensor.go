@@ -1,9 +1,10 @@
-package main
+package lircadapter
 
 import (
 	"bufio"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/hapitypes"
+	"github.com/function61/home-automation-hub/pkg/signalfabric"
 	"io"
 	"log"
 	"os/exec"
@@ -15,7 +16,7 @@ import (
 var mceUsbCommandRe = regexp.MustCompile(" 00 ([a-zA-Z_0-9]+) devinput$")
 
 // reads LIRC's "$ irw" output
-func irwPoller(app *Application, stop *stopper.Stopper) {
+func StartSensor(fabric *signalfabric.Fabric, stop *stopper.Stopper) {
 	defer stop.Done()
 
 	log.Println("irwPoller: starting")
@@ -57,7 +58,7 @@ func irwPoller(app *Application, stop *stopper.Stopper) {
 
 			log.Printf("irwPoller: received %s", ir.Event)
 
-			app.infraredEvent <- ir
+			fabric.InfraredEvent <- ir
 		}
 	}()
 

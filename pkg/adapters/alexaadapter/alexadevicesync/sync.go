@@ -1,4 +1,4 @@
-package main
+package alexadevicesync
 
 import (
 	"bytes"
@@ -27,7 +27,7 @@ type AlexaConnectorSpec struct {
 	Devices       []AlexaConnectorDevice `json:"devices"`
 }
 
-func SyncToAlexaConnector(conf *hapitypes.ConfigFile) error {
+func Sync(conf *hapitypes.ConfigFile) error {
 	var sqsAdapter *hapitypes.AdapterConfig = nil
 
 	for _, adapter := range conf.Adapters {
@@ -63,7 +63,7 @@ func SyncToAlexaConnector(conf *hapitypes.ConfigFile) error {
 		})
 	}
 
-	return UploadAlexaConnectorSpec(
+	return uploadAlexaConnectorSpec(
 		AlexaConnectorSpec{
 			UserTokenHash: sqsAdapter.SqsAlexaUsertokenHash,
 			Queue:         sqsAdapter.SqsQueueUrl,
@@ -73,7 +73,7 @@ func SyncToAlexaConnector(conf *hapitypes.ConfigFile) error {
 		sqsAdapter.SqsKeySecret)
 }
 
-func UploadAlexaConnectorSpec(spec AlexaConnectorSpec, accessKeyId string, accessKeySecret string) error {
+func uploadAlexaConnectorSpec(spec AlexaConnectorSpec, accessKeyId string, accessKeySecret string) error {
 	jsonBytes, errJson := json.MarshalIndent(&spec, "", "  ")
 	if errJson != nil {
 		return errJson
@@ -84,7 +84,7 @@ func UploadAlexaConnectorSpec(spec AlexaConnectorSpec, accessKeyId string, acces
 		Credentials: credentials.NewStaticCredentials(accessKeyId, accessKeySecret, ""),
 	})
 
-	log.Printf("UploadAlexaConnectorSpec: uploading discovery spec")
+	log.Printf("uploadAlexaConnectorSpec: uploading discovery spec")
 
 	_, err := svc.PutObject(&s3.PutObjectInput{
 		Bucket:      aws.String("homeautomation.function61.com"),
@@ -97,7 +97,7 @@ func UploadAlexaConnectorSpec(spec AlexaConnectorSpec, accessKeyId string, acces
 		return err
 	}
 
-	log.Printf("UploadAlexaConnectorSpec: uploading complete")
+	log.Printf("uploadAlexaConnectorSpec: uploading complete")
 
 	return nil
 }

@@ -1,4 +1,4 @@
-package main
+package alexaadapter
 
 import (
 	"encoding/json"
@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/hapitypes"
+	"github.com/function61/home-automation-hub/pkg/signalfabric"
 	"log"
 	"regexp"
 	"time"
@@ -40,29 +41,32 @@ type PlaybackRequest struct {
 	Action                  string `json:"action"`
 }
 
-func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, accessKeySecret string, stop *stopper.Stopper) {
+func StartSensor(fabric *signalfabric.Fabric, adapterConf hapitypes.AdapterConfig, stop *stopper.Stopper) {
 	defer stop.Done()
 
 	sess := session.Must(session.NewSession())
 
 	sqsClient := sqs.New(sess, &aws.Config{
-		Region:      aws.String(endpoints.UsEast1RegionID),
-		Credentials: credentials.NewStaticCredentials(accessKeyId, accessKeySecret, ""),
+		Region: aws.String(endpoints.UsEast1RegionID),
+		Credentials: credentials.NewStaticCredentials(
+			adapterConf.SqsKeyId,
+			adapterConf.SqsKeySecret,
+			""),
 	})
 
 	log.Println("sqsPollerLoop: started")
+	defer log.Println("sqsPollerLoop: stopping")
 
 	for {
 		select {
 		case <-stop.Signal:
-			log.Println("sqsPollerLoop: stopping")
 			return
 		default:
 		}
 
 		result, receiveErr := sqsClient.ReceiveMessage(&sqs.ReceiveMessageInput{
 			MaxNumberOfMessages: aws.Int64(10),
-			QueueUrl:            &queueUrl,
+			QueueUrl:            &adapterConf.SqsQueueUrl,
 			WaitTimeSeconds:     aws.Int64(10),
 		})
 
@@ -93,35 +97,35 @@ func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, access
 					panic(err)
 				}
 
-				app.powerEvent <- hapitypes.NewPowerEvent(req.DeviceIdOrDeviceGroupId, hapitypes.PowerKindOn)
+				fabric.PowerEvent <- hapitypes.NewPowerEvent(req.DeviceIdOrDeviceGroupId, hapitypes.PowerKindOn)
 			case "turn_off":
 				var req TurnOffRequest
 				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 					panic(err)
 				}
 
-				app.powerEvent <- hapitypes.NewPowerEvent(req.DeviceIdOrDeviceGroupId, hapitypes.PowerKindOff)
+				fabric.PowerEvent <- hapitypes.NewPowerEvent(req.DeviceIdOrDeviceGroupId, hapitypes.PowerKindOff)
 			case "color":
 				var req ColorRequest
 				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 					panic(err)
 				}
 
-				app.colorEvent <- hapitypes.NewColorMsg(req.DeviceIdOrDeviceGroupId, hapitypes.RGB{Red: req.Red, Green: req.Green, Blue: req.Blue})
+				fabric.ColorEvent <- hapitypes.NewColorMsg(req.DeviceIdOrDeviceGroupId, hapitypes.RGB{Red: req.Red, Green: req.Green, Blue: req.Blue})
 			case "brightness":
 				var req BrightnessRequest
 				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 					panic(err)
 				}
 
-				app.brightnessEvent <- hapitypes.NewBrightnessEvent(req.DeviceIdOrDeviceGroupId, req.Brightness)
+				fabric.BrightnessEvent <- hapitypes.NewBrightnessEvent(req.DeviceIdOrDeviceGroupId, req.Brightness)
 			case "playback":
 				var req PlaybackRequest
 				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 					panic(err)
 				}
 
-				app.playbackEvent <- hapitypes.NewPlaybackEvent(req.DeviceIdOrDeviceGroupId, req.Action)
+				fabric.PlaybackEvent <- hapitypes.NewPlaybackEvent(req.DeviceIdOrDeviceGroupId, req.Action)
 			default:
 				log.Printf("sqsPollerLoop: unknown msgType: " + msgType)
 			}
@@ -132,7 +136,7 @@ func sqsPollerLoop(app *Application, queueUrl string, accessKeyId string, access
 
 			_, err := sqsClient.DeleteMessageBatch(&sqs.DeleteMessageBatchInput{
 				Entries:  ackList,
-				QueueUrl: &queueUrl,
+				QueueUrl: &adapterConf.SqsQueueUrl,
 			})
 
 			if err != nil {

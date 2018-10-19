@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopper.Stopper) *hapitypes.Adapter {
+func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopper.Stopper) {
 	// we cannot make hierarchical stoppers, but we can have "stop manager" inside a
 	// stopper - it achieves the same thing
 	stopManager := stopper.NewManager()
@@ -36,6 +36,4 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopp
 			}
 		}
 	}()
-
-	return adapter
 }

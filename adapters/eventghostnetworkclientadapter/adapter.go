@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopper.Stopper) *hapitypes.Adapter {
+func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopper.Stopper) {
 	conn := eventghostnetworkclient.NewEventghostConnection(
 		config.EventghostAddr,
 		config.EventghostSecret)
@@ -29,6 +29,4 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopp
 			}
 		}
 	}()
-
-	return adapter
 }
