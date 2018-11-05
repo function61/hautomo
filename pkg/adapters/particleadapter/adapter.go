@@ -20,7 +20,7 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 					continue
 				}
 
-				if err := particleapi.Invoke(config.ParticleId, "rf", powerMsg.PowerCommand, config.ParticleId); err != nil {
+				if err := particleapi.Invoke(config.ParticleId, "rf", powerMsg.PowerCommand, config.ParticleAccessToken); err != nil {
 					log.Error(err.Error())
 				}
 			}
