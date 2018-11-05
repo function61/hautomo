@@ -58,7 +58,7 @@ func NewApplication(stop *stopper.Stopper) *Application {
 	go func() {
 		defer stop.Done()
 
-		log.Info("started")
+		log.Info(fmt.Sprintf("home-automation-hub %s started", version))
 		defer log.Info("stopped")
 
 		fabric := app.fabric
