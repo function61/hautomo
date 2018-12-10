@@ -38,8 +38,9 @@ func (c *CoapClient) Put(path string, data string) error {
 		"-e", data,
 		c.baseUrl+path)
 
-	// coap-client returns success status even if request does not succeed,
-	// OS-level errors probably mean that the binary was not found
+	// coap-client returns success status even if request does not succeed (no hope from
+	// looking at stdout/stderr either), OS-level errors probably mean that the binary was
+	// not found
 	_, err := coapCmd.CombinedOutput()
 	if err != nil {
 		return err
