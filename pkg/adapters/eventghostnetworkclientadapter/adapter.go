@@ -24,9 +24,14 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopp
 			select {
 			case <-stop.Signal:
 				return
-			case playbackMsg := <-adapter.PlaybackMsg:
-				if err := conn.Send(playbackMsg.Action, []string{}); err != nil {
-					log.Error(err.Error())
+			case genericEvent := <-adapter.Event:
+				switch e := genericEvent.(type) {
+				case *hapitypes.PlaybackEvent:
+					if err := conn.Send(e.Action, []string{}); err != nil {
+						log.Error(err.Error())
+					}
+				default:
+					adapter.LogUnsupportedEvent(genericEvent, log)
 				}
 			}
 		}

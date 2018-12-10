@@ -29,13 +29,18 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopp
 				log.Info("stopping")
 				stopManager.StopAllWorkersAndWait()
 				return
-			case powerMsg := <-adapter.PowerMsg:
-				if err := harmonyHubConnection.HoldAndRelease(powerMsg.DeviceId, powerMsg.PowerCommand); err != nil {
-					log.Error(fmt.Sprintf("HoldAndRelease: %s", err.Error()))
-				}
-			case infraredMsg := <-adapter.InfraredMsg:
-				if err := harmonyHubConnection.HoldAndRelease(infraredMsg.DeviceId, infraredMsg.Command); err != nil {
-					log.Error(fmt.Sprintf("HoldAndRelease: %s", err.Error()))
+			case genericEvent := <-adapter.Event:
+				switch e := genericEvent.(type) {
+				case *hapitypes.PowerMsg:
+					if err := harmonyHubConnection.HoldAndRelease(e.DeviceId, e.PowerCommand); err != nil {
+						log.Error(fmt.Sprintf("HoldAndRelease: %s", err.Error()))
+					}
+				case *hapitypes.InfraredMsg:
+					if err := harmonyHubConnection.HoldAndRelease(e.DeviceId, e.Command); err != nil {
+						log.Error(fmt.Sprintf("HoldAndRelease: %s", err.Error()))
+					}
+				default:
+					adapter.LogUnsupportedEvent(genericEvent, log)
 				}
 			}
 		}

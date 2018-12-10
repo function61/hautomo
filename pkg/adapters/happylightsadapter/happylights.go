@@ -28,13 +28,15 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 		log.Info("started")
 
 		for {
-			select {
-			case powerMsg := <-adapter.PowerMsg:
-				bluetoothAddr := powerMsg.DeviceId
+			genericEvent := <-adapter.Event
+
+			switch e := genericEvent.(type) {
+			case *hapitypes.PowerMsg:
+				bluetoothAddr := e.DeviceId
 
 				var req types.LightRequest
 
-				if powerMsg.On {
+				if e.On {
 					req = types.LightRequestOn(bluetoothAddr)
 				} else {
 					req = types.LightRequestOff(bluetoothAddr)
@@ -43,9 +45,9 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 				if err := client.SendRequest(config.HappyLightsAddr, req); err != nil {
 					log.Error(err.Error())
 				}
-			case brightnessMsg := <-adapter.BrightnessMsg:
-				lastColor := brightnessMsg.LastColor
-				brightness := brightnessMsg.Brightness
+			case *hapitypes.BrightnessMsg:
+				lastColor := e.LastColor
+				brightness := e.Brightness
 
 				dimmedColor := hapitypes.RGB{
 					Red:   uint8(float64(lastColor.Red) * float64(brightness) / 100.0),
@@ -54,9 +56,11 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 				}
 
 				// translate brightness directives into RGB directives
-				handleColorMsg(hapitypes.NewColorMsg(brightnessMsg.DeviceId, dimmedColor))
-			case colorMsg := <-adapter.ColorMsg:
-				handleColorMsg(colorMsg)
+				handleColorMsg(hapitypes.NewColorMsg(e.DeviceId, dimmedColor))
+			case *hapitypes.ColorMsg:
+				handleColorMsg(*e)
+			default:
+				adapter.LogUnsupportedEvent(genericEvent, log)
 			}
 		}
 	}()

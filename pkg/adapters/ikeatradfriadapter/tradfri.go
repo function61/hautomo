@@ -20,33 +20,37 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 			config.TradfriPsk)
 
 		for {
-			select {
-			case powerMsg := <-adapter.PowerMsg:
+			genericEvent := <-adapter.Event
+
+			switch e := genericEvent.(type) {
+			case *hapitypes.PowerMsg:
 				var responseErr error = nil
 
-				if powerMsg.On {
-					responseErr = ikeatradfri.TurnOn(powerMsg.DeviceId, coapClient)
+				if e.On {
+					responseErr = ikeatradfri.TurnOn(e.DeviceId, coapClient)
 				} else {
-					responseErr = ikeatradfri.TurnOff(powerMsg.DeviceId, coapClient)
+					responseErr = ikeatradfri.TurnOff(e.DeviceId, coapClient)
 				}
 
 				if responseErr != nil {
 					log.Error(responseErr.Error())
 				}
-			case brightnessMsg := <-adapter.BrightnessMsg:
+			case *hapitypes.BrightnessMsg:
 				// 0-100 => 0-254
-				to := int(float64(brightnessMsg.Brightness) * 2.54)
+				to := int(float64(e.Brightness) * 2.54)
 
-				if err := ikeatradfri.DimWithoutFading(brightnessMsg.DeviceId, to, coapClient); err != nil {
+				if err := ikeatradfri.DimWithoutFading(e.DeviceId, to, coapClient); err != nil {
 					log.Error(fmt.Sprintf("DimWithoutFading: %s", err.Error()))
 				}
-			case colorTempMsg := <-adapter.ColorTemperatureMsg:
+			case *hapitypes.ColorTemperatureEvent:
 				if err := ikeatradfri.SetColorTemp(
-					colorTempMsg.Device,
-					tempFromKelvin(colorTempMsg.TemperatureInKelvin),
+					e.Device,
+					tempFromKelvin(e.TemperatureInKelvin),
 					coapClient); err != nil {
 					log.Error(err.Error())
 				}
+			default:
+				adapter.LogUnsupportedEvent(genericEvent, log)
 			}
 		}
 	}()

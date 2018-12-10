@@ -80,9 +80,10 @@ func NewApplication(stop *stopper.Stopper) *Application {
 				device := app.deviceById[temp.Device]
 				adapter := app.adapterById[device.AdapterId]
 
-				adapter.ColorTemperatureMsg <- hapitypes.NewColorTemperatureEvent(
+				e := hapitypes.NewColorTemperatureEvent(
 					device.AdaptersDeviceId,
 					temp.TemperatureInKelvin)
+				adapter.Send(&e)
 			case colorMsg := <-fabric.ColorEvent:
 				// TODO: device group support
 				device := app.deviceById[colorMsg.DeviceId]
@@ -91,23 +92,24 @@ func NewApplication(stop *stopper.Stopper) *Application {
 				device.LastColor = colorMsg.Color
 
 				adaptedColorMsg := hapitypes.NewColorMsg(device.AdaptersDeviceId, colorMsg.Color)
-
-				adapter.ColorMsg <- adaptedColorMsg
+				adapter.Send(&adaptedColorMsg)
 			case brightnessEvent := <-fabric.BrightnessEvent:
 				// TODO: device group support
 				device := app.deviceById[brightnessEvent.DeviceIdOrDeviceGroupId]
 				adapter := app.adapterById[device.AdapterId]
 
-				adapter.BrightnessMsg <- hapitypes.NewBrightnessMsg(
+				e := hapitypes.NewBrightnessMsg(
 					device.AdaptersDeviceId,
 					brightnessEvent.Brightness,
 					device.LastColor)
+				adapter.Send(&e)
 			case playbackEvent := <-fabric.PlaybackEvent:
 				// TODO: device group support
 				device := app.deviceById[playbackEvent.DeviceIdOrDeviceGroupId]
 				adapter := app.adapterById[device.AdapterId]
 
-				adapter.PlaybackMsg <- hapitypes.NewPlaybackEvent(device.AdaptersDeviceId, playbackEvent.Action)
+				e := hapitypes.NewPlaybackEvent(device.AdaptersDeviceId, playbackEvent.Action)
+				adapter.Send(&e)
 			case ir := <-fabric.InfraredEvent:
 				if powerEvent, ok := app.infraredToPowerEvent[ir.Event]; ok {
 					log.Debug(fmt.Sprintf("IR: %s -> power for %s", ir.Event, powerEvent.DeviceIdOrDeviceGroupId))
@@ -116,7 +118,7 @@ func NewApplication(stop *stopper.Stopper) *Application {
 				} else if i2i, ok := app.infraredToInfraredMsg[ir.Event]; ok {
 					log.Debug(fmt.Sprintf("IR passthrough: %s -> %s", ir.Event, i2i.infraredMsg.Command))
 
-					i2i.adapter.InfraredMsg <- i2i.infraredMsg
+					i2i.adapter.Send(&i2i.infraredMsg)
 				} else {
 					log.Debug(fmt.Sprintf("IR ignored: %s", ir.Event))
 				}
@@ -176,14 +178,16 @@ func (a *Application) devicePower(device *hapitypes.Device, power hapitypes.Powe
 		log.Debug(fmt.Sprintf("Power on: %s", device.Name))
 
 		adapter := a.adapterById[device.AdapterId]
-		adapter.PowerMsg <- hapitypes.NewPowerMsg(device.AdaptersDeviceId, device.PowerOnCmd, true)
+		e := hapitypes.NewPowerMsg(device.AdaptersDeviceId, device.PowerOnCmd, true)
+		adapter.Send(&e)
 
 		device.ProbablyTurnedOn = true
 	} else if power.Kind == hapitypes.PowerKindOff {
 		log.Debug(fmt.Sprintf("Power off: %s", device.Name))
 
 		adapter := a.adapterById[device.AdapterId]
-		adapter.PowerMsg <- hapitypes.NewPowerMsg(device.AdaptersDeviceId, device.PowerOffCmd, false)
+		e := hapitypes.NewPowerMsg(device.AdaptersDeviceId, device.PowerOffCmd, false)
+		adapter.Send(&e)
 
 		device.ProbablyTurnedOn = false
 	} else if power.Kind == hapitypes.PowerKindToggle {

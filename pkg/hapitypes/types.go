@@ -2,7 +2,12 @@ package hapitypes
 
 import (
 	"errors"
+	"github.com/function61/gokit/logger"
 )
+
+type OutboundEvent interface {
+	OutboundEventType() string
+}
 
 type RGB struct {
 	Red   uint8
@@ -29,6 +34,10 @@ func NewColorTemperatureEvent(deviceIdOrDeviceGroupId string, temperatureInKelvi
 type ColorTemperatureEvent struct {
 	Device              string
 	TemperatureInKelvin uint
+}
+
+func (e *ColorTemperatureEvent) OutboundEventType() string {
+	return "ColorTemperatureEvent"
 }
 
 type InfraredEvent struct {
@@ -65,6 +74,10 @@ func NewPlaybackEvent(deviceIdOrDeviceGroupId string, action string) PlaybackEve
 		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
 		Action:                  action,
 	}
+}
+
+func (e *PlaybackEvent) OutboundEventType() string {
+	return "PlaybackEvent"
 }
 
 type PowerKind int
@@ -161,6 +174,10 @@ func NewPowerMsg(deviceId string, powerCommand string, on bool) PowerMsg {
 	}
 }
 
+func (e *PowerMsg) OutboundEventType() string {
+	return "PowerMsg"
+}
+
 type BrightnessMsg struct {
 	DeviceId   string
 	Brightness uint
@@ -175,6 +192,10 @@ func NewBrightnessMsg(deviceId string, brightness uint, lastColor RGB) Brightnes
 	}
 }
 
+func (e *BrightnessMsg) OutboundEventType() string {
+	return "BrightnessMsg"
+}
+
 type ColorMsg struct {
 	DeviceId string
 	Color    RGB
@@ -185,6 +206,10 @@ func NewColorMsg(deviceId string, color RGB) ColorMsg {
 		DeviceId: deviceId,
 		Color:    color,
 	}
+}
+
+func (e *ColorMsg) OutboundEventType() string {
+	return "ColorMsg"
 }
 
 type InfraredMsg struct {
@@ -199,24 +224,27 @@ func NewInfraredMsg(deviceId string, command string) InfraredMsg {
 	}
 }
 
+func (e *InfraredMsg) OutboundEventType() string {
+	return "InfraredMsg"
+}
+
 type Adapter struct {
-	Id                  string
-	PowerMsg            chan PowerMsg
-	BrightnessMsg       chan BrightnessMsg
-	ColorMsg            chan ColorMsg
-	InfraredMsg         chan InfraredMsg
-	PlaybackMsg         chan PlaybackEvent
-	ColorTemperatureMsg chan ColorTemperatureEvent
+	Id    string
+	Event chan OutboundEvent
 }
 
 func NewAdapter(id string) *Adapter {
 	return &Adapter{
-		Id:                  id,
-		PowerMsg:            make(chan PowerMsg),
-		BrightnessMsg:       make(chan BrightnessMsg),
-		ColorMsg:            make(chan ColorMsg),
-		InfraredMsg:         make(chan InfraredMsg),
-		PlaybackMsg:         make(chan PlaybackEvent),
-		ColorTemperatureMsg: make(chan ColorTemperatureEvent),
+		Id:    id,
+		Event: make(chan OutboundEvent, 32),
 	}
+}
+
+func (a *Adapter) Send(e OutboundEvent) {
+	// TODO: log warning if queue full?
+	a.Event <- e
+}
+
+func (a *Adapter) LogUnsupportedEvent(e OutboundEvent, log *logger.Logger) {
+	log.Error("unsupported outbound event: " + e.OutboundEventType())
 }

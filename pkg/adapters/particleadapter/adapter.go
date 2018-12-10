@@ -13,16 +13,20 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 		log.Info("started")
 
 		for {
-			select {
-			case powerMsg := <-adapter.PowerMsg:
+			genericEvent := <-adapter.Event
+
+			switch e := genericEvent.(type) {
+			case *hapitypes.PowerMsg:
 				if config.ParticleAccessToken == "" || config.ParticleId == "" {
 					log.Error("ParticleAccessToken or ParticleId not defined")
 					continue
 				}
 
-				if err := particleapi.Invoke(config.ParticleId, "rf", powerMsg.PowerCommand, config.ParticleAccessToken); err != nil {
+				if err := particleapi.Invoke(config.ParticleId, "rf", e.PowerCommand, config.ParticleAccessToken); err != nil {
 					log.Error(err.Error())
 				}
+			default:
+				adapter.LogUnsupportedEvent(genericEvent, log)
 			}
 		}
 	}()
