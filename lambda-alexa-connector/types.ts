@@ -10,6 +10,7 @@ export enum AlexaNamespace {
 	BrightnessController = 'Alexa.BrightnessController',
 	ColorController = 'Alexa.ColorController',
 	PlaybackController = 'Alexa.PlaybackController',
+	ColorTemperatureController = 'Alexa.ColorTemperatureController',
 }
 
 export enum Category {
@@ -165,6 +166,22 @@ export interface AlexaPlaybackInput {
 	payload: {};
 }
 
+// ColorTemperature
+
+export interface AlexaColorTemperatureInput {
+	header: {
+		namespace: AlexaNamespace.ColorTemperatureController;
+		name: 'SetColorTemperature';
+		payloadVersion: string;
+		messageId: string;
+		correlationToken: string;
+	};
+	endpoint: EndpointSpec;
+	payload: {
+		colorTemperatureInKelvin: number;
+	};
+}
+
 // factories for various AlexaInterface structs
 
 export function powerController(): AlexaInterface {
@@ -212,5 +229,18 @@ export function playbackController(): AlexaInterface {
 		interface: AlexaNamespace.PlaybackController,
 		version: '3',
 		supportedOperations: ['Play', 'Pause', 'Stop'],
+	};
+}
+
+export function colorTemperatureController(): AlexaInterface {
+	return {
+		type: 'AlexaInterface',
+		interface: AlexaNamespace.ColorTemperatureController,
+		version: '3',
+		properties: {
+			supported: [{ name: 'colorTemperatureInKelvin' }],
+			proactivelyReported: false,
+			retrievable: false,
+		},
 	};
 }

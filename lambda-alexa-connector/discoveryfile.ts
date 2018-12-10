@@ -3,17 +3,20 @@ import {
 	brightnessController,
 	Category,
 	colorController,
+	colorTemperatureController,
 	Device,
 	playbackController,
 	powerController,
 } from './types';
 import { assertUnreachable } from './utils';
 
+// for use between only home-automation-hub and Alexa connector
 enum CapabilityCode {
 	PowerController = 'PowerController',
 	BrightnessController = 'BrightnessController',
 	ColorController = 'ColorController',
 	PlaybackController = 'PlaybackController',
+	ColorTemperatureController = 'ColorTemperatureController',
 }
 
 interface DiscoveryFileDevice {
@@ -50,6 +53,8 @@ export function toAlexaStruct(file: DiscoveryFile): Device[] {
 							return colorController();
 						case CapabilityCode.PlaybackController:
 							return playbackController();
+						case CapabilityCode.ColorTemperatureController:
+							return colorTemperatureController();
 						default:
 							return assertUnreachable(code);
 					}

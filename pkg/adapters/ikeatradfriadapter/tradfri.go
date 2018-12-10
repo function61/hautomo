@@ -40,7 +40,27 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 				if err := ikeatradfri.DimWithoutFading(brightnessMsg.DeviceId, to, coapClient); err != nil {
 					log.Error(fmt.Sprintf("DimWithoutFading: %s", err.Error()))
 				}
+			case colorTempMsg := <-adapter.ColorTemperatureMsg:
+				if err := ikeatradfri.SetColorTemp(
+					colorTempMsg.DeviceId,
+					tempFromKelvin(colorTempMsg.TemperatureInKelvin),
+					coapClient); err != nil {
+					log.Error(err.Error())
+				}
 			}
 		}
 	}()
+}
+
+func tempFromKelvin(kelvin uint) ikeatradfri.ColorTemp {
+	// https://developer.amazon.com/docs/device-apis/alexa-colortemperaturecontroller.html#setcolortemperature
+	if kelvin < 4000 {
+		return ikeatradfri.ColorTempWarm
+	}
+
+	if kelvin < 7000 {
+		return ikeatradfri.ColorTempNormal
+	}
+
+	return ikeatradfri.ColorTempCold
 }

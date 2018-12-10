@@ -13,6 +13,16 @@ export function brightnessMessage(
 	return 'brightness ' + JSON.stringify({ id: applianceId, brightness });
 }
 
+export function colorTemperature(
+	applianceId: string,
+	colorTemperatureInKelvin: number,
+): string {
+	return (
+		'colorTemperature ' +
+		JSON.stringify({ id: applianceId, colorTemperatureInKelvin })
+	);
+}
+
 export function colorMessage(
 	applianceId: string,
 	color: { hue: number; saturation: number; brightness: number },

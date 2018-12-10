@@ -22,6 +22,15 @@ type PersonPresenceChangeEvent struct {
 	Present  bool
 }
 
+func NewColorTemperatureEvent(deviceIdOrDeviceGroupId string, temperatureInKelvin uint) ColorTemperatureEvent {
+	return ColorTemperatureEvent{deviceIdOrDeviceGroupId, temperatureInKelvin}
+}
+
+type ColorTemperatureEvent struct {
+	DeviceIdOrDeviceGroupId string
+	TemperatureInKelvin     uint
+}
+
 type InfraredEvent struct {
 	Remote string
 	Event  string
@@ -178,6 +187,15 @@ func NewColorMsg(deviceId string, color RGB) ColorMsg {
 	}
 }
 
+type ColorTemperatureMsg struct {
+	DeviceId            string
+	TemperatureInKelvin uint
+}
+
+func NewColorTemperatureMsg(deviceId string, temperatureInKelvin uint) ColorTemperatureMsg {
+	return ColorTemperatureMsg{deviceId, temperatureInKelvin}
+}
+
 type InfraredMsg struct {
 	DeviceId string // adapter's own id
 	Command  string
@@ -191,21 +209,23 @@ func NewInfraredMsg(deviceId string, command string) InfraredMsg {
 }
 
 type Adapter struct {
-	Id            string
-	PowerMsg      chan PowerMsg
-	BrightnessMsg chan BrightnessMsg
-	ColorMsg      chan ColorMsg
-	InfraredMsg   chan InfraredMsg
-	PlaybackMsg   chan PlaybackEvent
+	Id                  string
+	PowerMsg            chan PowerMsg
+	BrightnessMsg       chan BrightnessMsg
+	ColorMsg            chan ColorMsg
+	InfraredMsg         chan InfraredMsg
+	PlaybackMsg         chan PlaybackEvent
+	ColorTemperatureMsg chan ColorTemperatureMsg
 }
 
 func NewAdapter(id string) *Adapter {
 	return &Adapter{
-		Id:            id,
-		PowerMsg:      make(chan PowerMsg),
-		BrightnessMsg: make(chan BrightnessMsg),
-		ColorMsg:      make(chan ColorMsg),
-		InfraredMsg:   make(chan InfraredMsg),
-		PlaybackMsg:   make(chan PlaybackEvent),
+		Id:                  id,
+		PowerMsg:            make(chan PowerMsg),
+		BrightnessMsg:       make(chan BrightnessMsg),
+		ColorMsg:            make(chan ColorMsg),
+		InfraredMsg:         make(chan InfraredMsg),
+		PlaybackMsg:         make(chan PlaybackEvent),
+		ColorTemperatureMsg: make(chan ColorTemperatureMsg),
 	}
 }

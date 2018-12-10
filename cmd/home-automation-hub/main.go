@@ -75,6 +75,14 @@ func NewApplication(stop *stopper.Stopper) *Application {
 					ppc.Present))
 			case power := <-fabric.PowerEvent:
 				app.deviceOrDeviceGroupPower(power)
+			case temp := <-fabric.ColorTemperatureEvent:
+				// TODO: device group support
+				device := app.deviceById[temp.DeviceIdOrDeviceGroupId]
+				adapter := app.adapterById[device.AdapterId]
+
+				adapter.ColorTemperatureMsg <- hapitypes.NewColorTemperatureMsg(
+					device.AdaptersDeviceId,
+					temp.TemperatureInKelvin)
 			case colorMsg := <-fabric.ColorEvent:
 				// TODO: device group support
 				device := app.deviceById[colorMsg.DeviceId]

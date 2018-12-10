@@ -44,6 +44,11 @@ type PlaybackRequest struct {
 	Action                  string `json:"action"`
 }
 
+type ColorTemperatureRequest struct {
+	DeviceIdOrDeviceGroupId  string `json:"id"`
+	ColorTemperatureInKelvin uint   `json:"colorTemperatureInKelvin"`
+}
+
 func StartSensor(fabric *signalfabric.Fabric, adapterConf hapitypes.AdapterConfig, stop *stopper.Stopper) {
 	defer stop.Done()
 
@@ -129,6 +134,15 @@ func StartSensor(fabric *signalfabric.Fabric, adapterConf hapitypes.AdapterConfi
 				}
 
 				fabric.PlaybackEvent <- hapitypes.NewPlaybackEvent(req.DeviceIdOrDeviceGroupId, req.Action)
+			case "colorTemperature":
+				var req ColorTemperatureRequest
+				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
+					panic(err)
+				}
+
+				fabric.ColorTemperatureEvent <- hapitypes.NewColorTemperatureEvent(
+					req.DeviceIdOrDeviceGroupId,
+					req.ColorTemperatureInKelvin)
 			default:
 				log.Error("unknown msgType: " + msgType)
 			}

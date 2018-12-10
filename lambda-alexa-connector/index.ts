@@ -8,6 +8,7 @@ import { DiscoveryFile, toAlexaStruct } from './discoveryfile';
 import {
 	brightnessMessage,
 	colorMessage,
+	colorTemperature,
 	playbackControlMessage,
 	turnOffMessage,
 	turnOnMessage,
@@ -15,6 +16,7 @@ import {
 import {
 	AlexaBrightnessInput,
 	AlexaColorInput,
+	AlexaColorTemperatureInput,
 	AlexaDiscoveryInput,
 	AlexaDiscoveryOutput,
 	AlexaGenericMessage,
@@ -184,6 +186,27 @@ function handlePlaybackControl(
 	});
 }
 
+function handleColorTemperatureControl(
+	request: AlexaColorTemperatureInput,
+): Promise<ProcessResult<AlexaPowerOutput>> {
+	return Promise.resolve({
+		piMsg: {
+			msg: colorTemperature(
+				request.endpoint.endpointId,
+				request.payload.colorTemperatureInKelvin,
+			),
+			queue: request.endpoint.cookie.queue,
+		},
+		response: generateCommonControlResponse(
+			null,
+			null,
+			request.endpoint,
+			request.header.correlationToken,
+			request.header.namespace,
+		),
+	});
+}
+
 function isWarmupMsg(input: any): input is WarmupMsg {
 	return 'warmup' in input;
 }
@@ -224,6 +247,10 @@ export function processEvent(
 				return handleColorControl(directive as AlexaColorInput);
 			case AlexaNamespace.PlaybackController:
 				return handlePlaybackControl(directive as AlexaPlaybackInput);
+			case AlexaNamespace.ColorTemperatureController:
+				return handleColorTemperatureControl(
+					directive as AlexaColorTemperatureInput,
+				);
 			default: {
 				// unexpected message
 				assertUnreachable(directive.header.namespace);
