@@ -344,6 +344,18 @@ func serverEntry() *cobra.Command {
 	}
 
 	server.AddCommand(&cobra.Command{
+		Use:   "lint",
+		Short: "Verifies the syntax of the configuration file",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			_, err := readConfigurationFile()
+			if err != nil {
+				panic(err)
+			}
+		},
+	})
+
+	server.AddCommand(&cobra.Command{
 		Use:   "write-systemd-unit-file",
 		Short: "Install unit file to start this on startup",
 		Args:  cobra.NoArgs,
