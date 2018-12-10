@@ -27,8 +27,8 @@ func NewColorTemperatureEvent(deviceIdOrDeviceGroupId string, temperatureInKelvi
 }
 
 type ColorTemperatureEvent struct {
-	DeviceIdOrDeviceGroupId string
-	TemperatureInKelvin     uint
+	Device              string
+	TemperatureInKelvin uint
 }
 
 type InfraredEvent struct {
@@ -187,15 +187,6 @@ func NewColorMsg(deviceId string, color RGB) ColorMsg {
 	}
 }
 
-type ColorTemperatureMsg struct {
-	DeviceId            string
-	TemperatureInKelvin uint
-}
-
-func NewColorTemperatureMsg(deviceId string, temperatureInKelvin uint) ColorTemperatureMsg {
-	return ColorTemperatureMsg{deviceId, temperatureInKelvin}
-}
-
 type InfraredMsg struct {
 	DeviceId string // adapter's own id
 	Command  string
@@ -215,7 +206,7 @@ type Adapter struct {
 	ColorMsg            chan ColorMsg
 	InfraredMsg         chan InfraredMsg
 	PlaybackMsg         chan PlaybackEvent
-	ColorTemperatureMsg chan ColorTemperatureMsg
+	ColorTemperatureMsg chan ColorTemperatureEvent
 }
 
 func NewAdapter(id string) *Adapter {
@@ -226,6 +217,6 @@ func NewAdapter(id string) *Adapter {
 		ColorMsg:            make(chan ColorMsg),
 		InfraredMsg:         make(chan InfraredMsg),
 		PlaybackMsg:         make(chan PlaybackEvent),
-		ColorTemperatureMsg: make(chan ColorTemperatureMsg),
+		ColorTemperatureMsg: make(chan ColorTemperatureEvent),
 	}
 }

@@ -77,10 +77,10 @@ func NewApplication(stop *stopper.Stopper) *Application {
 				app.deviceOrDeviceGroupPower(power)
 			case temp := <-fabric.ColorTemperatureEvent:
 				// TODO: device group support
-				device := app.deviceById[temp.DeviceIdOrDeviceGroupId]
+				device := app.deviceById[temp.Device]
 				adapter := app.adapterById[device.AdapterId]
 
-				adapter.ColorTemperatureMsg <- hapitypes.NewColorTemperatureMsg(
+				adapter.ColorTemperatureMsg <- hapitypes.NewColorTemperatureEvent(
 					device.AdaptersDeviceId,
 					temp.TemperatureInKelvin)
 			case colorMsg := <-fabric.ColorEvent:

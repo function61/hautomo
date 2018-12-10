@@ -42,7 +42,7 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 				}
 			case colorTempMsg := <-adapter.ColorTemperatureMsg:
 				if err := ikeatradfri.SetColorTemp(
-					colorTempMsg.DeviceId,
+					colorTempMsg.Device,
 					tempFromKelvin(colorTempMsg.TemperatureInKelvin),
 					coapClient); err != nil {
 					log.Error(err.Error())
