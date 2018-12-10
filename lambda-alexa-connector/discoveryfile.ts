@@ -28,7 +28,6 @@ interface DiscoveryFileDevice {
 }
 
 export interface DiscoveryFile {
-	user_token_hash: string; // FIXME: this is unneeded
 	queue: string;
 	devices: DiscoveryFileDevice[];
 }

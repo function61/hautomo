@@ -21,9 +21,8 @@ type AlexaConnectorDevice struct {
 }
 
 type AlexaConnectorSpec struct {
-	UserTokenHash string                 `json:"user_token_hash"`
-	Queue         string                 `json:"queue"`
-	Devices       []AlexaConnectorDevice `json:"devices"`
+	Queue   string                 `json:"queue"`
+	Devices []AlexaConnectorDevice `json:"devices"`
 }
 
 func Sync(conf *hapitypes.ConfigFile) error {
@@ -63,16 +62,16 @@ func Sync(conf *hapitypes.ConfigFile) error {
 	}
 
 	return uploadAlexaConnectorSpec(
+		sqsAdapter.SqsAlexaUsertokenHash,
 		AlexaConnectorSpec{
-			UserTokenHash: sqsAdapter.SqsAlexaUsertokenHash,
-			Queue:         sqsAdapter.SqsQueueUrl,
-			Devices:       devices,
+			Queue:   sqsAdapter.SqsQueueUrl,
+			Devices: devices,
 		},
 		sqsAdapter.SqsKeyId,
 		sqsAdapter.SqsKeySecret)
 }
 
-func uploadAlexaConnectorSpec(spec AlexaConnectorSpec, accessKeyId string, accessKeySecret string) error {
+func uploadAlexaConnectorSpec(userTokenHash string, spec AlexaConnectorSpec, accessKeyId string, accessKeySecret string) error {
 	jsonBytes, errJson := json.MarshalIndent(&spec, "", "  ")
 	if errJson != nil {
 		return errJson
@@ -85,7 +84,7 @@ func uploadAlexaConnectorSpec(spec AlexaConnectorSpec, accessKeyId string, acces
 
 	_, err := svc.PutObject(&s3.PutObjectInput{
 		Bucket:      aws.String("homeautomation.function61.com"),
-		Key:         aws.String("discovery/" + spec.UserTokenHash + ".json"),
+		Key:         aws.String("discovery/" + userTokenHash + ".json"),
 		Body:        bytes.NewReader(jsonBytes),
 		ContentType: aws.String("application/json"),
 	})
