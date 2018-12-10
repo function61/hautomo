@@ -13,6 +13,7 @@ export enum AlexaNamespace {
 	ColorTemperatureController = 'Alexa.ColorTemperatureController',
 }
 
+// https://developer.amazon.com/docs/device-apis/alexa-discovery.html#display-categories
 export enum Category {
 	LIGHT = 'LIGHT',
 	TV = 'TV',

@@ -23,7 +23,7 @@ interface DiscoveryFileDevice {
 	id: string;
 	friendly_name: string;
 	description: string;
-	display_category: string;
+	display_category: Category;
 	capability_codes: CapabilityCode[];
 }
 
@@ -35,12 +35,6 @@ export interface DiscoveryFile {
 export function toAlexaStruct(file: DiscoveryFile): Device[] {
 	return file.devices.map(
 		(device): Device => {
-			if (device.display_category !== 'LIGHT') {
-				throw new Error(
-					`Unexpected display_category: ${device.display_category}`,
-				);
-			}
-
 			const caps: AlexaInterface[] = device.capability_codes.map(
 				(code): AlexaInterface => {
 					switch (code) {
@@ -66,7 +60,7 @@ export function toAlexaStruct(file: DiscoveryFile): Device[] {
 				version: '1.0',
 				friendlyName: device.friendly_name,
 				description: device.description,
-				displayCategories: [Category.LIGHT],
+				displayCategories: [device.display_category],
 				capabilities: caps,
 				cookie: {
 					queue: file.queue,

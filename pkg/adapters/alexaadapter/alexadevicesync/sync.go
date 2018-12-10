@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
@@ -25,6 +26,22 @@ type AlexaConnectorSpec struct {
 	Devices []AlexaConnectorDevice `json:"devices"`
 }
 
+// https://developer.amazon.com/docs/device-apis/alexa-discovery.html#display-categories
+var supportedDisplayCategories = map[string]bool{
+	"LIGHT":     true,
+	"SPEAKER":   true,
+	"TV":        true,
+	"SMARTPLUG": true,
+}
+
+var supportedCapabilities = map[string]bool{
+	"PowerController":            true,
+	"BrightnessController":       true,
+	"ColorController":            true,
+	"PlaybackController":         true,
+	"ColorTemperatureController": true,
+}
+
 func Sync(conf *hapitypes.ConfigFile) error {
 	var sqsAdapter *hapitypes.AdapterConfig = nil
 
@@ -42,6 +59,16 @@ func Sync(conf *hapitypes.ConfigFile) error {
 	devices := []AlexaConnectorDevice{}
 
 	for _, device := range conf.Devices {
+		if _, ok := supportedDisplayCategories[device.AlexaCategory]; !ok {
+			return fmt.Errorf("unsupported AlexaCategory: %s", device.AlexaCategory)
+		}
+
+		for _, capability := range device.AlexaCapabilities {
+			if _, ok := supportedCapabilities[capability]; !ok {
+				return fmt.Errorf("unsupported AlexaCapability: %s", capability)
+			}
+		}
+
 		devices = append(devices, AlexaConnectorDevice{
 			Id:              device.DeviceId,
 			FriendlyName:    device.Name,
