@@ -117,12 +117,18 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:fd35bc6003cfae47dd6041db172fb971f3e08991ecdf2971bd03dcabedef3b0b"
+  digest = "1:8dfa81522f8d4b65bae4b11df7504b0644ec7c8a8f763e4f6d2ffcdf9e745127"
   name = "golang.org/x/net"
   packages = [
+    "bpf",
     "html",
     "html/atom",
     "html/charset",
+    "icmp",
+    "internal/iana",
+    "internal/socket",
+    "ipv4",
+    "ipv6",
   ]
   pruneopts = "UT"
   revision = "8a410e7b638dca158bf9e766925842f6651ff828"
@@ -172,6 +178,8 @@
     "github.com/hashicorp/hcl",
     "github.com/spf13/cobra",
     "golang.org/x/net/html/charset",
+    "golang.org/x/net/icmp",
+    "golang.org/x/net/ipv4",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

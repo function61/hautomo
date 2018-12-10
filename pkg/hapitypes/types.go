@@ -10,6 +10,18 @@ type RGB struct {
 	Blue  uint8
 }
 
+func NewPersonPresenceChangeEvent(personId string, present bool) PersonPresenceChangeEvent {
+	return PersonPresenceChangeEvent{
+		PersonId: personId,
+		Present:  present,
+	}
+}
+
+type PersonPresenceChangeEvent struct {
+	PersonId string
+	Present  bool
+}
+
 type InfraredEvent struct {
 	Remote string
 	Event  string

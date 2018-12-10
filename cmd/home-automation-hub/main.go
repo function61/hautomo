@@ -17,6 +17,7 @@ import (
 	"github.com/function61/home-automation-hub/pkg/adapters/irsimulatoradapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/lircadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/particleadapter"
+	"github.com/function61/home-automation-hub/pkg/adapters/presencebypingadapter"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"github.com/function61/home-automation-hub/pkg/happylights/happylightsclientcli"
 	"github.com/function61/home-automation-hub/pkg/happylights/happylightsserver"
@@ -67,6 +68,11 @@ func NewApplication(stop *stopper.Stopper) *Application {
 			select {
 			case <-stop.Signal:
 				return
+			case ppc := <-fabric.PersonPresenceChangeEvent:
+				log.Info(fmt.Sprintf(
+					"Person %s presence changed to %v",
+					ppc.PersonId,
+					ppc.Present))
 			case power := <-fabric.PowerEvent:
 				app.deviceOrDeviceGroupPower(power)
 			case colorMsg := <-fabric.ColorEvent:
@@ -197,6 +203,9 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 		case "particle":
 			particleadapter.New(adapter, adapterConf)
 			app.DefineAdapter(adapter)
+		case "presencebyping":
+			presencebypingadapter.StartSensor(adapterConf, app.fabric, stopManager.Stopper())
+			app.DefineAdapter(adapter)
 		case "harmony":
 			harmonyhubadapter.New(adapter, adapterConf, stopManager.Stopper())
 			app.DefineAdapter(adapter)
@@ -266,6 +275,8 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 }
 
 func handleHttp(conf *hapitypes.ConfigFile, stop *stopper.Stopper) {
+	log := logger.New("handleHttp")
+
 	defer stop.Done()
 	srv := &http.Server{Addr: ":8080"}
 

@@ -1,5 +1,10 @@
 package hapitypes
 
+type PresenceByPingDevice struct {
+	Ip     string `json:"ip"`
+	Person string `json:"person"`
+}
+
 type AdapterConfig struct {
 	Id   string `json:"id"`
 	Type string `json:"type"`
@@ -24,6 +29,8 @@ type AdapterConfig struct {
 	TradfriUrl  string `json:"tradfri_url"`
 	TradfriUser string `json:"tradfri_user"`
 	TradfriPsk  string `json:"tradfri_psk"`
+
+	PresenceByPingDevice []PresenceByPingDevice `json:"presencebypingdevice"`
 }
 
 type DeviceConfig struct {
@@ -57,10 +64,15 @@ type IrToIr struct {
 	IrEvent   string `json:"ir"`
 }
 
+type Person struct {
+	Id string `json:"id"`
+}
+
 type ConfigFile struct {
 	Adapters     []AdapterConfig     `json:"adapter"`
 	Devices      []DeviceConfig      `json:"device"`
 	DeviceGroups []DeviceGroupConfig `json:"devicegroup"`
 	IrPowers     []IrPowerConfig     `json:"ir_powers"`
 	IrToIr       []IrToIr            `json:"ir2ir"`
+	Persons      []Person            `json:"person"`
 }
