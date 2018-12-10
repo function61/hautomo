@@ -198,8 +198,8 @@ function handleColorTemperatureControl(
 			queue: request.endpoint.cookie.queue,
 		},
 		response: generateCommonControlResponse(
-			null,
-			null,
+			'colorTemperatureInKelvin',
+			request.payload.colorTemperatureInKelvin,
 			request.endpoint,
 			request.header.correlationToken,
 			request.header.namespace,
