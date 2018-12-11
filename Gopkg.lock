@@ -100,6 +100,14 @@
   revision = "0b12d6b5"
 
 [[projects]]
+  digest = "1:c65a16ac77d0b1aefc7009cabb6ac5ad05def02025f5be85f450c03f52cc6f86"
+  name = "github.com/lucasb-eyer/go-colorful"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "345fbb3dbcdb252d9985ee899a84963c0fa24c82"
+  version = "v1.0"
+
+[[projects]]
   digest = "1:645cabccbb4fa8aab25a956cbcbdf6a6845ca736b2c64e197ca7cbb9d210b939"
   name = "github.com/spf13/cobra"
   packages = ["."]
@@ -176,6 +184,7 @@
     "github.com/function61/gokit/stopper",
     "github.com/function61/gokit/systemdinstaller",
     "github.com/hashicorp/hcl",
+    "github.com/lucasb-eyer/go-colorful",
     "github.com/spf13/cobra",
     "golang.org/x/net/html/charset",
     "golang.org/x/net/icmp",

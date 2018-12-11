@@ -3,15 +3,17 @@ package ikeatradfri
 import (
 	"errors"
 	"fmt"
+	"github.com/lucasb-eyer/go-colorful"
 )
 
 // TODO: use native Golang COAP + DTLS to get rid of "$ coap-client" dependency which you manually have to compile
 
+// 5712 means transition time
 const (
-	turnOnMsg           = `{ "3311": [{ "5850": 1 }] }`
-	turnOffMsg          = `{ "3311": [{ "5850": 0 }] }`
-	dimWithoutFadingMsg = `{ "3311": [{ "5851": %d }] }`
-	colorTemperature    = `{ "3311": [{ "5709": %d, "5710": %d }] }`
+	turnOnMsg  = `{ "3311": [{ "5850": 1 }] }`
+	turnOffMsg = `{ "3311": [{ "5850": 0 }] }`
+	dim        = `{ "3311": [{ "5851": %d, "5712": 5 }] }`
+	colorMsg   = `{ "3311": [{ "5709": %d, "5710": %d, "5712": 5 }] }`
 )
 
 type ColorTemp int
@@ -30,20 +32,28 @@ func TurnOff(deviceId string, client *CoapClient) error {
 	return client.Put(deviceEndpoint(deviceId), turnOffMsg)
 }
 
+func SetRGB(deviceId string, r uint8, g uint8, b uint8, client *CoapClient) error {
+	x, y := rgbToXY(r, g, b)
+
+	return client.Put(
+		deviceEndpoint(deviceId),
+		fmt.Sprintf(colorMsg, x, y))
+}
+
 func SetColorTemp(deviceId string, temp ColorTemp, client *CoapClient) error {
-	msg := fmt.Sprintf(colorTemperature, colorTempX(temp), colorTempY(temp))
+	msg := fmt.Sprintf(colorMsg, colorTempX(temp), colorTempY(temp))
 
 	return client.Put(deviceEndpoint(deviceId), msg)
 }
 
-func DimWithoutFading(deviceId string, to int, client *CoapClient) error {
+func Dim(deviceId string, to int, client *CoapClient) error {
 	if to < 0 || to > 254 {
 		return errors.New("invalid argument")
 	}
 
 	return client.Put(
 		deviceEndpoint(deviceId),
-		fmt.Sprintf(dimWithoutFadingMsg, to))
+		fmt.Sprintf(dim, to))
 }
 
 func deviceEndpoint(deviceId string) string {
@@ -74,4 +84,24 @@ func colorTempY(temp ColorTemp) int {
 	default:
 		panic("unknown temp")
 	}
+}
+
+// adapted from:
+//   https://github.com/ffleurey/ThingML-Tradfri/blob/e4c8a8bbe48e36d364b9fd1c574e6a1e292bb58e/tradfri-java/src/main/java/org/thingml/tradfri/LightBulb.java#L106
+func rgbToXY(red uint8, green uint8, blue uint8) (int, int) {
+	// convert to XYZ
+	x, y, z := colorful.Color{
+		R: float64(red) / 255,
+		G: float64(green) / 255,
+		B: float64(blue) / 255,
+	}.Xyz()
+
+	// merge XYZ to XY (this seems really retarded)
+	xMerged := x / (x + y + z)
+	yMerged := y / (x + y + z)
+
+	xInt := int(xMerged*65535 + 0.5)
+	yInt := int(yMerged*65535 + 0.5)
+
+	return xInt, yInt
 }

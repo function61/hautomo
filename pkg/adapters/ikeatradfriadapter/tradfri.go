@@ -39,8 +39,12 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 				// 0-100 => 0-254
 				to := int(float64(e.Brightness) * 2.54)
 
-				if err := ikeatradfri.DimWithoutFading(e.DeviceId, to, coapClient); err != nil {
-					log.Error(fmt.Sprintf("DimWithoutFading: %s", err.Error()))
+				if err := ikeatradfri.Dim(e.DeviceId, to, coapClient); err != nil {
+					log.Error(fmt.Sprintf("Dim: %s", err.Error()))
+				}
+			case *hapitypes.ColorMsg:
+				if err := ikeatradfri.SetRGB(e.DeviceId, e.Color.Red, e.Color.Green, e.Color.Blue, coapClient); err != nil {
+					log.Error(err.Error())
 				}
 			case *hapitypes.ColorTemperatureEvent:
 				if err := ikeatradfri.SetColorTemp(
