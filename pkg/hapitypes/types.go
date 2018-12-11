@@ -155,39 +155,22 @@ func NewPowerToggleEvent(deviceIdOrDeviceGroupId string) PowerEvent {
 var ErrDeviceNotFound = errors.New("device not found")
 
 type Device struct {
-	Id          string
-	Name        string
-	Description string
-
-	// adapter details
-	AdapterId        string
-	AdaptersDeviceId string // id by which the adapter identifies this device
+	Conf DeviceConfig
 
 	// probably turned on if true
 	// might be turned on even if false,
 	ProbablyTurnedOn bool
 
-	PowerOnCmd  string
-	PowerOffCmd string
-
 	LastColor RGB
 }
 
-func NewDevice(id string, adapterId string, adaptersDeviceId string, name string, description string, powerOnCmd string, powerOffCmd string) *Device {
+func NewDevice(conf DeviceConfig) *Device {
 	return &Device{
-		Id:          id,
-		Name:        name,
-		Description: description,
-
-		AdapterId:        adapterId,
-		AdaptersDeviceId: adaptersDeviceId,
+		Conf: conf,
 
 		// state
 		ProbablyTurnedOn: false,
 		LastColor:        RGB{255, 255, 255},
-
-		PowerOnCmd:  powerOnCmd,
-		PowerOffCmd: powerOffCmd,
 	}
 }
 

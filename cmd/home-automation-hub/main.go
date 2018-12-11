@@ -80,37 +80,37 @@ func NewApplication(stop *stopper.Stopper) *Application {
 				case *hapitypes.ColorTemperatureEvent:
 					// TODO: device group support
 					device := app.deviceById[e.Device]
-					adapter := app.adapterById[device.AdapterId]
+					adapter := app.adapterById[device.Conf.AdapterId]
 
 					e2 := hapitypes.NewColorTemperatureEvent(
-						device.AdaptersDeviceId,
+						device.Conf.AdaptersDeviceId,
 						e.TemperatureInKelvin)
 					adapter.Send(&e2)
 				case *hapitypes.ColorMsg:
 					// TODO: device group support
 					device := app.deviceById[e.DeviceId]
-					adapter := app.adapterById[device.AdapterId]
+					adapter := app.adapterById[device.Conf.AdapterId]
 
 					device.LastColor = e.Color
 
-					adaptedColorMsg := hapitypes.NewColorMsg(device.AdaptersDeviceId, e.Color)
+					adaptedColorMsg := hapitypes.NewColorMsg(device.Conf.AdaptersDeviceId, e.Color)
 					adapter.Send(&adaptedColorMsg)
 				case *hapitypes.BrightnessEvent:
 					// TODO: device group support
 					device := app.deviceById[e.DeviceIdOrDeviceGroupId]
-					adapter := app.adapterById[device.AdapterId]
+					adapter := app.adapterById[device.Conf.AdapterId]
 
 					e2 := hapitypes.NewBrightnessMsg(
-						device.AdaptersDeviceId,
+						device.Conf.AdaptersDeviceId,
 						e.Brightness,
 						device.LastColor)
 					adapter.Send(&e2)
 				case *hapitypes.PlaybackEvent:
 					// TODO: device group support
 					device := app.deviceById[e.DeviceIdOrDeviceGroupId]
-					adapter := app.adapterById[device.AdapterId]
+					adapter := app.adapterById[device.Conf.AdapterId]
 
-					e2 := hapitypes.NewPlaybackEvent(device.AdaptersDeviceId, e.Action)
+					e2 := hapitypes.NewPlaybackEvent(device.Conf.AdaptersDeviceId, e.Action)
 					adapter.Send(&e2)
 				case *hapitypes.InfraredEvent:
 					if powerEvent, ok := app.infraredToPowerEvent[e.Event]; ok {
@@ -139,7 +139,7 @@ func (a *Application) DefineAdapter(adapter *hapitypes.Adapter) {
 }
 
 func (a *Application) AttachDevice(device *hapitypes.Device) {
-	a.deviceById[device.Id] = device
+	a.deviceById[device.Conf.DeviceId] = device
 }
 
 func (a *Application) AttachDeviceGroup(deviceGroup *hapitypes.DeviceGroup) {
@@ -152,9 +152,10 @@ func (a *Application) InfraredShouldPower(key string, powerEvent hapitypes.Power
 
 func (a *Application) InfraredShouldInfrared(key string, deviceId string, command string) {
 	device := a.deviceById[deviceId]
-	adapter := a.adapterById[device.AdapterId]
+	adapter := a.adapterById[device.Conf.AdapterId]
 
-	a.infraredToInfraredMsg[key] = InfraredToInfraredWrapper{adapter, hapitypes.NewInfraredMsg(device.AdaptersDeviceId, command)}
+	msg := hapitypes.NewInfraredMsg(device.Conf.AdaptersDeviceId, command)
+	a.infraredToInfraredMsg[key] = InfraredToInfraredWrapper{adapter, msg}
 }
 
 func (a *Application) deviceOrDeviceGroupPower(power hapitypes.PowerEvent) error {
@@ -179,28 +180,28 @@ func (a *Application) deviceOrDeviceGroupPower(power hapitypes.PowerEvent) error
 
 func (a *Application) devicePower(device *hapitypes.Device, power hapitypes.PowerEvent) error {
 	if power.Kind == hapitypes.PowerKindOn {
-		log.Debug(fmt.Sprintf("Power on: %s", device.Name))
+		log.Debug(fmt.Sprintf("Power on: %s", device.Conf.Name))
 
-		adapter := a.adapterById[device.AdapterId]
-		e := hapitypes.NewPowerMsg(device.AdaptersDeviceId, device.PowerOnCmd, true)
+		adapter := a.adapterById[device.Conf.AdapterId]
+		e := hapitypes.NewPowerMsg(device.Conf.AdaptersDeviceId, device.Conf.PowerOnCmd, true)
 		adapter.Send(&e)
 
 		device.ProbablyTurnedOn = true
 	} else if power.Kind == hapitypes.PowerKindOff {
-		log.Debug(fmt.Sprintf("Power off: %s", device.Name))
+		log.Debug(fmt.Sprintf("Power off: %s", device.Conf.Name))
 
-		adapter := a.adapterById[device.AdapterId]
-		e := hapitypes.NewPowerMsg(device.AdaptersDeviceId, device.PowerOffCmd, false)
+		adapter := a.adapterById[device.Conf.AdapterId]
+		e := hapitypes.NewPowerMsg(device.Conf.AdaptersDeviceId, device.Conf.PowerOffCmd, false)
 		adapter.Send(&e)
 
 		device.ProbablyTurnedOn = false
 	} else if power.Kind == hapitypes.PowerKindToggle {
-		log.Debug(fmt.Sprintf("Power toggle: %s, current state = %v", device.Name, device.ProbablyTurnedOn))
+		log.Debug(fmt.Sprintf("Power toggle: %s, current state = %v", device.Conf.Name, device.ProbablyTurnedOn))
 
 		if device.ProbablyTurnedOn {
-			return a.devicePower(device, hapitypes.NewPowerEvent(device.Id, hapitypes.PowerKindOff))
+			return a.devicePower(device, hapitypes.NewPowerEvent(device.Conf.DeviceId, hapitypes.PowerKindOff))
 		} else {
-			return a.devicePower(device, hapitypes.NewPowerEvent(device.Id, hapitypes.PowerKindOn))
+			return a.devicePower(device, hapitypes.NewPowerEvent(device.Conf.DeviceId, hapitypes.PowerKindOn))
 		}
 	} else {
 		panic(errors.New("unknown power kind"))
@@ -253,15 +254,8 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 		}
 	}
 
-	for _, device := range conf.Devices {
-		app.AttachDevice(hapitypes.NewDevice(
-			device.DeviceId,
-			device.AdapterId,
-			device.AdaptersDeviceId,
-			device.Name,
-			device.Description,
-			device.PowerOnCmd,
-			device.PowerOffCmd))
+	for _, deviceConf := range conf.Devices {
+		app.AttachDevice(hapitypes.NewDevice(deviceConf))
 	}
 
 	for _, deviceGroup := range conf.DeviceGroups {
