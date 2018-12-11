@@ -49,7 +49,7 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 			case *hapitypes.ColorTemperatureEvent:
 				if err := ikeatradfri.SetColorTemp(
 					e.Device,
-					tempFromKelvin(e.TemperatureInKelvin),
+					e.TemperatureInKelvin,
 					coapClient); err != nil {
 					log.Error(err.Error())
 				}
@@ -58,17 +58,4 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
 			}
 		}
 	}()
-}
-
-func tempFromKelvin(kelvin uint) ikeatradfri.ColorTemp {
-	// https://developer.amazon.com/docs/device-apis/alexa-colortemperaturecontroller.html#setcolortemperature
-	if kelvin < 4000 {
-		return ikeatradfri.ColorTempWarm
-	}
-
-	if kelvin < 7000 {
-		return ikeatradfri.ColorTempNormal
-	}
-
-	return ikeatradfri.ColorTempCold
 }

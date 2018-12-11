@@ -40,7 +40,9 @@ func SetRGB(deviceId string, r uint8, g uint8, b uint8, client *CoapClient) erro
 		fmt.Sprintf(colorMsg, x, y))
 }
 
-func SetColorTemp(deviceId string, temp ColorTemp, client *CoapClient) error {
+func SetColorTemp(deviceId string, kelvin uint, client *CoapClient) error {
+	// TODO: find out if Trådfri actually supports only these warm/normal/cold?
+	temp := tempConstantFromKelvin(kelvin)
 	msg := fmt.Sprintf(colorMsg, colorTempX(temp), colorTempY(temp))
 
 	return client.Put(deviceEndpoint(deviceId), msg)
@@ -104,4 +106,17 @@ func rgbToXY(red uint8, green uint8, blue uint8) (int, int) {
 	yInt := int(yMerged*65535 + 0.5)
 
 	return xInt, yInt
+}
+
+func tempConstantFromKelvin(kelvin uint) ColorTemp {
+	// https://developer.amazon.com/docs/device-apis/alexa-colortemperaturecontroller.html#setcolortemperature
+	if kelvin < 4000 {
+		return ColorTempWarm
+	}
+
+	if kelvin < 7000 {
+		return ColorTempNormal
+	}
+
+	return ColorTempCold
 }
