@@ -5,8 +5,29 @@ import (
 	"github.com/function61/gokit/logger"
 )
 
+/*
+	symmetric events (same struct for inbound/outbound):
+
+	ColorTemperatureEvent
+	ColorMsg
+	PersonPresenceChangeEvent
+	PlaybackEvent
+
+	asymmetric (different structs for inbound/outbound):
+
+	inbound 							outbound
+	--------------------------------------------
+	PowerEvent							PowerMsg
+	InfraredEvent						InfraredMsg
+	BrightnessEvent						BrightnessMsg
+*/
+
 type OutboundEvent interface {
 	OutboundEventType() string
+}
+
+type InboundEvent interface {
+	InboundEventType() string
 }
 
 type RGB struct {
@@ -27,6 +48,10 @@ type PersonPresenceChangeEvent struct {
 	Present  bool
 }
 
+func (e *PersonPresenceChangeEvent) InboundEventType() string {
+	return "PersonPresenceChangeEvent"
+}
+
 func NewColorTemperatureEvent(deviceIdOrDeviceGroupId string, temperatureInKelvin uint) ColorTemperatureEvent {
 	return ColorTemperatureEvent{deviceIdOrDeviceGroupId, temperatureInKelvin}
 }
@@ -34,6 +59,10 @@ func NewColorTemperatureEvent(deviceIdOrDeviceGroupId string, temperatureInKelvi
 type ColorTemperatureEvent struct {
 	Device              string
 	TemperatureInKelvin uint
+}
+
+func (e *ColorTemperatureEvent) InboundEventType() string {
+	return "ColorTemperatureEvent"
 }
 
 func (e *ColorTemperatureEvent) OutboundEventType() string {
@@ -52,9 +81,13 @@ func NewInfraredEvent(remote string, event string) InfraredEvent {
 	}
 }
 
+func (e *InfraredEvent) InboundEventType() string {
+	return "InfraredEvent"
+}
+
 type BrightnessEvent struct {
 	DeviceIdOrDeviceGroupId string
-	Brightness              uint
+	Brightness              uint // 0..100 %
 }
 
 func NewBrightnessEvent(deviceIdOrDeviceGroupId string, brightness uint) BrightnessEvent {
@@ -62,6 +95,10 @@ func NewBrightnessEvent(deviceIdOrDeviceGroupId string, brightness uint) Brightn
 		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
 		Brightness:              brightness,
 	}
+}
+
+func (e *BrightnessEvent) InboundEventType() string {
+	return "BrightnessEvent"
 }
 
 type PlaybackEvent struct {
@@ -74,6 +111,10 @@ func NewPlaybackEvent(deviceIdOrDeviceGroupId string, action string) PlaybackEve
 		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
 		Action:                  action,
 	}
+}
+
+func (e *PlaybackEvent) InboundEventType() string {
+	return "PlaybackEvent"
 }
 
 func (e *PlaybackEvent) OutboundEventType() string {
@@ -91,6 +132,10 @@ const (
 type PowerEvent struct {
 	DeviceIdOrDeviceGroupId string
 	Kind                    PowerKind
+}
+
+func (e *PowerEvent) InboundEventType() string {
+	return "PowerEvent"
 }
 
 func NewPowerEvent(deviceIdOrDeviceGroupId string, kind PowerKind) PowerEvent {
@@ -206,6 +251,10 @@ func NewColorMsg(deviceId string, color RGB) ColorMsg {
 		DeviceId: deviceId,
 		Color:    color,
 	}
+}
+
+func (e *ColorMsg) InboundEventType() string {
+	return "ColorMsg"
 }
 
 func (e *ColorMsg) OutboundEventType() string {

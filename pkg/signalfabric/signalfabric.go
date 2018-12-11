@@ -5,23 +5,16 @@ import (
 )
 
 type Fabric struct {
-	InfraredEvent             chan hapitypes.InfraredEvent
-	PowerEvent                chan hapitypes.PowerEvent
-	ColorEvent                chan hapitypes.ColorMsg
-	BrightnessEvent           chan hapitypes.BrightnessEvent
-	PlaybackEvent             chan hapitypes.PlaybackEvent
-	ColorTemperatureEvent     chan hapitypes.ColorTemperatureEvent
-	PersonPresenceChangeEvent chan hapitypes.PersonPresenceChangeEvent
+	Event chan hapitypes.InboundEvent
 }
 
 func New() *Fabric {
 	return &Fabric{
-		InfraredEvent:             make(chan hapitypes.InfraredEvent, 1),
-		PowerEvent:                make(chan hapitypes.PowerEvent, 1),
-		ColorEvent:                make(chan hapitypes.ColorMsg, 1),
-		BrightnessEvent:           make(chan hapitypes.BrightnessEvent, 1),
-		PlaybackEvent:             make(chan hapitypes.PlaybackEvent, 1),
-		ColorTemperatureEvent:     make(chan hapitypes.ColorTemperatureEvent, 1),
-		PersonPresenceChangeEvent: make(chan hapitypes.PersonPresenceChangeEvent, 1),
+		Event: make(chan hapitypes.InboundEvent, 32),
 	}
+}
+
+func (f *Fabric) Receive(e hapitypes.InboundEvent) {
+	// TODO: log if channel full?
+	f.Event <- e
 }

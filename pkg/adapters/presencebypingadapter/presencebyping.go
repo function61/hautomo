@@ -158,7 +158,7 @@ func tickerLoop(
 						current.Person,
 						current.Present)
 
-					fabric.PersonPresenceChangeEvent <- e
+					fabric.Receive(&e)
 				}
 
 				personIdPresentMap[current.Person] = current.Present

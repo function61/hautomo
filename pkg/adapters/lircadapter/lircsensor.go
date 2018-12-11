@@ -58,11 +58,11 @@ func StartSensor(fabric *signalfabric.Fabric, stop *stopper.Stopper) {
 				continue
 			}
 
-			ir := hapitypes.NewInfraredEvent("mceusb", mceUsbCommand[1])
+			e := hapitypes.NewInfraredEvent("mceusb", mceUsbCommand[1])
 
-			log.Debug(fmt.Sprintf("received %s", ir.Event))
+			log.Debug(fmt.Sprintf("received %s", e.Event))
 
-			fabric.InfraredEvent <- ir
+			fabric.Receive(&e)
 		}
 	}()
 

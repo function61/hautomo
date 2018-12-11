@@ -68,63 +68,67 @@ func NewApplication(stop *stopper.Stopper) *Application {
 			select {
 			case <-stop.Signal:
 				return
-			case ppc := <-fabric.PersonPresenceChangeEvent:
-				log.Info(fmt.Sprintf(
-					"Person %s presence changed to %v",
-					ppc.PersonId,
-					ppc.Present))
-			case power := <-fabric.PowerEvent:
-				app.deviceOrDeviceGroupPower(power)
-			case temp := <-fabric.ColorTemperatureEvent:
-				// TODO: device group support
-				device := app.deviceById[temp.Device]
-				adapter := app.adapterById[device.AdapterId]
+			case genericEvent := <-fabric.Event:
+				switch e := genericEvent.(type) {
+				case *hapitypes.PersonPresenceChangeEvent:
+					log.Info(fmt.Sprintf(
+						"Person %s presence changed to %v",
+						e.PersonId,
+						e.Present))
+				case *hapitypes.PowerEvent:
+					app.deviceOrDeviceGroupPower(*e)
+				case *hapitypes.ColorTemperatureEvent:
+					// TODO: device group support
+					device := app.deviceById[e.Device]
+					adapter := app.adapterById[device.AdapterId]
 
-				e := hapitypes.NewColorTemperatureEvent(
-					device.AdaptersDeviceId,
-					temp.TemperatureInKelvin)
-				adapter.Send(&e)
-			case colorMsg := <-fabric.ColorEvent:
-				// TODO: device group support
-				device := app.deviceById[colorMsg.DeviceId]
-				adapter := app.adapterById[device.AdapterId]
+					e2 := hapitypes.NewColorTemperatureEvent(
+						device.AdaptersDeviceId,
+						e.TemperatureInKelvin)
+					adapter.Send(&e2)
+				case *hapitypes.ColorMsg:
+					// TODO: device group support
+					device := app.deviceById[e.DeviceId]
+					adapter := app.adapterById[device.AdapterId]
 
-				device.LastColor = colorMsg.Color
+					device.LastColor = e.Color
 
-				adaptedColorMsg := hapitypes.NewColorMsg(device.AdaptersDeviceId, colorMsg.Color)
-				adapter.Send(&adaptedColorMsg)
-			case brightnessEvent := <-fabric.BrightnessEvent:
-				// TODO: device group support
-				device := app.deviceById[brightnessEvent.DeviceIdOrDeviceGroupId]
-				adapter := app.adapterById[device.AdapterId]
+					adaptedColorMsg := hapitypes.NewColorMsg(device.AdaptersDeviceId, e.Color)
+					adapter.Send(&adaptedColorMsg)
+				case *hapitypes.BrightnessEvent:
+					// TODO: device group support
+					device := app.deviceById[e.DeviceIdOrDeviceGroupId]
+					adapter := app.adapterById[device.AdapterId]
 
-				e := hapitypes.NewBrightnessMsg(
-					device.AdaptersDeviceId,
-					brightnessEvent.Brightness,
-					device.LastColor)
-				adapter.Send(&e)
-			case playbackEvent := <-fabric.PlaybackEvent:
-				// TODO: device group support
-				device := app.deviceById[playbackEvent.DeviceIdOrDeviceGroupId]
-				adapter := app.adapterById[device.AdapterId]
+					e2 := hapitypes.NewBrightnessMsg(
+						device.AdaptersDeviceId,
+						e.Brightness,
+						device.LastColor)
+					adapter.Send(&e2)
+				case *hapitypes.PlaybackEvent:
+					// TODO: device group support
+					device := app.deviceById[e.DeviceIdOrDeviceGroupId]
+					adapter := app.adapterById[device.AdapterId]
 
-				e := hapitypes.NewPlaybackEvent(device.AdaptersDeviceId, playbackEvent.Action)
-				adapter.Send(&e)
-			case ir := <-fabric.InfraredEvent:
-				if powerEvent, ok := app.infraredToPowerEvent[ir.Event]; ok {
-					log.Debug(fmt.Sprintf("IR: %s -> power for %s", ir.Event, powerEvent.DeviceIdOrDeviceGroupId))
+					e2 := hapitypes.NewPlaybackEvent(device.AdaptersDeviceId, e.Action)
+					adapter.Send(&e2)
+				case *hapitypes.InfraredEvent:
+					if powerEvent, ok := app.infraredToPowerEvent[e.Event]; ok {
+						log.Debug(fmt.Sprintf("IR: %s -> power for %s", e.Event, powerEvent.DeviceIdOrDeviceGroupId))
 
-					fabric.PowerEvent <- powerEvent
-				} else if i2i, ok := app.infraredToInfraredMsg[ir.Event]; ok {
-					log.Debug(fmt.Sprintf("IR passthrough: %s -> %s", ir.Event, i2i.infraredMsg.Command))
+						fabric.Receive(&powerEvent)
+					} else if i2i, ok := app.infraredToInfraredMsg[e.Event]; ok {
+						log.Debug(fmt.Sprintf("IR passthrough: %s -> %s", e.Event, i2i.infraredMsg.Command))
 
-					i2i.adapter.Send(&i2i.infraredMsg)
-				} else {
-					log.Debug(fmt.Sprintf("IR ignored: %s", ir.Event))
+						i2i.adapter.Send(&i2i.infraredMsg)
+					} else {
+						log.Debug(fmt.Sprintf("IR ignored: %s", e.Event))
+					}
+				default:
+					log.Error("Unsupported inbound event: " + genericEvent.InboundEventType())
 				}
 			}
 		}
-
 	}()
 
 	return app

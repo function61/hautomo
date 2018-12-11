@@ -105,44 +105,50 @@ func StartSensor(fabric *signalfabric.Fabric, adapterConf hapitypes.AdapterConfi
 					panic(err)
 				}
 
-				fabric.PowerEvent <- hapitypes.NewPowerEvent(req.DeviceIdOrDeviceGroupId, hapitypes.PowerKindOn)
+				e := hapitypes.NewPowerEvent(req.DeviceIdOrDeviceGroupId, hapitypes.PowerKindOn)
+				fabric.Receive(&e)
 			case "turn_off":
 				var req TurnOffRequest
 				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 					panic(err)
 				}
 
-				fabric.PowerEvent <- hapitypes.NewPowerEvent(req.DeviceIdOrDeviceGroupId, hapitypes.PowerKindOff)
+				e := hapitypes.NewPowerEvent(req.DeviceIdOrDeviceGroupId, hapitypes.PowerKindOff)
+				fabric.Receive(&e)
 			case "color":
 				var req ColorRequest
 				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 					panic(err)
 				}
 
-				fabric.ColorEvent <- hapitypes.NewColorMsg(req.DeviceIdOrDeviceGroupId, hapitypes.RGB{Red: req.Red, Green: req.Green, Blue: req.Blue})
+				e := hapitypes.NewColorMsg(req.DeviceIdOrDeviceGroupId, hapitypes.RGB{Red: req.Red, Green: req.Green, Blue: req.Blue})
+				fabric.Receive(&e)
 			case "brightness":
 				var req BrightnessRequest
 				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 					panic(err)
 				}
 
-				fabric.BrightnessEvent <- hapitypes.NewBrightnessEvent(req.DeviceIdOrDeviceGroupId, req.Brightness)
+				e := hapitypes.NewBrightnessEvent(req.DeviceIdOrDeviceGroupId, req.Brightness)
+				fabric.Receive(&e)
 			case "playback":
 				var req PlaybackRequest
 				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 					panic(err)
 				}
 
-				fabric.PlaybackEvent <- hapitypes.NewPlaybackEvent(req.DeviceIdOrDeviceGroupId, req.Action)
+				e := hapitypes.NewPlaybackEvent(req.DeviceIdOrDeviceGroupId, req.Action)
+				fabric.Receive(&e)
 			case "colorTemperature":
 				var req ColorTemperatureRequest
 				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 					panic(err)
 				}
 
-				fabric.ColorTemperatureEvent <- hapitypes.NewColorTemperatureEvent(
+				e := hapitypes.NewColorTemperatureEvent(
 					req.DeviceIdOrDeviceGroupId,
 					req.ColorTemperatureInKelvin)
+				fabric.Receive(&e)
 			default:
 				log.Error("unknown msgType: " + msgType)
 			}

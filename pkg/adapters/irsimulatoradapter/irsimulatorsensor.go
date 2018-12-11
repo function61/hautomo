@@ -20,7 +20,8 @@ func StartSensor(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, fab
 		for {
 			select {
 			case <-time.After(5 * time.Second):
-				fabric.InfraredEvent <- hapitypes.NewInfraredEvent("simulated_remote", config.IrSimulatorKey)
+				e := hapitypes.NewInfraredEvent("simulated_remote", config.IrSimulatorKey)
+				fabric.Receive(&e)
 			case <-stop.Signal:
 				return
 			}
