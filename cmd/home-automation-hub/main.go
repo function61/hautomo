@@ -278,8 +278,6 @@ func runServer() error {
 
 	go handleHttp(conf, stopManager.Stopper())
 
-	log.Info("alexadevicesync completed")
-
 	log.Info(fmt.Sprintf("stopping due to signal %s", ossignal.WaitForInterruptOrTerminate()))
 
 	return nil
