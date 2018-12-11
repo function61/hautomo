@@ -124,9 +124,9 @@ func (e *PlaybackEvent) OutboundEventType() string {
 type PowerKind int
 
 const (
-	PowerKindOn     PowerKind = iota
-	PowerKindOff              = iota
-	PowerKindToggle           = iota
+	PowerKindOn PowerKind = iota
+	PowerKindOff
+	PowerKindToggle
 )
 
 type PowerEvent struct {
