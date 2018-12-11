@@ -10,6 +10,7 @@ import (
 	"github.com/function61/gokit/systemdinstaller"
 	"github.com/function61/home-automation-hub/pkg/adapters/alexaadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/alexaadapter/alexadevicesync"
+	"github.com/function61/home-automation-hub/pkg/adapters/devicegroupadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/eventghostnetworkclientadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/happylightsadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/harmonyhubadapter"
@@ -35,7 +36,6 @@ var version = "dev"
 type Application struct {
 	adapterById           map[string]*hapitypes.Adapter
 	deviceById            map[string]*hapitypes.Device
-	deviceGroupById       map[string]*hapitypes.DeviceGroup
 	infraredToPowerEvent  map[string]hapitypes.PowerEvent
 	infraredToInfraredMsg map[string]InfraredToInfraredWrapper
 	fabric                *signalfabric.Fabric
@@ -50,7 +50,6 @@ func NewApplication(stop *stopper.Stopper) *Application {
 	app := &Application{
 		adapterById:           make(map[string]*hapitypes.Adapter),
 		deviceById:            make(map[string]*hapitypes.Device),
-		deviceGroupById:       make(map[string]*hapitypes.DeviceGroup),
 		infraredToPowerEvent:  make(map[string]hapitypes.PowerEvent),
 		infraredToInfraredMsg: make(map[string]InfraredToInfraredWrapper),
 		fabric:                signalfabric.New(),
@@ -76,9 +75,12 @@ func NewApplication(stop *stopper.Stopper) *Application {
 						e.PersonId,
 						e.Present))
 				case *hapitypes.PowerEvent:
-					app.deviceOrDeviceGroupPower(*e)
+					device := app.deviceById[e.DeviceIdOrDeviceGroupId]
+
+					if err := app.devicePower(device, *e); err != nil {
+						log.Error(err.Error())
+					}
 				case *hapitypes.ColorTemperatureEvent:
-					// TODO: device group support
 					device := app.deviceById[e.Device]
 					adapter := app.adapterById[device.Conf.AdapterId]
 
@@ -87,7 +89,6 @@ func NewApplication(stop *stopper.Stopper) *Application {
 						e.TemperatureInKelvin)
 					adapter.Send(&e2)
 				case *hapitypes.ColorMsg:
-					// TODO: device group support
 					device := app.deviceById[e.DeviceId]
 					adapter := app.adapterById[device.Conf.AdapterId]
 
@@ -96,7 +97,6 @@ func NewApplication(stop *stopper.Stopper) *Application {
 					adaptedColorMsg := hapitypes.NewColorMsg(device.Conf.AdaptersDeviceId, e.Color)
 					adapter.Send(&adaptedColorMsg)
 				case *hapitypes.BrightnessEvent:
-					// TODO: device group support
 					device := app.deviceById[e.DeviceIdOrDeviceGroupId]
 					adapter := app.adapterById[device.Conf.AdapterId]
 
@@ -106,7 +106,6 @@ func NewApplication(stop *stopper.Stopper) *Application {
 						device.LastColor)
 					adapter.Send(&e2)
 				case *hapitypes.PlaybackEvent:
-					// TODO: device group support
 					device := app.deviceById[e.DeviceIdOrDeviceGroupId]
 					adapter := app.adapterById[device.Conf.AdapterId]
 
@@ -142,10 +141,6 @@ func (a *Application) AttachDevice(device *hapitypes.Device) {
 	a.deviceById[device.Conf.DeviceId] = device
 }
 
-func (a *Application) AttachDeviceGroup(deviceGroup *hapitypes.DeviceGroup) {
-	a.deviceGroupById[deviceGroup.Id] = deviceGroup
-}
-
 func (a *Application) InfraredShouldPower(key string, powerEvent hapitypes.PowerEvent) {
 	a.infraredToPowerEvent[key] = powerEvent
 }
@@ -156,26 +151,6 @@ func (a *Application) InfraredShouldInfrared(key string, deviceId string, comman
 
 	msg := hapitypes.NewInfraredMsg(device.Conf.AdaptersDeviceId, command)
 	a.infraredToInfraredMsg[key] = InfraredToInfraredWrapper{adapter, msg}
-}
-
-func (a *Application) deviceOrDeviceGroupPower(power hapitypes.PowerEvent) error {
-	device, deviceFound := a.deviceById[power.DeviceIdOrDeviceGroupId]
-	if deviceFound {
-		return a.devicePower(device, power)
-	}
-
-	deviceGroup, deviceGroupFound := a.deviceGroupById[power.DeviceIdOrDeviceGroupId]
-	if deviceGroupFound {
-		for _, deviceId := range deviceGroup.DeviceIds {
-			device := a.deviceById[deviceId]
-
-			_ = a.devicePower(device, power)
-		}
-
-		return nil
-	}
-
-	return hapitypes.ErrDeviceNotFound
 }
 
 func (a *Application) devicePower(device *hapitypes.Device, power hapitypes.PowerEvent) error {
@@ -204,7 +179,7 @@ func (a *Application) devicePower(device *hapitypes.Device, power hapitypes.Powe
 			return a.devicePower(device, hapitypes.NewPowerEvent(device.Conf.DeviceId, hapitypes.PowerKindOn))
 		}
 	} else {
-		panic(errors.New("unknown power kind"))
+		return errors.New("unknown power kind")
 	}
 
 	return nil
@@ -217,6 +192,9 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 		adapter := hapitypes.NewAdapter(adapterConf.Id)
 
 		switch adapterConf.Type {
+		case "devicegroup":
+			devicegroupadapter.New(adapter, app.fabric, adapterConf)
+			app.DefineAdapter(adapter)
 		case "particle":
 			particleadapter.New(adapter, adapterConf)
 			app.DefineAdapter(adapter)
@@ -258,18 +236,14 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 		app.AttachDevice(hapitypes.NewDevice(deviceConf))
 	}
 
-	for _, deviceGroup := range conf.DeviceGroups {
-		app.AttachDeviceGroup(hapitypes.NewDeviceGroup(deviceGroup.Id, deviceGroup.Name, deviceGroup.DeviceIds))
-	}
-
-	supportedPowerKinds := map[string]hapitypes.PowerKind{
+	supportedIrPowerKinds := map[string]hapitypes.PowerKind{
 		"toggle": hapitypes.PowerKindToggle,
 		"on":     hapitypes.PowerKindOn,
 		"off":    hapitypes.PowerKindOff,
 	}
 
 	for _, powerConfig := range conf.IrPowers {
-		kind, ok := supportedPowerKinds[powerConfig.PowerKind]
+		kind, ok := supportedIrPowerKinds[powerConfig.PowerKind]
 		if !ok {
 			panic(fmt.Errorf("Unsupported power kind: %s", powerConfig.PowerKind))
 		}

@@ -78,16 +78,6 @@ func Sync(conf *hapitypes.ConfigFile) error {
 		})
 	}
 
-	for _, deviceGroup := range conf.DeviceGroups {
-		devices = append(devices, AlexaConnectorDevice{
-			Id:              deviceGroup.Id,
-			FriendlyName:    deviceGroup.Name,
-			Description:     "Device group",
-			DisplayCategory: "LIGHT",                     // TODO
-			CapabilityCodes: []string{"PowerController"}, // TODO
-		})
-	}
-
 	return uploadAlexaConnectorSpec(
 		sqsAdapter.SqsAlexaUsertokenHash,
 		AlexaConnectorSpec{

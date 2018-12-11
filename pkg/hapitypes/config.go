@@ -5,6 +5,9 @@ type PresenceByPingDevice struct {
 	Person string `json:"person"`
 }
 
+// always prefix your keys with <type> of your adapter.
+// <type> should be same as pkg/adapters/<name>adapter (without the "adapter" suffix).
+
 type AdapterConfig struct {
 	Id   string `json:"id"`
 	Type string `json:"type"`
@@ -31,6 +34,8 @@ type AdapterConfig struct {
 	TradfriPsk  string `json:"tradfri_psk"`
 
 	PresenceByPingDevice []PresenceByPingDevice `json:"presencebypingdevice"`
+
+	DevicegroupDevices []string `json:"devicegroup_devs"`
 }
 
 type DeviceConfig struct {
@@ -44,12 +49,6 @@ type DeviceConfig struct {
 	PowerOffCmd       string   `json:"power_off_cmd,omitempty"`
 	AlexaCategory     string   `json:"alexa_category,omitempty"`
 	AlexaCapabilities []string `json:"alexa_capabilities,omitempty"`
-}
-
-type DeviceGroupConfig struct {
-	Id        string   `json:"id"`
-	Name      string   `json:"name"`
-	DeviceIds []string `json:"device_ids"`
 }
 
 type IrPowerConfig struct {
@@ -69,10 +68,9 @@ type Person struct {
 }
 
 type ConfigFile struct {
-	Adapters     []AdapterConfig     `json:"adapter"`
-	Devices      []DeviceConfig      `json:"device"`
-	DeviceGroups []DeviceGroupConfig `json:"devicegroup"`
-	IrPowers     []IrPowerConfig     `json:"ir_powers"`
-	IrToIr       []IrToIr            `json:"ir2ir"`
-	Persons      []Person            `json:"person"`
+	Adapters []AdapterConfig `json:"adapter"`
+	Devices  []DeviceConfig  `json:"device"`
+	IrPowers []IrPowerConfig `json:"ir_powers"`
+	IrToIr   []IrToIr        `json:"ir2ir"`
+	Persons  []Person        `json:"person"`
 }
