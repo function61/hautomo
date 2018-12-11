@@ -11,6 +11,7 @@ import (
 	"github.com/function61/home-automation-hub/pkg/adapters/alexaadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/alexaadapter/alexadevicesync"
 	"github.com/function61/home-automation-hub/pkg/adapters/devicegroupadapter"
+	"github.com/function61/home-automation-hub/pkg/adapters/dummyadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/eventghostnetworkclientadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/happylightsadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/harmonyhubadapter"
@@ -227,6 +228,9 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 				adapterConf,
 				stopManager.Stopper())
 			// FIXME: app.DefineAdapter() intentionally not called
+		case "dummy":
+			dummyadapter.New(adapter, adapterConf)
+			app.DefineAdapter(adapter)
 		default:
 			return errors.New("unkown adapter: " + adapterConf.Type)
 		}
