@@ -31,7 +31,7 @@ func TurnOff(deviceId string, client *CoapClient) error {
 }
 
 func SetColorTemp(deviceId string, temp ColorTemp, client *CoapClient) error {
-	msg := fmt.Sprintf(colorTemperature, colorTempA(temp), colorTempB(temp))
+	msg := fmt.Sprintf(colorTemperature, colorTempX(temp), colorTempY(temp))
 
 	return client.Put(deviceEndpoint(deviceId), msg)
 }
@@ -50,7 +50,7 @@ func deviceEndpoint(deviceId string) string {
 	return "/15001/" + deviceId
 }
 
-func colorTempA(temp ColorTemp) int {
+func colorTempX(temp ColorTemp) int {
 	switch temp {
 	case ColorTempCold:
 		return 24930
@@ -63,7 +63,7 @@ func colorTempA(temp ColorTemp) int {
 	}
 }
 
-func colorTempB(temp ColorTemp) int {
+func colorTempY(temp ColorTemp) int {
 	switch temp {
 	case ColorTempCold:
 		return 24684
