@@ -10,12 +10,12 @@ import (
 
 var log = logger.New("HarmonyHubAdapter")
 
-func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopper.Stopper) {
+func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	// we cannot make hierarchical stoppers, but we can have "stop manager" inside a
 	// stopper - it achieves the same thing
 	stopManager := stopper.NewManager()
 
-	harmonyHubConnection := harmonyhub.NewHarmonyHubConnection(config.HarmonyAddr, stopManager.Stopper())
+	harmonyHubConnection := harmonyhub.NewHarmonyHubConnection(adapter.Conf.HarmonyAddr, stopManager.Stopper())
 
 	go func() {
 		defer stop.Done()
@@ -29,7 +29,7 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopp
 				log.Info("stopping")
 				stopManager.StopAllWorkersAndWait()
 				return
-			case genericEvent := <-adapter.Event:
+			case genericEvent := <-adapter.Outbound:
 				switch e := genericEvent.(type) {
 				case *hapitypes.PowerMsg:
 					if err := harmonyHubConnection.HoldAndRelease(e.DeviceId, e.PowerCommand); err != nil {
@@ -45,4 +45,6 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopp
 			}
 		}
 	}()
+
+	return nil
 }

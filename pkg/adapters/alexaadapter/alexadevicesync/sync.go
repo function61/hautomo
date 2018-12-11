@@ -42,17 +42,8 @@ var supportedCapabilities = map[string]bool{
 	"ColorTemperatureController": true,
 }
 
-func Sync(conf *hapitypes.ConfigFile) error {
-	var sqsAdapter *hapitypes.AdapterConfig = nil
-
-	for _, adapter := range conf.Adapters {
-		if adapter.SqsQueueUrl != "" {
-			copied := adapter // doesn't work: sqsAdapter = &*adapter
-			sqsAdapter = &copied
-		}
-	}
-
-	if sqsAdapter == nil || sqsAdapter.SqsAlexaUsertokenHash == "" {
+func Sync(sqsAdapter hapitypes.AdapterConfig, conf *hapitypes.ConfigFile) error {
+	if sqsAdapter.SqsQueueUrl == "" || sqsAdapter.SqsAlexaUsertokenHash == "" {
 		return errors.New("invalid configuration for SyncToAlexaConnector")
 	}
 

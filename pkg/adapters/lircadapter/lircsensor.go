@@ -6,7 +6,6 @@ import (
 	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
-	"github.com/function61/home-automation-hub/pkg/signalfabric"
 	"io"
 	"os/exec"
 	"regexp"
@@ -19,27 +18,21 @@ var log = logger.New("lircadapter")
 var mceUsbCommandRe = regexp.MustCompile(" 00 ([a-zA-Z_0-9]+) devinput$")
 
 // reads LIRC's "$ irw" output
-func StartSensor(fabric *signalfabric.Fabric, stop *stopper.Stopper) {
-	defer stop.Done()
-
-	log.Info("started")
-	defer log.Info("stopped")
-
+func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	irw := exec.Command("irw")
 
-	stdoutPipe, pipeErr := irw.StdoutPipe()
-	if pipeErr != nil {
-		panic(pipeErr)
+	stdoutPipe, err := irw.StdoutPipe()
+	if err != nil {
+		return err
 	}
 
-	startErr := irw.Start()
-	if startErr != nil {
-		panic(startErr)
+	if err := irw.Start(); err != nil {
+		return err
 	}
-
-	bufferedReader := bufio.NewReader(stdoutPipe)
 
 	go func() {
+		bufferedReader := bufio.NewReader(stdoutPipe)
+
 		for {
 			// TODO: implement isPrefix
 			line, _, err := bufferedReader.ReadLine()
@@ -62,12 +55,17 @@ func StartSensor(fabric *signalfabric.Fabric, stop *stopper.Stopper) {
 
 			log.Debug(fmt.Sprintf("received %s", e.Event))
 
-			fabric.Receive(&e)
+			adapter.Inbound.Receive(&e)
 		}
 	}()
 
 	// TODO: do this via context cancel?
 	go func() {
+		defer stop.Done()
+
+		log.Info("started")
+		defer log.Info("stopped")
+
 		<-stop.Signal
 
 		log.Info("stopping")
@@ -75,8 +73,12 @@ func StartSensor(fabric *signalfabric.Fabric, stop *stopper.Stopper) {
 		irw.Process.Kill()
 	}()
 
-	// wait to complete
-	err := irw.Wait()
+	go func() {
+		// wait to complete
+		err := irw.Wait()
 
-	log.Error(fmt.Sprintf("$ irw exited, error: %s", err.Error()))
+		log.Error(fmt.Sprintf("$ irw exited, error: %s", err.Error()))
+	}()
+
+	return nil
 }

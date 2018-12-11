@@ -9,7 +9,6 @@ import (
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/gokit/systemdinstaller"
 	"github.com/function61/home-automation-hub/pkg/adapters/alexaadapter"
-	"github.com/function61/home-automation-hub/pkg/adapters/alexaadapter/alexadevicesync"
 	"github.com/function61/home-automation-hub/pkg/adapters/devicegroupadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/dummyadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/eventghostnetworkclientadapter"
@@ -23,7 +22,6 @@ import (
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"github.com/function61/home-automation-hub/pkg/happylights/happylightsclientcli"
 	"github.com/function61/home-automation-hub/pkg/happylights/happylightsserver"
-	"github.com/function61/home-automation-hub/pkg/signalfabric"
 	"github.com/spf13/cobra"
 	"net/http"
 	"os"
@@ -39,7 +37,7 @@ type Application struct {
 	deviceById            map[string]*hapitypes.Device
 	infraredToPowerEvent  map[string]hapitypes.PowerEvent
 	infraredToInfraredMsg map[string]InfraredToInfraredWrapper
-	fabric                *signalfabric.Fabric
+	inbound               *hapitypes.InboundFabric
 }
 
 type InfraredToInfraredWrapper struct {
@@ -53,7 +51,7 @@ func NewApplication(stop *stopper.Stopper) *Application {
 		deviceById:            make(map[string]*hapitypes.Device),
 		infraredToPowerEvent:  make(map[string]hapitypes.PowerEvent),
 		infraredToInfraredMsg: make(map[string]InfraredToInfraredWrapper),
-		fabric:                signalfabric.New(),
+		inbound:               hapitypes.NewInboundFabric(),
 	}
 
 	go func() {
@@ -62,13 +60,11 @@ func NewApplication(stop *stopper.Stopper) *Application {
 		log.Info(fmt.Sprintf("home-automation-hub %s started", version))
 		defer log.Info("stopped")
 
-		fabric := app.fabric
-
 		for {
 			select {
 			case <-stop.Signal:
 				return
-			case genericEvent := <-fabric.Event:
+			case genericEvent := <-app.inbound.Ch:
 				switch e := genericEvent.(type) {
 				case *hapitypes.PersonPresenceChangeEvent:
 					log.Info(fmt.Sprintf(
@@ -116,7 +112,7 @@ func NewApplication(stop *stopper.Stopper) *Application {
 					if powerEvent, ok := app.infraredToPowerEvent[e.Event]; ok {
 						log.Debug(fmt.Sprintf("IR: %s -> power for %s", e.Event, powerEvent.DeviceIdOrDeviceGroupId))
 
-						fabric.Receive(&powerEvent)
+						app.inbound.Receive(&powerEvent)
 					} else if i2i, ok := app.infraredToInfraredMsg[e.Event]; ok {
 						log.Debug(fmt.Sprintf("IR passthrough: %s -> %s", e.Event, i2i.infraredMsg.Command))
 
@@ -132,14 +128,6 @@ func NewApplication(stop *stopper.Stopper) *Application {
 	}()
 
 	return app
-}
-
-func (a *Application) DefineAdapter(adapter *hapitypes.Adapter) {
-	a.adapterById[adapter.Id] = adapter
-}
-
-func (a *Application) AttachDevice(device *hapitypes.Device) {
-	a.deviceById[device.Conf.DeviceId] = device
 }
 
 func (a *Application) InfraredShouldPower(key string, powerEvent hapitypes.PowerEvent) {
@@ -186,58 +174,41 @@ func (a *Application) devicePower(device *hapitypes.Device, power hapitypes.Powe
 	return nil
 }
 
+type AdapterInitFn func(adapter *hapitypes.Adapter, stop *stopper.Stopper) error
+
 func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, stopManager *stopper.Manager) error {
-	// TODO: map[string]InitFn
+	adapters := map[string]AdapterInitFn{
+		"devicegroup":             devicegroupadapter.Start,
+		"dummy":                   dummyadapter.Start,
+		"eventghostnetworkclient": eventghostnetworkclientadapter.Start,
+		"happylights":             happylightsadapter.Start,
+		"harmony":                 harmonyhubadapter.Start,
+		"ikea_tradfri":            ikeatradfriadapter.Start,
+		"irsimulator":             irsimulatoradapter.Start,
+		"lirc":                    lircadapter.Start,
+		"particle":                particleadapter.Start,
+		"presencebyping":          presencebypingadapter.Start,
+		"sqs":                     alexaadapter.Start,
+	}
 
 	for _, adapterConf := range conf.Adapters {
-		adapter := hapitypes.NewAdapter(adapterConf.Id)
-
-		switch adapterConf.Type {
-		case "devicegroup":
-			devicegroupadapter.New(adapter, app.fabric, adapterConf)
-			app.DefineAdapter(adapter)
-		case "particle":
-			particleadapter.New(adapter, adapterConf)
-			app.DefineAdapter(adapter)
-		case "presencebyping":
-			presencebypingadapter.StartSensor(adapterConf, app.fabric, stopManager.Stopper())
-			app.DefineAdapter(adapter)
-		case "harmony":
-			harmonyhubadapter.New(adapter, adapterConf, stopManager.Stopper())
-			app.DefineAdapter(adapter)
-		case "ikea_tradfri":
-			ikeatradfriadapter.New(adapter, adapterConf)
-			app.DefineAdapter(adapter)
-		case "happylights":
-			happylightsadapter.New(adapter, adapterConf)
-			app.DefineAdapter(adapter)
-		case "eventghostnetworkclient":
-			eventghostnetworkclientadapter.New(adapter, adapterConf, stopManager.Stopper())
-			app.DefineAdapter(adapter)
-		case "irsimulator":
-			irsimulatoradapter.StartSensor(adapter, adapterConf, app.fabric, stopManager.Stopper())
-			app.DefineAdapter(adapter)
-		case "lirc":
-			go lircadapter.StartSensor(
-				app.fabric,
-				stopManager.Stopper())
-			// FIXME: app.DefineAdapter() intentionally not called
-		case "sqs":
-			go alexaadapter.StartSensor(
-				app.fabric,
-				adapterConf,
-				stopManager.Stopper())
-			// FIXME: app.DefineAdapter() intentionally not called
-		case "dummy":
-			dummyadapter.New(adapter, adapterConf)
-			app.DefineAdapter(adapter)
-		default:
+		initFn, ok := adapters[adapterConf.Type]
+		if !ok {
 			return errors.New("unkown adapter: " + adapterConf.Type)
 		}
+
+		adapter := hapitypes.NewAdapter(adapterConf, conf, app.inbound)
+
+		if err := initFn(adapter, stopManager.Stopper()); err != nil {
+			return err
+		}
+
+		app.adapterById[adapter.Conf.Id] = adapter
 	}
 
 	for _, deviceConf := range conf.Devices {
-		app.AttachDevice(hapitypes.NewDevice(deviceConf))
+		device := hapitypes.NewDevice(deviceConf)
+		app.deviceById[deviceConf.DeviceId] = device
 	}
 
 	supportedIrPowerKinds := map[string]hapitypes.PowerKind{
@@ -295,7 +266,10 @@ func runServer() error {
 	}
 
 	stopManager := stopper.NewManager()
+	defer log.Info("all components stopped")
+	defer stopManager.StopAllWorkersAndWait()
 
+	// FIXME: main loop probably shouldn't start here, since there's a race condition
 	app := NewApplication(stopManager.Stopper())
 
 	if err := configureAppAndStartAdapters(app, conf, stopManager); err != nil {
@@ -304,17 +278,9 @@ func runServer() error {
 
 	go handleHttp(conf, stopManager.Stopper())
 
-	if err := alexadevicesync.Sync(conf); err != nil {
-		log.Error(fmt.Sprintf("alexadevicesync: %s", err.Error()))
-	}
-
 	log.Info("alexadevicesync completed")
 
 	log.Info(fmt.Sprintf("stopping due to signal %s", ossignal.WaitForInterruptOrTerminate()))
-
-	stopManager.StopAllWorkersAndWait()
-
-	log.Info("all components stopped")
 
 	return nil
 }

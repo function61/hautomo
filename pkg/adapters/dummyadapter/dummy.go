@@ -4,17 +4,27 @@ package dummyadapter
 
 import (
 	"github.com/function61/gokit/logger"
+	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 )
 
 var log = logger.New("dummyadapter")
 
-func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig) {
+func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	go func() {
+		defer stop.Done()
 		log.Info("started")
+		defer log.Info("stopped")
 
 		for {
-			adapter.LogUnsupportedEvent(<-adapter.Event, log)
+			select {
+			case <-stop.Signal:
+				return
+			case e := <-adapter.Outbound:
+				adapter.LogUnsupportedEvent(e, log)
+			}
 		}
 	}()
+
+	return nil
 }

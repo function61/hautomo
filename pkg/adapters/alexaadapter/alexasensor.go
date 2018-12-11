@@ -11,8 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
+	"github.com/function61/home-automation-hub/pkg/adapters/alexaadapter/alexadevicesync"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
-	"github.com/function61/home-automation-hub/pkg/signalfabric"
 	"regexp"
 	"time"
 )
@@ -49,122 +49,137 @@ type ColorTemperatureRequest struct {
 	ColorTemperatureInKelvin uint   `json:"colorTemperatureInKelvin"`
 }
 
-func StartSensor(fabric *signalfabric.Fabric, adapterConf hapitypes.AdapterConfig, stop *stopper.Stopper) {
+func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	defer stop.Done()
 
-	sess := session.Must(session.NewSession())
+	if err := alexadevicesync.Sync(adapter.Conf, adapter.GetConfigFileDeprecated()); err != nil {
+		return fmt.Errorf("alexadevicesync: %s", err.Error())
+	}
 
+	sess := session.Must(session.NewSession())
 	sqsClient := sqs.New(sess, &aws.Config{
 		Region: aws.String(endpoints.UsEast1RegionID),
 		Credentials: credentials.NewStaticCredentials(
-			adapterConf.SqsKeyId,
-			adapterConf.SqsKeySecret,
+			adapter.Conf.SqsKeyId,
+			adapter.Conf.SqsKeySecret,
 			""),
 	})
 
-	log.Info("started")
-	defer log.Info("stopped")
+	go func() {
+		defer stop.Done()
 
-	for {
-		select {
-		case <-stop.Signal:
-			return
-		default:
+		log.Info("started")
+		defer log.Info("stopped")
+
+		for {
+			select {
+			case <-stop.Signal:
+				return
+			default:
+			}
+
+			runOnce(sqsClient, adapter)
 		}
+	}()
 
-		result, receiveErr := sqsClient.ReceiveMessage(&sqs.ReceiveMessageInput{
-			MaxNumberOfMessages: aws.Int64(10),
-			QueueUrl:            &adapterConf.SqsQueueUrl,
-			WaitTimeSeconds:     aws.Int64(10),
+	return nil
+}
+
+func runOnce(sqsClient *sqs.SQS, adapter *hapitypes.Adapter) {
+	inbound := adapter.Inbound // shorthand
+
+	result, receiveErr := sqsClient.ReceiveMessage(&sqs.ReceiveMessageInput{
+		MaxNumberOfMessages: aws.Int64(10),
+		QueueUrl:            &adapter.Conf.SqsQueueUrl,
+		WaitTimeSeconds:     aws.Int64(10),
+	})
+
+	if receiveErr != nil {
+		log.Error(fmt.Sprintf("ReceiveMessage(): %s", receiveErr.Error()))
+		time.Sleep(5 * time.Second)
+		return
+	}
+
+	ackList := []*sqs.DeleteMessageBatchRequestEntry{}
+
+	for _, msg := range result.Messages {
+		ackList = append(ackList, &sqs.DeleteMessageBatchRequestEntry{
+			Id:            msg.MessageId,
+			ReceiptHandle: msg.ReceiptHandle,
 		})
 
-		if receiveErr != nil {
-			log.Error(fmt.Sprintf("ReceiveMessage(): %s", receiveErr.Error()))
-			time.Sleep(5 * time.Second)
+		msgParseErr, msgType, msgJsonBody := parseMessage(*msg.Body)
+		if msgParseErr != nil {
+			log.Error(fmt.Sprintf("parseMessage: %s", msgParseErr.Error()))
 			continue
 		}
 
-		ackList := []*sqs.DeleteMessageBatchRequestEntry{}
-
-		for _, msg := range result.Messages {
-			ackList = append(ackList, &sqs.DeleteMessageBatchRequestEntry{
-				Id:            msg.MessageId,
-				ReceiptHandle: msg.ReceiptHandle,
-			})
-
-			msgParseErr, msgType, msgJsonBody := parseMessage(*msg.Body)
-			if msgParseErr != nil {
-				log.Error(fmt.Sprintf("parseMessage: %s", msgParseErr.Error()))
-				continue
-			}
-
-			switch msgType {
-			case "turn_on":
-				var req TurnOnRequest
-				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
-					panic(err)
-				}
-
-				e := hapitypes.NewPowerEvent(req.DeviceIdOrDeviceGroupId, hapitypes.PowerKindOn)
-				fabric.Receive(&e)
-			case "turn_off":
-				var req TurnOffRequest
-				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
-					panic(err)
-				}
-
-				e := hapitypes.NewPowerEvent(req.DeviceIdOrDeviceGroupId, hapitypes.PowerKindOff)
-				fabric.Receive(&e)
-			case "color":
-				var req ColorRequest
-				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
-					panic(err)
-				}
-
-				e := hapitypes.NewColorMsg(req.DeviceIdOrDeviceGroupId, hapitypes.RGB{Red: req.Red, Green: req.Green, Blue: req.Blue})
-				fabric.Receive(&e)
-			case "brightness":
-				var req BrightnessRequest
-				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
-					panic(err)
-				}
-
-				e := hapitypes.NewBrightnessEvent(req.DeviceIdOrDeviceGroupId, req.Brightness)
-				fabric.Receive(&e)
-			case "playback":
-				var req PlaybackRequest
-				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
-					panic(err)
-				}
-
-				e := hapitypes.NewPlaybackEvent(req.DeviceIdOrDeviceGroupId, req.Action)
-				fabric.Receive(&e)
-			case "colorTemperature":
-				var req ColorTemperatureRequest
-				if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
-					panic(err)
-				}
-
-				e := hapitypes.NewColorTemperatureEvent(
-					req.DeviceIdOrDeviceGroupId,
-					req.ColorTemperatureInKelvin)
-				fabric.Receive(&e)
-			default:
-				log.Error("unknown msgType: " + msgType)
-			}
-		}
-
-		if len(ackList) > 0 {
-			log.Debug(fmt.Sprintf("acking %d message(s)", len(ackList)))
-
-			_, err := sqsClient.DeleteMessageBatch(&sqs.DeleteMessageBatchInput{
-				Entries:  ackList,
-				QueueUrl: &adapterConf.SqsQueueUrl,
-			})
-
-			if err != nil {
+		switch msgType {
+		case "turn_on":
+			var req TurnOnRequest
+			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 				panic(err)
 			}
+
+			e := hapitypes.NewPowerEvent(req.DeviceIdOrDeviceGroupId, hapitypes.PowerKindOn)
+			inbound.Receive(&e)
+		case "turn_off":
+			var req TurnOffRequest
+			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
+				panic(err)
+			}
+
+			e := hapitypes.NewPowerEvent(req.DeviceIdOrDeviceGroupId, hapitypes.PowerKindOff)
+			inbound.Receive(&e)
+		case "color":
+			var req ColorRequest
+			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
+				panic(err)
+			}
+
+			e := hapitypes.NewColorMsg(req.DeviceIdOrDeviceGroupId, hapitypes.RGB{Red: req.Red, Green: req.Green, Blue: req.Blue})
+			inbound.Receive(&e)
+		case "brightness":
+			var req BrightnessRequest
+			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
+				panic(err)
+			}
+
+			e := hapitypes.NewBrightnessEvent(req.DeviceIdOrDeviceGroupId, req.Brightness)
+			inbound.Receive(&e)
+		case "playback":
+			var req PlaybackRequest
+			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
+				panic(err)
+			}
+
+			e := hapitypes.NewPlaybackEvent(req.DeviceIdOrDeviceGroupId, req.Action)
+			inbound.Receive(&e)
+		case "colorTemperature":
+			var req ColorTemperatureRequest
+			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
+				panic(err)
+			}
+
+			e := hapitypes.NewColorTemperatureEvent(
+				req.DeviceIdOrDeviceGroupId,
+				req.ColorTemperatureInKelvin)
+			inbound.Receive(&e)
+		default:
+			log.Error("unknown msgType: " + msgType)
+		}
+	}
+
+	if len(ackList) > 0 {
+		log.Debug(fmt.Sprintf("acking %d message(s)", len(ackList)))
+
+		_, err := sqsClient.DeleteMessageBatch(&sqs.DeleteMessageBatchInput{
+			Entries:  ackList,
+			QueueUrl: &adapter.Conf.SqsQueueUrl,
+		})
+
+		if err != nil {
+			panic(err)
 		}
 	}
 }

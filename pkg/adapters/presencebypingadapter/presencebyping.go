@@ -5,7 +5,6 @@ import (
 	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
-	"github.com/function61/home-automation-hub/pkg/signalfabric"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
 	"net"
@@ -29,7 +28,7 @@ type Presence struct {
 	Present bool
 }
 
-func StartSensor(config hapitypes.AdapterConfig, fabric *signalfabric.Fabric, stop *stopper.Stopper) error {
+func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	workers := stopper.NewManager()
 
 	// this is a privileged operation, you need to set:
@@ -44,7 +43,7 @@ func StartSensor(config hapitypes.AdapterConfig, fabric *signalfabric.Fabric, st
 	pingRequests := make(chan ProbeRequest, 16)
 	pingResponses := make(chan ProbeResponse, 16)
 
-	go tickerLoop(config, fabric, forStamping, pingResponses, workers.Stopper())
+	go tickerLoop(adapter.Conf, adapter.Inbound, forStamping, pingResponses, workers.Stopper())
 
 	go pingSender(icmpSocket, pingRequests, workers.Stopper())
 
@@ -122,7 +121,7 @@ func probePresence(
 
 func tickerLoop(
 	config hapitypes.AdapterConfig,
-	fabric *signalfabric.Fabric,
+	inbound *hapitypes.InboundFabric,
 	forStamping chan<- ProbeRequest,
 	pingResponses chan<- ProbeResponse,
 	stop *stopper.Stopper,
@@ -158,7 +157,7 @@ func tickerLoop(
 						current.Person,
 						current.Present)
 
-					fabric.Receive(&e)
+					inbound.Receive(&e)
 				}
 
 				personIdPresentMap[current.Person] = current.Present

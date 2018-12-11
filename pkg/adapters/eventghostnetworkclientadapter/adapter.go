@@ -9,10 +9,10 @@ import (
 
 var log = logger.New("EventGhost")
 
-func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopper.Stopper) {
+func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	conn := eventghostnetworkclient.NewEventghostConnection(
-		config.EventghostAddr,
-		config.EventghostSecret)
+		adapter.Conf.EventghostAddr,
+		adapter.Conf.EventghostSecret)
 
 	go func() {
 		defer stop.Done()
@@ -24,7 +24,7 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopp
 			select {
 			case <-stop.Signal:
 				return
-			case genericEvent := <-adapter.Event:
+			case genericEvent := <-adapter.Outbound:
 				switch e := genericEvent.(type) {
 				case *hapitypes.PlaybackEvent:
 					if err := conn.Send(e.Action, []string{}); err != nil {
@@ -36,4 +36,6 @@ func New(adapter *hapitypes.Adapter, config hapitypes.AdapterConfig, stop *stopp
 			}
 		}
 	}()
+
+	return nil
 }
