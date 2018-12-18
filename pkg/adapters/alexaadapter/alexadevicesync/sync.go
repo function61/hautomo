@@ -50,6 +50,10 @@ func Sync(sqsAdapter hapitypes.AdapterConfig, conf *hapitypes.ConfigFile) error 
 	devices := []AlexaConnectorDevice{}
 
 	for _, device := range conf.Devices {
+		if device.AlexaCategory == "" { // = hide from Alexa
+			continue
+		}
+
 		if _, ok := supportedDisplayCategories[device.AlexaCategory]; !ok {
 			return fmt.Errorf("unsupported AlexaCategory: %s", device.AlexaCategory)
 		}
