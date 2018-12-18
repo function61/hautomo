@@ -33,6 +33,8 @@ type AdapterConfig struct {
 	TradfriUser string `json:"tradfri_user"`
 	TradfriPsk  string `json:"tradfri_psk"`
 
+	Zigbee2MqttAddr string `json:"zigbee2mqtt_addr"`
+
 	PresenceByPingDevice []PresenceByPingDevice `json:"presencebypingdevice"`
 
 	DevicegroupDevices []string `json:"devicegroup_devs"`

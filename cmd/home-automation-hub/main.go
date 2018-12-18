@@ -19,6 +19,7 @@ import (
 	"github.com/function61/home-automation-hub/pkg/adapters/lircadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/particleadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/presencebypingadapter"
+	"github.com/function61/home-automation-hub/pkg/adapters/zigbee2mqttadapter"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"github.com/function61/home-automation-hub/pkg/happylights/happylightsclientcli"
 	"github.com/function61/home-automation-hub/pkg/happylights/happylightsserver"
@@ -184,6 +185,7 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 		"happylights":             happylightsadapter.Start,
 		"harmony":                 harmonyhubadapter.Start,
 		"ikea_tradfri":            ikeatradfriadapter.Start,
+		"zigbee2mqtt":             zigbee2mqttadapter.Start,
 		"irsimulator":             irsimulatoradapter.Start,
 		"lirc":                    lircadapter.Start,
 		"particle":                particleadapter.Start,
