@@ -1,7 +1,6 @@
 package zigbee2mqttadapter
 
 import (
-	"errors"
 	"fmt"
 	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
@@ -15,6 +14,18 @@ import (
 
 var log = logger.New("zigbee2mqtt")
 
+type MqttPublish struct {
+	Topic   string
+	Message string
+}
+
+func zigbee2mqtt(deviceId string, msg string) MqttPublish {
+	return MqttPublish{
+		Topic:   "zigbee2mqtt/" + deviceId + "/set",
+		Message: msg,
+	}
+}
+
 func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	// this logic is still TODO and has to be made configurable
 	clickRecognizer := func(topicName, message []byte) {
@@ -26,14 +37,42 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 
 		toggleCabinetLights := hapitypes.NewPowerToggleEvent("45e6e09c")
 
-		for i := 0; i < 6; i++ {
+		for i := 0; i < 4; i++ {
 			adapter.Inbound.Receive(&toggleCabinetLights)
 
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(1000 * time.Millisecond)
 		}
 	}
 
+	publish := make(chan MqttPublish, 16)
+
 	subStoppers := stopper.NewManager()
+
+	handleOneEvent := func(genericEvent hapitypes.OutboundEvent) {
+		switch e := genericEvent.(type) {
+		case *hapitypes.PowerMsg:
+			if e.On {
+				publish <- zigbee2mqtt(e.DeviceId, `{"state": "ON", "transition": 3}`)
+			} else {
+				publish <- zigbee2mqtt(e.DeviceId, `{"state": "OFF", "transition": 3}`)
+			}
+		case *hapitypes.BrightnessMsg:
+			// 0-100 => 0-255
+			to := int(float64(e.Brightness) * 2.55)
+
+			publish <- zigbee2mqtt(e.DeviceId, fmt.Sprintf(`{"brightness": %d, "transition": 2}`, to))
+		case *hapitypes.ColorMsg:
+			publish <- zigbee2mqtt(e.DeviceId, fmt.Sprintf(
+				`{"color": {"r": %d, "g": %d, "b": %d}, "transition": 2}`,
+				e.Color.Red,
+				e.Color.Green,
+				e.Color.Blue))
+		case *hapitypes.ColorTemperatureEvent:
+			// TODO: not implemented
+		default:
+			adapter.LogUnsupportedEvent(genericEvent, log)
+		}
+	}
 
 	go func() {
 		defer stop.Done()
@@ -47,10 +86,9 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 				subStoppers.StopAllWorkersAndWait()
 				return
 			case genericEvent := <-adapter.Outbound:
-				adapter.LogUnsupportedEvent(genericEvent, log)
+				handleOneEvent(genericEvent)
 			}
 		}
-
 	}()
 
 	go func(stop *stopper.Stopper) {
@@ -58,7 +96,7 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 		defer log.Info("reconnect loop stopped")
 
 		for {
-			if err := mqttConnection(adapter.Conf.Zigbee2MqttAddr, clickRecognizer, stop); err != nil {
+			if err := mqttConnection(adapter.Conf.Zigbee2MqttAddr, clickRecognizer, publish, stop); err != nil {
 				log.Error(fmt.Sprintf("mqttConnection error; reconnecting soon: %v", err))
 				time.Sleep(1 * time.Second)
 			}
@@ -73,19 +111,22 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	return nil
 }
 
-func mqttConnection(addr string, handler client.MessageHandler, stop *stopper.Stopper) error {
+func mqttConnection(addr string, handler client.MessageHandler, mqttPublishes <-chan MqttPublish, stop *stopper.Stopper) error {
 	broken := make(chan interface{})
+	var brokenErr error
+	var brokenOnce sync.Once
 
-	var closeOnce sync.Once
+	// there might be multiple error signals coming in - only process the first.
+	breakConnectionWithError := func(err error) {
+		brokenOnce.Do(func() {
+			brokenErr = fmt.Errorf("mqtt connection broke: %v", err)
+			close(broken) // signals total teardown of this connection
+		})
+	}
 
 	mqttClient := client.New(&client.Options{
 		ErrorHandler: func(err error) {
-			fmt.Println(err)
-
-			// TODO: is connection broken now?
-			closeOnce.Do(func() {
-				close(broken)
-			})
+			breakConnectionWithError(err)
 		},
 	})
 	defer mqttClient.Terminate()
@@ -101,7 +142,7 @@ func mqttConnection(addr string, handler client.MessageHandler, stop *stopper.St
 	if err := mqttClient.Subscribe(&client.SubscribeOptions{
 		SubReqs: []*client.SubReq{
 			{
-				TopicFilter: []byte("zigbee2mqtt/#"),
+				TopicFilter: []byte("zigbee2mqtt/#"), // # means catch-all
 				QoS:         mqtt.QoS0,
 				Handler:     handler,
 			},
@@ -110,9 +151,28 @@ func mqttConnection(addr string, handler client.MessageHandler, stop *stopper.St
 		return err
 	}
 
+	go func() {
+		for {
+			select {
+			case <-broken:
+				return
+			case publish := <-mqttPublishes:
+				if err := mqttClient.Publish(&client.PublishOptions{
+					QoS:       mqtt.QoS0,
+					Retain:    false,
+					TopicName: []byte(publish.Topic),
+					Message:   []byte(publish.Message),
+				}); err != nil {
+					breakConnectionWithError(err)
+					return
+				}
+			}
+		}
+	}()
+
 	select {
 	case <-broken:
-		return errors.New("connection broken")
+		return brokenErr
 	case <-stop.Signal:
 		mqttClient.Disconnect()
 		return nil
