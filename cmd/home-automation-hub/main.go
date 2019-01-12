@@ -21,8 +21,6 @@ import (
 	"github.com/function61/home-automation-hub/pkg/adapters/presencebypingadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/zigbee2mqttadapter"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
-	"github.com/function61/home-automation-hub/pkg/happylights/happylightsclientcli"
-	"github.com/function61/home-automation-hub/pkg/happylights/happylightsserver"
 	"github.com/spf13/cobra"
 	"net/http"
 	"os"
@@ -333,7 +331,6 @@ func main() {
 		Version: version,
 	}
 	rootCmd.AddCommand(serverEntry())
-	rootCmd.AddCommand(happylightsclientcli.BindEntrypoint(happylightsserver.Entrypoint()))
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

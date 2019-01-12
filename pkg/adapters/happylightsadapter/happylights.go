@@ -1,14 +1,17 @@
 package happylightsadapter
 
 import (
+	"context"
 	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
-	"github.com/function61/home-automation-hub/pkg/happylights/client"
-	"github.com/function61/home-automation-hub/pkg/happylights/types"
+	"github.com/function61/home-automation-hub/pkg/happylights"
+	"time"
 )
 
 var log = logger.New("HappyLights")
+
+const requestTimeout = 15 * time.Second
 
 func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	go func() {
@@ -35,17 +38,15 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 	case *hapitypes.PowerMsg:
 		bluetoothAddr := e.DeviceId
 
-		var req types.LightRequest
+		var req happylights.LightRequest
 
 		if e.On {
-			req = types.LightRequestOn(bluetoothAddr)
+			req = happylights.LightRequestOn(bluetoothAddr)
 		} else {
-			req = types.LightRequestOff(bluetoothAddr)
+			req = happylights.LightRequestOff(bluetoothAddr)
 		}
 
-		if err := client.SendRequest(adapter.Conf.HappyLightsAddr, req); err != nil {
-			log.Error(err.Error())
-		}
+		sendLightRequest(req)
 	case *hapitypes.BrightnessMsg:
 		lastColor := e.LastColor
 		brightness := e.Brightness
@@ -57,24 +58,26 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 		)
 
 		// translate brightness directives into RGB directives
-		handleColorMsg(hapitypes.NewColorMsg(e.DeviceId, dimmedColor), adapter)
+		colorMsg := hapitypes.NewColorMsg(e.DeviceId, dimmedColor)
+		adapter.Send(&colorMsg)
 	case *hapitypes.ColorMsg:
-		handleColorMsg(*e, adapter)
+		bluetoothAddr := e.DeviceId
+
+		sendLightRequest(happylights.LightRequestColor(
+			bluetoothAddr,
+			e.Color.Red,
+			e.Color.Green,
+			e.Color.Blue))
 	default:
 		adapter.LogUnsupportedEvent(genericEvent, log)
 	}
 }
 
-func handleColorMsg(colorMsg hapitypes.ColorMsg, adapter *hapitypes.Adapter) {
-	bluetoothAddr := colorMsg.DeviceId
+func sendLightRequest(hlreq happylights.LightRequest) {
+	ctx, cancel := context.WithTimeout(context.TODO(), requestTimeout)
+	defer cancel()
 
-	hlreq := types.LightRequestColor(
-		bluetoothAddr,
-		colorMsg.Color.Red,
-		colorMsg.Color.Green,
-		colorMsg.Color.Blue)
-
-	if err := client.SendRequest(adapter.Conf.HappyLightsAddr, hlreq); err != nil {
+	if err := happylights.Send(ctx, hlreq); err != nil {
 		log.Error(err.Error())
 	}
 }

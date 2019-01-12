@@ -1,4 +1,4 @@
-package types
+package happylights
 
 type LightRequest struct {
 	Red           uint8

@@ -15,8 +15,6 @@ type AdapterConfig struct {
 	ParticleId          string `json:"particle_id,omitempty"`
 	ParticleAccessToken string `json:"particle_access_token,omitempty"`
 
-	HappyLightsAddr string `json:"happylights_addr,omitempty"`
-
 	HarmonyAddr string `json:"harmony_addr,omitempty"`
 
 	SqsQueueUrl           string `json:"sqs_queue_url,omitempty"`
