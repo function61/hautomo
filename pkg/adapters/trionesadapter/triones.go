@@ -77,6 +77,17 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 				e.Color.Red,
 				e.Color.Green,
 				e.Color.Blue)
+
+			// I don't know if my only Triones controller that is attached to a RGBW strip
+			// is messed up, or if the pinouts of this controller and this particular strip
+			// that are incompatible, but here Red and Green channels are mixed up.
+			// compensating for it here.
+			if deviceConf.CapabilityColorSeparateWhiteChannel {
+				// swap red <-> green channels
+				temp := req.RgbOpts.Red
+				req.RgbOpts.Red = req.RgbOpts.Green
+				req.RgbOpts.Green = temp
+			}
 		}
 
 		sendLightRequest(req)
