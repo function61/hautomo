@@ -27,6 +27,8 @@ func deviceMsg(deviceId string, msg string) MqttPublish {
 }
 
 func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
+	config := adapter.GetConfigFileDeprecated()
+
 	// this logic is still TODO and has to be made configurable
 	clickRecognizer := func(topicName, message []byte) {
 		if string(topicName) != "zigbee2mqtt/0x00158d000227a73c" || !strings.Contains(string(message), `"click":"single"`) {
@@ -68,9 +70,21 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 				e.Color.Green,
 				e.Color.Blue))
 		case *hapitypes.ColorTemperatureEvent:
-			z2mPublish <- deviceMsg(e.Device, fmt.Sprintf(
-				`{"color_temp": %d, "transition": 1}`,
-				kelvinToMired(e.TemperatureInKelvin)))
+			deviceConf := config.FindDeviceConfigByAdaptersDeviceId(e.Device)
+
+			// for some reason IKEA lights with color temp & RGB abilities, do not support
+			// color_temp message, so we transparently convert it into a RGB message
+			if deviceConf != nil && deviceConf.CapabilityColor && deviceConf.CapabilityColorTemperature {
+				r, g, b := temperatureToRGB(float64(e.TemperatureInKelvin))
+
+				// re-publish as a RGB message
+				rgbMsg := hapitypes.NewColorMsg(e.Device, hapitypes.NewRGB(r, g, b))
+				adapter.Outbound <- &rgbMsg
+			} else {
+				z2mPublish <- deviceMsg(e.Device, fmt.Sprintf(
+					`{"color_temp": %d, "transition": 1}`,
+					kelvinToMired(e.TemperatureInKelvin)))
+			}
 		default:
 			adapter.LogUnsupportedEvent(genericEvent, log)
 		}

@@ -81,3 +81,13 @@ type ConfigFile struct {
 	IrToIr   []IrToIr        `json:"ir2ir"`
 	Persons  []Person        `json:"person"`
 }
+
+func (c *ConfigFile) FindDeviceConfigByAdaptersDeviceId(adaptersDeviceId string) *DeviceConfig {
+	for _, deviceConfig := range c.Devices {
+		if deviceConfig.AdaptersDeviceId == adaptersDeviceId {
+			return &deviceConfig
+		}
+	}
+
+	return nil
+}
