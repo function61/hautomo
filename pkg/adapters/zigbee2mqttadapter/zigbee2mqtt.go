@@ -19,7 +19,7 @@ type MqttPublish struct {
 	Message string
 }
 
-func zigbee2mqtt(deviceId string, msg string) MqttPublish {
+func deviceMsg(deviceId string, msg string) MqttPublish {
 	return MqttPublish{
 		Topic:   "zigbee2mqtt/" + deviceId + "/set",
 		Message: msg,
@@ -44,7 +44,7 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 		}
 	}
 
-	publish := make(chan MqttPublish, 16)
+	z2mPublish := make(chan MqttPublish, 16)
 
 	subStoppers := stopper.NewManager()
 
@@ -52,23 +52,23 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 		switch e := genericEvent.(type) {
 		case *hapitypes.PowerMsg:
 			if e.On {
-				publish <- zigbee2mqtt(e.DeviceId, `{"state": "ON", "transition": 3}`)
+				z2mPublish <- deviceMsg(e.DeviceId, `{"state": "ON", "transition": 3}`)
 			} else {
-				publish <- zigbee2mqtt(e.DeviceId, `{"state": "OFF", "transition": 3}`)
+				z2mPublish <- deviceMsg(e.DeviceId, `{"state": "OFF", "transition": 3}`)
 			}
 		case *hapitypes.BrightnessMsg:
 			// 0-100 => 0-255
 			to := int(float64(e.Brightness) * 2.55)
 
-			publish <- zigbee2mqtt(e.DeviceId, fmt.Sprintf(`{"brightness": %d, "transition": 2}`, to))
+			z2mPublish <- deviceMsg(e.DeviceId, fmt.Sprintf(`{"brightness": %d, "transition": 2}`, to))
 		case *hapitypes.ColorMsg:
-			publish <- zigbee2mqtt(e.DeviceId, fmt.Sprintf(
+			z2mPublish <- deviceMsg(e.DeviceId, fmt.Sprintf(
 				`{"color": {"r": %d, "g": %d, "b": %d}, "transition": 2}`,
 				e.Color.Red,
 				e.Color.Green,
 				e.Color.Blue))
 		case *hapitypes.ColorTemperatureEvent:
-			publish <- zigbee2mqtt(e.Device, fmt.Sprintf(
+			z2mPublish <- deviceMsg(e.Device, fmt.Sprintf(
 				`{"color_temp": %d}`,
 				kelvinToMired(e.TemperatureInKelvin)))
 		default:
@@ -98,7 +98,7 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 		defer log.Info("reconnect loop stopped")
 
 		for {
-			if err := mqttConnection(adapter.Conf.Zigbee2MqttAddr, clickRecognizer, publish, stop); err != nil {
+			if err := mqttConnection(adapter.Conf.Zigbee2MqttAddr, clickRecognizer, z2mPublish, stop); err != nil {
 				log.Error(fmt.Sprintf("mqttConnection error; reconnecting soon: %v", err))
 				time.Sleep(1 * time.Second)
 			}
