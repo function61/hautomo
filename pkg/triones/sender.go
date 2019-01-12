@@ -1,4 +1,4 @@
-package happylights
+package triones
 
 // controls Triones (sometimes marketed as Happylights) over Bluetooth BLE
 

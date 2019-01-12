@@ -12,13 +12,13 @@ import (
 	"github.com/function61/home-automation-hub/pkg/adapters/devicegroupadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/dummyadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/eventghostnetworkclientadapter"
-	"github.com/function61/home-automation-hub/pkg/adapters/happylightsadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/harmonyhubadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/ikeatradfriadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/irsimulatoradapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/lircadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/particleadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/presencebypingadapter"
+	"github.com/function61/home-automation-hub/pkg/adapters/trionesadapter"
 	"github.com/function61/home-automation-hub/pkg/adapters/zigbee2mqttadapter"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"github.com/spf13/cobra"
@@ -180,7 +180,7 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 		"devicegroup":             devicegroupadapter.Start,
 		"dummy":                   dummyadapter.Start,
 		"eventghostnetworkclient": eventghostnetworkclientadapter.Start,
-		"happylights":             happylightsadapter.Start,
+		"triones":                 trionesadapter.Start,
 		"harmony":                 harmonyhubadapter.Start,
 		"ikea_tradfri":            ikeatradfriadapter.Start,
 		"zigbee2mqtt":             zigbee2mqttadapter.Start,

@@ -1,15 +1,15 @@
-package happylightsadapter
+package trionesadapter
 
 import (
 	"context"
 	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
-	"github.com/function61/home-automation-hub/pkg/happylights"
+	"github.com/function61/home-automation-hub/pkg/triones"
 	"time"
 )
 
-var log = logger.New("HappyLights")
+var log = logger.New("triones")
 
 const requestTimeout = 15 * time.Second
 
@@ -40,12 +40,12 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 	case *hapitypes.PowerMsg:
 		bluetoothAddr := e.DeviceId
 
-		var req happylights.Request
+		var req triones.Request
 
 		if e.On {
-			req = happylights.RequestOn(bluetoothAddr)
+			req = triones.RequestOn(bluetoothAddr)
 		} else {
-			req = happylights.RequestOff(bluetoothAddr)
+			req = triones.RequestOff(bluetoothAddr)
 		}
 
 		sendLightRequest(req)
@@ -67,12 +67,12 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 
 		deviceConf := conf.FindDeviceConfigByAdaptersDeviceId(bluetoothAddr)
 
-		var req happylights.Request
+		var req triones.Request
 		if e.Color.IsGrayscale() && deviceConf.CapabilityColorSeparateWhiteChannel {
 			// we can just take red because we know that r == g == b
-			req = happylights.RequestWhite(bluetoothAddr, e.Color.Red)
+			req = triones.RequestWhite(bluetoothAddr, e.Color.Red)
 		} else {
-			req = happylights.RequestRGB(
+			req = triones.RequestRGB(
 				bluetoothAddr,
 				e.Color.Red,
 				e.Color.Green,
@@ -85,11 +85,11 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 	}
 }
 
-func sendLightRequest(hlreq happylights.Request) {
+func sendLightRequest(hlreq triones.Request) {
 	ctx, cancel := context.WithTimeout(context.TODO(), requestTimeout)
 	defer cancel()
 
-	if err := happylights.Send(ctx, hlreq); err != nil {
+	if err := triones.Send(ctx, hlreq); err != nil {
 		log.Error(err.Error())
 	}
 }

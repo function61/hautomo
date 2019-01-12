@@ -1,4 +1,4 @@
-package happylights
+package triones
 
 import (
 	"github.com/function61/gokit/assert"
