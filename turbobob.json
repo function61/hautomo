@@ -20,5 +20,9 @@
 			"pass_envs": ["BINTRAY_CREDS"],
 			"contextless_build": true
 		}
-	]
+	],
+	"os_arches": {
+		"linux-amd64": true,
+		"linux-arm": true
+	}
 }
