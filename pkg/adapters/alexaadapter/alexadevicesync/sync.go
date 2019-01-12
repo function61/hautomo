@@ -34,17 +34,22 @@ var supportedDisplayCategories = map[string]bool{
 	"SMARTPLUG": true,
 }
 
-var supportedCapabilities = map[string]bool{
-	"PowerController":            true,
-	"BrightnessController":       true,
-	"ColorController":            true,
-	"PlaybackController":         true,
-	"ColorTemperatureController": true,
+func Sync(sqsAdapter hapitypes.AdapterConfig, conf *hapitypes.ConfigFile) error {
+	spec, err := createAlexaConnectorSpec(sqsAdapter, conf)
+	if err != nil {
+		return err
+	}
+
+	return uploadAlexaConnectorSpec(
+		sqsAdapter.SqsAlexaUsertokenHash,
+		*spec,
+		sqsAdapter.SqsKeyId,
+		sqsAdapter.SqsKeySecret)
 }
 
-func Sync(sqsAdapter hapitypes.AdapterConfig, conf *hapitypes.ConfigFile) error {
+func createAlexaConnectorSpec(sqsAdapter hapitypes.AdapterConfig, conf *hapitypes.ConfigFile) (*AlexaConnectorSpec, error) {
 	if sqsAdapter.SqsQueueUrl == "" || sqsAdapter.SqsAlexaUsertokenHash == "" {
-		return errors.New("invalid configuration for SyncToAlexaConnector")
+		return nil, errors.New("invalid configuration for SyncToAlexaConnector")
 	}
 
 	devices := []AlexaConnectorDevice{}
@@ -55,32 +60,29 @@ func Sync(sqsAdapter hapitypes.AdapterConfig, conf *hapitypes.ConfigFile) error 
 		}
 
 		if _, ok := supportedDisplayCategories[device.AlexaCategory]; !ok {
-			return fmt.Errorf("unsupported AlexaCategory: %s", device.AlexaCategory)
+			return nil, fmt.Errorf("unsupported AlexaCategory: %s", device.AlexaCategory)
 		}
 
-		for _, capability := range device.AlexaCapabilities {
-			if _, ok := supportedCapabilities[capability]; !ok {
-				return fmt.Errorf("unsupported AlexaCapability: %s", capability)
-			}
-		}
+		alexaCapabilities := []string{}
+		maybePushCap(&alexaCapabilities, device.CapabilityPower, "PowerController")
+		maybePushCap(&alexaCapabilities, device.CapabilityBrightness, "BrightnessController")
+		maybePushCap(&alexaCapabilities, device.CapabilityColor, "ColorController")
+		maybePushCap(&alexaCapabilities, device.CapabilityColorTemperature, "ColorTemperatureController")
+		maybePushCap(&alexaCapabilities, device.CapabilityPlayback, "PlaybackController")
 
 		devices = append(devices, AlexaConnectorDevice{
 			Id:              device.DeviceId,
 			FriendlyName:    device.Name,
 			Description:     device.Description,
 			DisplayCategory: device.AlexaCategory,
-			CapabilityCodes: device.AlexaCapabilities,
+			CapabilityCodes: alexaCapabilities,
 		})
 	}
 
-	return uploadAlexaConnectorSpec(
-		sqsAdapter.SqsAlexaUsertokenHash,
-		AlexaConnectorSpec{
-			Queue:   sqsAdapter.SqsQueueUrl,
-			Devices: devices,
-		},
-		sqsAdapter.SqsKeyId,
-		sqsAdapter.SqsKeySecret)
+	return &AlexaConnectorSpec{
+		Queue:   sqsAdapter.SqsQueueUrl,
+		Devices: devices,
+	}, nil
 }
 
 func uploadAlexaConnectorSpec(userTokenHash string, spec AlexaConnectorSpec, accessKeyId string, accessKeySecret string) error {
@@ -102,4 +104,10 @@ func uploadAlexaConnectorSpec(userTokenHash string, spec AlexaConnectorSpec, acc
 	})
 
 	return err
+}
+
+func maybePushCap(ref *[]string, hasCapability bool, capStr string) {
+	if hasCapability {
+		*ref = append(*ref, capStr)
+	}
 }
