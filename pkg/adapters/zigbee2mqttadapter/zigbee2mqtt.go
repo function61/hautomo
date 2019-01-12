@@ -69,7 +69,7 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 				e.Color.Blue))
 		case *hapitypes.ColorTemperatureEvent:
 			z2mPublish <- deviceMsg(e.Device, fmt.Sprintf(
-				`{"color_temp": %d}`,
+				`{"color_temp": %d, "transition": 1}`,
 				kelvinToMired(e.TemperatureInKelvin)))
 		default:
 			adapter.LogUnsupportedEvent(genericEvent, log)
