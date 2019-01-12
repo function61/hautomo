@@ -49,11 +49,12 @@ type DeviceConfig struct {
 	PowerOffCmd   string `json:"power_off_cmd,omitempty"`
 	AlexaCategory string `json:"alexa_category,omitempty"`
 
-	CapabilityPower            bool `json:"capability_power"`
-	CapabilityBrightness       bool `json:"capability_brightness"`
-	CapabilityColor            bool `json:"capability_color"`
-	CapabilityColorTemperature bool `json:"capability_colortemperature"`
-	CapabilityPlayback         bool `json:"capability_playback"`
+	CapabilityPower                     bool `json:"capability_power"`
+	CapabilityBrightness                bool `json:"capability_brightness"`
+	CapabilityColor                     bool `json:"capability_color"`
+	CapabilityColorTemperature          bool `json:"capability_colortemperature"`
+	CapabilityColorSeparateWhiteChannel bool `json:"capability_color_separate_white_channel"`
+	CapabilityPlayback                  bool `json:"capability_playback"`
 }
 
 type IrPowerConfig struct {

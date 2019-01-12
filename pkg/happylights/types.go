@@ -1,40 +1,63 @@
 package happylights
 
-type LightRequest struct {
-	Red           uint8
-	Green         uint8
-	Blue          uint8
+type RequestKind int
+
+const (
+	RequestKindOn RequestKind = iota
+	RequestKindOff
+	RequestKindRGB
+	RequestKindWhite
+)
+
+type Request struct {
+	Kind          RequestKind
 	BluetoothAddr string
+	RgbOpts       *RgbOpts
+	WhiteOpts     *WhiteOpts // use only if the strip has separate white channel (RGBW strip)
 }
 
-func lightRequestNew(bluetoothAddr string, r uint8, g uint8, b uint8) LightRequest {
-	return LightRequest{r, g, b, bluetoothAddr}
+type RgbOpts struct {
+	Red   uint8
+	Green uint8
+	Blue  uint8
 }
 
-func LightRequestColor(bluetoothAddr string, r uint8, g uint8, b uint8) LightRequest {
-	req := lightRequestNew(bluetoothAddr, r, g, b)
+type WhiteOpts struct {
+	Brightness uint8
+}
 
-	// full white? this would be understood as "turn on", using previous color.
-	// use almost full white to tell that we actually mean white
-	if req.IsOn() {
-		return lightRequestNew(bluetoothAddr, 255, 255, 254)
+func RequestOn(bluetoothAddr string) Request {
+	return Request{
+		Kind:          RequestKindOn,
+		BluetoothAddr: bluetoothAddr,
 	}
-
-	return req
 }
 
-func LightRequestOn(bluetoothAddr string) LightRequest {
-	return lightRequestNew(bluetoothAddr, 255, 255, 255)
+func RequestOff(bluetoothAddr string) Request {
+	return Request{
+		Kind:          RequestKindOff,
+		BluetoothAddr: bluetoothAddr,
+	}
 }
 
-func LightRequestOff(bluetoothAddr string) LightRequest {
-	return lightRequestNew(bluetoothAddr, 0, 0, 0)
+func RequestRGB(bluetoothAddr string, r, g, b uint8) Request {
+	return Request{
+		Kind:          RequestKindRGB,
+		BluetoothAddr: bluetoothAddr,
+		RgbOpts: &RgbOpts{
+			Red:   r,
+			Green: g,
+			Blue:  b,
+		},
+	}
 }
 
-func (l *LightRequest) IsOff() bool {
-	return (l.Red + l.Green + l.Blue) == 0
-}
-
-func (l *LightRequest) IsOn() bool {
-	return uint16(l.Red)+uint16(l.Green)+uint16(l.Blue) == (255 * 3)
+func RequestWhite(bluetoothAddr string, brightness uint8) Request {
+	return Request{
+		Kind:          RequestKindWhite,
+		BluetoothAddr: bluetoothAddr,
+		WhiteOpts: &WhiteOpts{
+			Brightness: brightness,
+		},
+	}
 }

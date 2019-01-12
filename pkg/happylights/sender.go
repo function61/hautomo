@@ -1,5 +1,7 @@
 package happylights
 
+// controls Triones (sometimes marketed as Happylights) over Bluetooth BLE
+
 import (
 	"context"
 	"fmt"
@@ -9,42 +11,14 @@ import (
 	"time"
 )
 
-// controls happylights over Bluetooth BLE
-func lightRequestToGattToolArgs(req LightRequest) []string {
-	reqHex := ""
-
-	if req.IsOff() {
-		// turns off
-		reqHex = "cc2433"
-	} else if req.IsOn() {
-		// turns on
-		reqHex = "cc2333"
-	} else {
-		// sets rgb. sadly does not turn on if currently off
-		reqHex = fmt.Sprintf("56%02x%02x%02x00f0aa", req.Red, req.Green, req.Blue)
-	}
-
-	// if running into errors:
-	// https://stackoverflow.com/questions/22062037/hcitool-lescan-shows-i-o-error
-
-	return []string{
-		"gatttool",
-		"-i", "hci0",
-		"-b", req.BluetoothAddr,
-		"--char-write-req",
-		"-a", "0x0021", // known handle for light request
-		"-n", reqHex,
-	}
-}
-
-func Send(ctx context.Context, req LightRequest) error {
+func Send(ctx context.Context, req Request) error {
 	ifFails := func(err error) {
 		log.Printf("happylightCmd %s", err.Error())
 	}
 
-	return retry.Retry(ctx, func(ctx context.Context) error {
-		happylightCmdArgs := lightRequestToGattToolArgs(req)
+	happylightCmdArgs := gattToolArgs(req.BluetoothAddr, requestToHex(req))
 
+	return retry.Retry(ctx, func(ctx context.Context) error {
 		// do not let one attempt last more than this
 		ctxCmd, cancel := context.WithTimeout(ctx, 3*time.Second)
 		defer cancel()
@@ -64,4 +38,40 @@ func Send(ctx context.Context, req LightRequest) error {
 
 		return nil
 	}, retry.DefaultBackoff(), ifFails)
+}
+
+// if running into errors:
+// https://stackoverflow.com/questions/22062037/hcitool-lescan-shows-i-o-error
+func gattToolArgs(btAddr string, reqHex string) []string {
+	return []string{
+		"gatttool",
+		"-i", "hci0",
+		"-b", btAddr,
+		"--char-write-req",
+		"-a", "0x0021", // known handle for light request
+		"-n", reqHex,
+	}
+}
+
+// thanks https://github.com/madhead/saberlight/blob/master/protocols/Triones/protocol.md
+// for the AWESOME protocol description! :)
+func requestToHex(req Request) string {
+	switch req.Kind {
+	case RequestKindOn:
+		return "cc2333"
+	case RequestKindOff:
+		return "cc2433"
+	case RequestKindRGB:
+		return fmt.Sprintf(
+			"56%02x%02x%02x00f0aa",
+			req.RgbOpts.Red,
+			req.RgbOpts.Green,
+			req.RgbOpts.Blue)
+	case RequestKindWhite:
+		return fmt.Sprintf(
+			"56000000%02x0faa",
+			req.WhiteOpts.Brightness)
+	default:
+		panic("unkown request kind")
+	}
 }

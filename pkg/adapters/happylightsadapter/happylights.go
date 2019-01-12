@@ -14,6 +14,8 @@ var log = logger.New("HappyLights")
 const requestTimeout = 15 * time.Second
 
 func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
+	conf := adapter.GetConfigFileDeprecated()
+
 	go func() {
 		defer stop.Done()
 
@@ -25,7 +27,7 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 			case <-stop.Signal:
 				return
 			case genericEvent := <-adapter.Outbound:
-				handleEvent(genericEvent, adapter)
+				handleEvent(genericEvent, adapter, conf)
 			}
 		}
 	}()
@@ -33,17 +35,17 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	return nil
 }
 
-func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapter) {
+func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapter, conf *hapitypes.ConfigFile) {
 	switch e := genericEvent.(type) {
 	case *hapitypes.PowerMsg:
 		bluetoothAddr := e.DeviceId
 
-		var req happylights.LightRequest
+		var req happylights.Request
 
 		if e.On {
-			req = happylights.LightRequestOn(bluetoothAddr)
+			req = happylights.RequestOn(bluetoothAddr)
 		} else {
-			req = happylights.LightRequestOff(bluetoothAddr)
+			req = happylights.RequestOff(bluetoothAddr)
 		}
 
 		sendLightRequest(req)
@@ -63,17 +65,27 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 	case *hapitypes.ColorMsg:
 		bluetoothAddr := e.DeviceId
 
-		sendLightRequest(happylights.LightRequestColor(
-			bluetoothAddr,
-			e.Color.Red,
-			e.Color.Green,
-			e.Color.Blue))
+		deviceConf := conf.FindDeviceConfigByAdaptersDeviceId(bluetoothAddr)
+
+		var req happylights.Request
+		if e.Color.IsGrayscale() && deviceConf.CapabilityColorSeparateWhiteChannel {
+			// we can just take red because we know that r == g == b
+			req = happylights.RequestWhite(bluetoothAddr, e.Color.Red)
+		} else {
+			req = happylights.RequestRGB(
+				bluetoothAddr,
+				e.Color.Red,
+				e.Color.Green,
+				e.Color.Blue)
+		}
+
+		sendLightRequest(req)
 	default:
 		adapter.LogUnsupportedEvent(genericEvent, log)
 	}
 }
 
-func sendLightRequest(hlreq happylights.LightRequest) {
+func sendLightRequest(hlreq happylights.Request) {
 	ctx, cancel := context.WithTimeout(context.TODO(), requestTimeout)
 	defer cancel()
 

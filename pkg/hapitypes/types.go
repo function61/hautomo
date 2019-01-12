@@ -44,6 +44,10 @@ func NewRGB(red, green, blue uint8) RGB {
 	}
 }
 
+func (r RGB) IsGrayscale() bool {
+	return r.Red == r.Green && r.Green == r.Blue
+}
+
 var ErrDeviceNotFound = errors.New("device not found")
 
 type Device struct {
