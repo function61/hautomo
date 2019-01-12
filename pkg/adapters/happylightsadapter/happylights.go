@@ -50,11 +50,11 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 		lastColor := e.LastColor
 		brightness := e.Brightness
 
-		dimmedColor := hapitypes.RGB{
-			Red:   uint8(float64(lastColor.Red) * float64(brightness) / 100.0),
-			Green: uint8(float64(lastColor.Green) * float64(brightness) / 100.0),
-			Blue:  uint8(float64(lastColor.Blue) * float64(brightness) / 100.0),
-		}
+		dimmedColor := hapitypes.NewRGB(
+			uint8(float64(lastColor.Red)*float64(brightness)/100.0),
+			uint8(float64(lastColor.Green)*float64(brightness)/100.0),
+			uint8(float64(lastColor.Blue)*float64(brightness)/100.0),
+		)
 
 		// translate brightness directives into RGB directives
 		handleColorMsg(hapitypes.NewColorMsg(e.DeviceId, dimmedColor), adapter)

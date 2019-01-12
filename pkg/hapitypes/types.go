@@ -36,6 +36,14 @@ type RGB struct {
 	Blue  uint8
 }
 
+func NewRGB(red, green, blue uint8) RGB {
+	return RGB{
+		Red:   red,
+		Green: green,
+		Blue:  blue,
+	}
+}
+
 var ErrDeviceNotFound = errors.New("device not found")
 
 type Device struct {

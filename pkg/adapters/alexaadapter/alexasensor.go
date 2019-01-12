@@ -137,7 +137,7 @@ func runOnce(sqsClient *sqs.SQS, adapter *hapitypes.Adapter) {
 				panic(err)
 			}
 
-			e := hapitypes.NewColorMsg(req.DeviceIdOrDeviceGroupId, hapitypes.RGB{Red: req.Red, Green: req.Green, Blue: req.Blue})
+			e := hapitypes.NewColorMsg(req.DeviceIdOrDeviceGroupId, hapitypes.NewRGB(req.Red, req.Green, req.Blue))
 			inbound.Receive(&e)
 		case "brightness":
 			var req BrightnessRequest
