@@ -68,7 +68,9 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 				e.Color.Green,
 				e.Color.Blue))
 		case *hapitypes.ColorTemperatureEvent:
-			// TODO: not implemented
+			publish <- zigbee2mqtt(e.Device, fmt.Sprintf(
+				`{"color_temp": %d}`,
+				kelvinToMired(e.TemperatureInKelvin)))
 		default:
 			adapter.LogUnsupportedEvent(genericEvent, log)
 		}
