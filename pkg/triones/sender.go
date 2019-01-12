@@ -13,22 +13,22 @@ import (
 
 func Send(ctx context.Context, req Request) error {
 	ifFails := func(err error) {
-		log.Printf("happylightCmd %s", err.Error())
+		log.Printf("triones %s", err.Error())
 	}
 
-	happylightCmdArgs := gattToolArgs(req.BluetoothAddr, requestToHex(req))
+	gatttool := gattToolArgs(req.BluetoothAddr, requestToHex(req))
 
 	return retry.Retry(ctx, func(ctx context.Context) error {
 		// do not let one attempt last more than this
 		ctxCmd, cancel := context.WithTimeout(ctx, 3*time.Second)
 		defer cancel()
 
-		happylightCmd := exec.CommandContext(
+		gatttoolCmd := exec.CommandContext(
 			ctxCmd,
-			happylightCmdArgs[0],
-			happylightCmdArgs[1:]...)
+			gatttool[0],
+			gatttool[1:]...)
 
-		output, err := happylightCmd.CombinedOutput()
+		output, err := gatttoolCmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf( // retryer adds sufficient log prefix
 				"%s, stdout: %s",
