@@ -37,11 +37,11 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 			// TODO: implement isPrefix
 			line, _, err := bufferedReader.ReadLine()
 			if err != nil {
-				if err != io.EOF {
-					panic(err)
+				if err == io.EOF {
+					return
 				}
 
-				return // EOF
+				panic(err)
 			}
 
 			// "000000037ff07bee 00 KEY_VOLUMEDOWN mceusb" => "KEY_VOLUMEDOWN"
