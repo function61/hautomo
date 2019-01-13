@@ -15,15 +15,15 @@ var log = logger.New("lircadapter")
 
 // match lines like this: "000000037ff07bee 00 KEY_VOLUMEDOWN mceusb"
 
-var irParseRe = regexp.MustCompile(" 00 ([a-zA-Z_0-9]+) devinput$")
+var irwOutputParseRe = regexp.MustCompile(`^[0-9a-f]{16} 00 ([^ ]+) (.+)$`)
 
 func irwOutputLineToIrEvent(line string) *hapitypes.InfraredEvent {
-	irCommand := irParseRe.FindStringSubmatch(line)
+	irCommand := irwOutputParseRe.FindStringSubmatch(line)
 	if irCommand == nil {
 		return nil
 	}
 
-	return hapitypes.NewInfraredEvent("mceusb", irCommand[1])
+	return hapitypes.NewInfraredEvent(irCommand[2], irCommand[1])
 }
 
 // reads LIRC's "$ irw" output
