@@ -206,6 +206,33 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 		"sqs":                     alexaadapter.Start,
 	}
 
+	for _, devGroup := range conf.DeviceGroups {
+		generatedAdapterId := devGroup.DeviceId + "Group"
+
+		adapterConf := hapitypes.AdapterConfig{
+			Id:                 generatedAdapterId,
+			Type:               "devicegroup",
+			DevicegroupDevices: devGroup.Devices,
+		}
+
+		firstDeviceOfGroup := findDeviceConfig(devGroup.Devices[0], conf)
+		if firstDeviceOfGroup == nil {
+			return fmt.Errorf("device group device not found: %s", devGroup.Devices[0])
+		}
+
+		deviceConf := hapitypes.DeviceConfig{
+			DeviceId:      devGroup.DeviceId,
+			AdapterId:     adapterConf.Id,
+			Name:          devGroup.Name,
+			Description:   "Device group",
+			AlexaCategory: firstDeviceOfGroup.AlexaCategory,
+			Type:          firstDeviceOfGroup.Type, // TODO: compute lowest common denominator type?
+		}
+
+		conf.Adapters = append(conf.Adapters, adapterConf)
+		conf.Devices = append(conf.Devices, deviceConf)
+	}
+
 	for _, adapterConf := range conf.Adapters {
 		initFn, ok := adapters[adapterConf.Type]
 		if !ok {

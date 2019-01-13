@@ -50,6 +50,13 @@ type DeviceConfig struct {
 	AlexaCategory    string `json:"alexa_category,omitempty"`
 }
 
+// these are transparently generated to adapter + device combo
+type DeviceGroupConfig struct {
+	DeviceId string   `json:"device_id"`
+	Name     string   `json:"name"`
+	Devices  []string `json:"devices"`
+}
+
 type Person struct {
 	Id string `json:"id"`
 }
@@ -66,10 +73,11 @@ type SubscribeConfig struct {
 }
 
 type ConfigFile struct {
-	Adapters      []AdapterConfig   `json:"adapter"`
-	Devices       []DeviceConfig    `json:"device"`
-	Persons       []Person          `json:"person"`
-	Subscriptions []SubscribeConfig `json:"subscribe"`
+	Adapters      []AdapterConfig     `json:"adapter"`
+	Devices       []DeviceConfig      `json:"device"`
+	DeviceGroups  []DeviceGroupConfig `json:"devicegroup"`
+	Persons       []Person            `json:"person"`
+	Subscriptions []SubscribeConfig   `json:"subscribe"`
 }
 
 func (c *ConfigFile) FindDeviceConfigByAdaptersDeviceId(adaptersDeviceId string) *DeviceConfig {

@@ -85,3 +85,13 @@ func readAllConfFilesMerged() (io.Reader, func(), error) {
 		}
 	}, nil
 }
+
+func findDeviceConfig(id string, conf *hapitypes.ConfigFile) *hapitypes.DeviceConfig {
+	for _, devs := range conf.Devices {
+		if devs.DeviceId == id {
+			return &devs
+		}
+	}
+
+	return nil
+}
