@@ -17,21 +17,17 @@ func TestCreateAlexaConnectorSpec(t *testing.T) {
 		},
 		Devices: []hapitypes.DeviceConfig{
 			{
-				DeviceId:        "dev1",
-				Name:            "Kitchen light",
-				AlexaCategory:   "SMARTPLUG",
-				CapabilityPower: true,
+				DeviceId:      "dev1",
+				Name:          "Kitchen light",
+				AlexaCategory: "SMARTPLUG",
+				Type:          "onkyo-tx-nr515",
 			},
 			{
-				DeviceId:                   "dev2",
-				Name:                       "God",
-				Description:                "Has all the capabilities",
-				AlexaCategory:              "LIGHT",
-				CapabilityPower:            true,
-				CapabilityBrightness:       true,
-				CapabilityColor:            true,
-				CapabilityColorTemperature: true,
-				CapabilityPlayback:         true,
+				DeviceId:      "dev2",
+				Name:          "Balcony light",
+				Description:   "RGBW light",
+				AlexaCategory: "LIGHT",
+				Type:          "ledstrip-rgbw",
 			},
 		},
 	}
@@ -56,15 +52,13 @@ func TestCreateAlexaConnectorSpec(t *testing.T) {
     },
     {
       "id": "dev2",
-      "friendly_name": "God",
-      "description": "Has all the capabilities",
+      "friendly_name": "Balcony light",
+      "description": "RGBW light",
       "display_category": "LIGHT",
       "capability_codes": [
         "PowerController",
         "BrightnessController",
-        "ColorController",
-        "ColorTemperatureController",
-        "PlaybackController"
+        "ColorController"
       ]
     }
   ]

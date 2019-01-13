@@ -63,12 +63,14 @@ func createAlexaConnectorSpec(sqsAdapter hapitypes.AdapterConfig, conf *hapitype
 			return nil, fmt.Errorf("unsupported AlexaCategory: %s", device.AlexaCategory)
 		}
 
+		caps := hapitypes.ResolveDeviceType(device.Type).Capabilities
+
 		alexaCapabilities := []string{}
-		maybePushCap(&alexaCapabilities, device.CapabilityPower, "PowerController")
-		maybePushCap(&alexaCapabilities, device.CapabilityBrightness, "BrightnessController")
-		maybePushCap(&alexaCapabilities, device.CapabilityColor, "ColorController")
-		maybePushCap(&alexaCapabilities, device.CapabilityColorTemperature, "ColorTemperatureController")
-		maybePushCap(&alexaCapabilities, device.CapabilityPlayback, "PlaybackController")
+		maybePushCap(&alexaCapabilities, caps.Power, "PowerController")
+		maybePushCap(&alexaCapabilities, caps.Brightness, "BrightnessController")
+		maybePushCap(&alexaCapabilities, caps.Color, "ColorController")
+		maybePushCap(&alexaCapabilities, caps.ColorTemperature, "ColorTemperatureController")
+		maybePushCap(&alexaCapabilities, caps.Playback, "PlaybackController")
 
 		devices = append(devices, AlexaConnectorDevice{
 			Id:              device.DeviceId,

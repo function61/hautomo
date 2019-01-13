@@ -40,21 +40,14 @@ type AdapterConfig struct {
 
 type DeviceConfig struct {
 	DeviceId         string `json:"id"`
+	Type             string `json:"type"`
 	AdapterId        string `json:"adapter"`
 	AdaptersDeviceId string `json:"adapters_device_id,omitempty"`
-	// used for Alexa
-	Name          string `json:"name"`
-	Description   string `json:"description"`
-	PowerOnCmd    string `json:"power_on_cmd,omitempty"`
-	PowerOffCmd   string `json:"power_off_cmd,omitempty"`
-	AlexaCategory string `json:"alexa_category,omitempty"`
-
-	CapabilityPower                     bool `json:"capability_power"`
-	CapabilityBrightness                bool `json:"capability_brightness"`
-	CapabilityColor                     bool `json:"capability_color"`
-	CapabilityColorTemperature          bool `json:"capability_colortemperature"`
-	CapabilityColorSeparateWhiteChannel bool `json:"capability_color_separate_white_channel"`
-	CapabilityPlayback                  bool `json:"capability_playback"`
+	Name             string `json:"name"`
+	Description      string `json:"description"`
+	PowerOnCmd       string `json:"power_on_cmd,omitempty"`
+	PowerOffCmd      string `json:"power_off_cmd,omitempty"`
+	AlexaCategory    string `json:"alexa_category,omitempty"`
 }
 
 type Person struct {

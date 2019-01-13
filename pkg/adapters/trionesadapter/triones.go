@@ -65,9 +65,10 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 		bluetoothAddr := e.DeviceId
 
 		deviceConf := conf.FindDeviceConfigByAdaptersDeviceId(bluetoothAddr)
+		caps := hapitypes.ResolveDeviceType(deviceConf.Type).Capabilities
 
 		var req triones.Request
-		if e.Color.IsGrayscale() && deviceConf.CapabilityColorSeparateWhiteChannel {
+		if e.Color.IsGrayscale() && caps.ColorSeparateWhiteChannel {
 			// we can just take red because we know that r == g == b
 			req = triones.RequestWhite(bluetoothAddr, e.Color.Red)
 		} else {
@@ -81,7 +82,7 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 			// is messed up, or if the pinouts of this controller and this particular strip
 			// that are incompatible, but here Red and Green channels are mixed up.
 			// compensating for it here.
-			if deviceConf.CapabilityColorSeparateWhiteChannel {
+			if caps.ColorSeparateWhiteChannel {
 				// swap red <-> green channels
 				temp := req.RgbOpts.Red
 				req.RgbOpts.Red = req.RgbOpts.Green
