@@ -173,8 +173,6 @@ func runOnce(sqsClient *sqs.SQS, adapter *hapitypes.Adapter) {
 	}
 
 	if len(ackList) > 0 {
-		log.Debug(fmt.Sprintf("acking %d message(s)", len(ackList)))
-
 		_, err := sqsClient.DeleteMessageBatch(&sqs.DeleteMessageBatchInput{
 			Entries:  ackList,
 			QueueUrl: &adapter.Conf.SqsQueueUrl,
