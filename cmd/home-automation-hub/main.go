@@ -255,9 +255,8 @@ func handleHttp(conf *hapitypes.ConfigFile, stop *stopper.Stopper) {
 		enc.Encode(conf)
 	})
 
-	if err := srv.ListenAndServe(); err != nil {
-		// cannot panic, because this probably is an intentional close
-		log.Error(fmt.Sprintf("ListenAndServe() stopped: %s", err.Error()))
+	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		log.Error(fmt.Sprintf("ListenAndServe(): %s", err.Error()))
 	}
 }
 
