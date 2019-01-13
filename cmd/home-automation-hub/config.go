@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"github.com/hashicorp/hcl"
+	"io"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 )
 
 const (
@@ -14,14 +17,25 @@ const (
 )
 
 func readConfigurationFile() (*hapitypes.ConfigFile, error) {
-	// read & parse HCL to generic struct
-	input, err := ioutil.ReadFile(confFilePath)
+	merged, free, err := readAllConfFilesMerged()
+	if err != nil {
+		return nil, err
+	}
+	defer free()
+
+	return parseConfiguration(merged)
+}
+
+func parseConfiguration(hclContent io.Reader) (*hapitypes.ConfigFile, error) {
+	// read all files concatenated (you can catenate HCL files) into a single blob
+	hclContentBuffered, err := ioutil.ReadAll(hclContent)
 	if err != nil {
 		return nil, err
 	}
 
+	// read & parse HCL to generic struct
 	var v interface{}
-	errHcl := hcl.Unmarshal(input, &v)
+	errHcl := hcl.Unmarshal(hclContentBuffered, &v)
 	if errHcl != nil {
 		return nil, fmt.Errorf("unable to parse HCL: %s", errHcl)
 	}
@@ -43,4 +57,31 @@ func readConfigurationFile() (*hapitypes.ConfigFile, error) {
 	}
 
 	return conf, nil
+}
+
+func readAllConfFilesMerged() (io.Reader, func(), error) {
+	noop := func() {}
+
+	confFilePaths, err := filepath.Glob("conf/*.hcl")
+	if err != nil {
+		return nil, noop, err
+	}
+
+	confFiles := []*os.File{}
+	readers := []io.Reader{}
+	for _, confFilePath := range confFilePaths {
+		confFile, err := os.Open(confFilePath)
+		if err != nil {
+			return nil, noop, err
+		}
+
+		confFiles = append(confFiles, confFile)
+		readers = append(readers, confFile)
+	}
+
+	return io.MultiReader(readers...), func() {
+		for _, r := range confFiles {
+			r.Close()
+		}
+	}, nil
 }
