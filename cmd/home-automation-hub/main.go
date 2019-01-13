@@ -249,6 +249,10 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 	}
 
 	for _, deviceConf := range conf.Devices {
+		if _, exists := app.deviceById[deviceConf.DeviceId]; exists {
+			return fmt.Errorf("duplicate device id %s", deviceConf.DeviceId)
+		}
+
 		device := hapitypes.NewDevice(deviceConf)
 		app.deviceById[deviceConf.DeviceId] = device
 	}
