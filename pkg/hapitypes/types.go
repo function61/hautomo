@@ -86,7 +86,7 @@ func NewDeviceGroup(id string, name string, deviceIds []string) *DeviceGroup {
 
 type Adapter struct {
 	Conf     AdapterConfig
-	Inbound  *InboundFabric     // inbound events coming from sensors, infrared, Amazon Echo etc.
+	inbound  *InboundFabric     // inbound events coming from sensors, infrared, Amazon Echo etc.
 	Outbound chan OutboundEvent // outbound events going to lights, TV, amplifier etc.
 	confFile *ConfigFile        // FIXME
 }
@@ -94,7 +94,7 @@ type Adapter struct {
 func NewAdapter(conf AdapterConfig, confFile *ConfigFile, inbound *InboundFabric) *Adapter {
 	return &Adapter{
 		Conf:     conf,
-		Inbound:  inbound,
+		inbound:  inbound,
 		Outbound: make(chan OutboundEvent, 32),
 		confFile: confFile,
 	}
@@ -108,6 +108,10 @@ func (a *Adapter) GetConfigFileDeprecated() *ConfigFile {
 func (a *Adapter) Send(e OutboundEvent) {
 	// TODO: log warning if queue full?
 	a.Outbound <- e
+}
+
+func (a *Adapter) Receive(e InboundEvent) {
+	a.inbound.Receive(e)
 }
 
 func (a *Adapter) LogUnsupportedEvent(e OutboundEvent, log *logger.Logger) {

@@ -60,8 +60,7 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 		)
 
 		// translate brightness directives into RGB directives
-		colorMsg := hapitypes.NewColorMsg(e.DeviceId, dimmedColor)
-		adapter.Send(&colorMsg)
+		adapter.Send(hapitypes.NewColorMsg(e.DeviceId, dimmedColor))
 	case *hapitypes.ColorMsg:
 		bluetoothAddr := e.DeviceId
 

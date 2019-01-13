@@ -31,40 +31,40 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 }
 
 func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapter) {
-	inbound := adapter.Inbound // shorthands
-	conf := adapter.Conf
+	group := adapter.Conf.DevicegroupDevices // shorthand
 
 	switch e := genericEvent.(type) {
 	case *hapitypes.ColorMsg:
-		for _, deviceId := range conf.DevicegroupDevices {
-			e2 := hapitypes.NewColorMsg(deviceId, e.Color)
-			inbound.Receive(&e2)
+		for _, deviceId := range group {
+			adapter.Receive(hapitypes.NewColorMsg(deviceId, e.Color))
 		}
 	case *hapitypes.PlaybackEvent:
-		for _, deviceId := range conf.DevicegroupDevices {
-			e2 := hapitypes.NewPlaybackEvent(deviceId, e.Action)
-			inbound.Receive(&e2)
+		for _, deviceId := range group {
+			adapter.Receive(hapitypes.NewPlaybackEvent(
+				deviceId,
+				e.Action))
 		}
 	case *hapitypes.BrightnessMsg:
-		for _, deviceId := range conf.DevicegroupDevices {
-			e2 := hapitypes.NewBrightnessEvent(deviceId, e.Brightness)
-			inbound.Receive(&e2)
+		for _, deviceId := range group {
+			adapter.Receive(hapitypes.NewBrightnessEvent(deviceId, e.Brightness))
 		}
 	case *hapitypes.ColorTemperatureEvent:
-		for _, deviceId := range conf.DevicegroupDevices {
-			e2 := hapitypes.NewColorTemperatureEvent(deviceId, e.TemperatureInKelvin)
-			inbound.Receive(&e2)
+		for _, deviceId := range group {
+			adapter.Receive(hapitypes.NewColorTemperatureEvent(
+				deviceId,
+				e.TemperatureInKelvin))
 		}
 	case *hapitypes.PowerMsg:
-		for _, deviceId := range conf.DevicegroupDevices {
-			var e2 hapitypes.PowerEvent
+		for _, deviceId := range group {
 			if e.On {
-				e2 = hapitypes.NewPowerEvent(deviceId, hapitypes.PowerKindOn)
+				adapter.Receive(hapitypes.NewPowerEvent(deviceId, hapitypes.PowerKindOn))
 			} else {
-				e2 = hapitypes.NewPowerEvent(deviceId, hapitypes.PowerKindOff)
+				adapter.Receive(hapitypes.NewPowerEvent(deviceId, hapitypes.PowerKindOff))
 			}
-
-			inbound.Receive(&e2)
+		}
+	case *hapitypes.BlinkEvent:
+		for _, deviceId := range group {
+			adapter.Receive(hapitypes.NewBlinkEvent(deviceId))
 		}
 	default:
 		adapter.LogUnsupportedEvent(genericEvent, log)

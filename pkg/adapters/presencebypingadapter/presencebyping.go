@@ -43,7 +43,7 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	pingRequests := make(chan ProbeRequest, 16)
 	pingResponses := make(chan ProbeResponse, 16)
 
-	go tickerLoop(adapter.Conf, adapter.Inbound, forStamping, pingResponses, workers.Stopper())
+	go tickerLoop(adapter.Conf, adapter, forStamping, pingResponses, workers.Stopper())
 
 	go pingSender(icmpSocket, pingRequests, workers.Stopper())
 
@@ -121,7 +121,7 @@ func probePresence(
 
 func tickerLoop(
 	config hapitypes.AdapterConfig,
-	inbound *hapitypes.InboundFabric,
+	adapter *hapitypes.Adapter,
 	forStamping chan<- ProbeRequest,
 	pingResponses chan<- ProbeResponse,
 	stop *stopper.Stopper,
@@ -153,11 +153,9 @@ func tickerLoop(
 
 				// TODO: have this "different than last one" -check in app
 				if !firstResult || current.Present != previous {
-					e := hapitypes.NewPersonPresenceChangeEvent(
+					adapter.Receive(hapitypes.NewPersonPresenceChangeEvent(
 						current.Person,
-						current.Present)
-
-					inbound.Receive(&e)
+						current.Present))
 				}
 
 				personIdPresentMap[current.Person] = current.Present

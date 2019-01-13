@@ -5,8 +5,8 @@ type PlaybackEvent struct {
 	Action                  string
 }
 
-func NewPlaybackEvent(deviceIdOrDeviceGroupId string, action string) PlaybackEvent {
-	return PlaybackEvent{
+func NewPlaybackEvent(deviceIdOrDeviceGroupId string, action string) *PlaybackEvent {
+	return &PlaybackEvent{
 		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
 		Action:                  action,
 	}

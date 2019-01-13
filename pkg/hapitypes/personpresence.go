@@ -1,7 +1,7 @@
 package hapitypes
 
-func NewPersonPresenceChangeEvent(personId string, present bool) PersonPresenceChangeEvent {
-	return PersonPresenceChangeEvent{
+func NewPersonPresenceChangeEvent(personId string, present bool) *PersonPresenceChangeEvent {
+	return &PersonPresenceChangeEvent{
 		PersonId: personId,
 		Present:  present,
 	}

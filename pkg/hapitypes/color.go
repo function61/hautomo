@@ -5,8 +5,8 @@ type ColorMsg struct {
 	Color    RGB
 }
 
-func NewColorMsg(deviceId string, color RGB) ColorMsg {
-	return ColorMsg{
+func NewColorMsg(deviceId string, color RGB) *ColorMsg {
+	return &ColorMsg{
 		DeviceId: deviceId,
 		Color:    color,
 	}

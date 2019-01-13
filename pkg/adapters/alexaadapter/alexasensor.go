@@ -86,8 +86,6 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 }
 
 func runOnce(sqsClient *sqs.SQS, adapter *hapitypes.Adapter) {
-	inbound := adapter.Inbound // shorthand
-
 	result, receiveErr := sqsClient.ReceiveMessage(&sqs.ReceiveMessageInput{
 		MaxNumberOfMessages: aws.Int64(10),
 		QueueUrl:            &adapter.Conf.SqsQueueUrl,
@@ -121,50 +119,54 @@ func runOnce(sqsClient *sqs.SQS, adapter *hapitypes.Adapter) {
 				panic(err)
 			}
 
-			e := hapitypes.NewPowerEvent(req.DeviceIdOrDeviceGroupId, hapitypes.PowerKindOn)
-			inbound.Receive(&e)
+			adapter.Receive(hapitypes.NewPowerEvent(
+				req.DeviceIdOrDeviceGroupId,
+				hapitypes.PowerKindOn))
 		case "turn_off":
 			var req TurnOffRequest
 			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 				panic(err)
 			}
 
-			e := hapitypes.NewPowerEvent(req.DeviceIdOrDeviceGroupId, hapitypes.PowerKindOff)
-			inbound.Receive(&e)
+			adapter.Receive(hapitypes.NewPowerEvent(
+				req.DeviceIdOrDeviceGroupId,
+				hapitypes.PowerKindOff))
 		case "color":
 			var req ColorRequest
 			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 				panic(err)
 			}
 
-			e := hapitypes.NewColorMsg(req.DeviceIdOrDeviceGroupId, hapitypes.NewRGB(req.Red, req.Green, req.Blue))
-			inbound.Receive(&e)
+			adapter.Receive(hapitypes.NewColorMsg(
+				req.DeviceIdOrDeviceGroupId,
+				hapitypes.NewRGB(req.Red, req.Green, req.Blue)))
 		case "brightness":
 			var req BrightnessRequest
 			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 				panic(err)
 			}
 
-			e := hapitypes.NewBrightnessEvent(req.DeviceIdOrDeviceGroupId, req.Brightness)
-			inbound.Receive(&e)
+			adapter.Receive(hapitypes.NewBrightnessEvent(
+				req.DeviceIdOrDeviceGroupId,
+				req.Brightness))
 		case "playback":
 			var req PlaybackRequest
 			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 				panic(err)
 			}
 
-			e := hapitypes.NewPlaybackEvent(req.DeviceIdOrDeviceGroupId, req.Action)
-			inbound.Receive(&e)
+			adapter.Receive(hapitypes.NewPlaybackEvent(
+				req.DeviceIdOrDeviceGroupId,
+				req.Action))
 		case "colorTemperature":
 			var req ColorTemperatureRequest
 			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
 				panic(err)
 			}
 
-			e := hapitypes.NewColorTemperatureEvent(
+			adapter.Receive(hapitypes.NewColorTemperatureEvent(
 				req.DeviceIdOrDeviceGroupId,
-				req.ColorTemperatureInKelvin)
-			inbound.Receive(&e)
+				req.ColorTemperatureInKelvin))
 		default:
 			log.Error("unknown msgType: " + msgType)
 		}

@@ -32,11 +32,10 @@ var log = logger.New("main")
 var version = "dev"
 
 type Application struct {
-	adapterById           map[string]*hapitypes.Adapter
-	deviceById            map[string]*hapitypes.Device
-	infraredToPowerEvent  map[string]hapitypes.PowerEvent
-	infraredToInfraredMsg map[string]InfraredToInfraredWrapper
-	inbound               *hapitypes.InboundFabric
+	adapterById   map[string]*hapitypes.Adapter
+	deviceById    map[string]*hapitypes.Device
+	subscriptions map[string]*hapitypes.SubscribeConfig
+	inbound       *hapitypes.InboundFabric
 }
 
 type InfraredToInfraredWrapper struct {
@@ -46,11 +45,10 @@ type InfraredToInfraredWrapper struct {
 
 func NewApplication(stop *stopper.Stopper) *Application {
 	app := &Application{
-		adapterById:           make(map[string]*hapitypes.Adapter),
-		deviceById:            make(map[string]*hapitypes.Device),
-		infraredToPowerEvent:  make(map[string]hapitypes.PowerEvent),
-		infraredToInfraredMsg: make(map[string]InfraredToInfraredWrapper),
-		inbound:               hapitypes.NewInboundFabric(),
+		adapterById:   map[string]*hapitypes.Adapter{},
+		deviceById:    map[string]*hapitypes.Device{},
+		subscriptions: map[string]*hapitypes.SubscribeConfig{},
+		inbound:       hapitypes.NewInboundFabric(),
 	}
 
 	go func() {
@@ -73,25 +71,25 @@ func NewApplication(stop *stopper.Stopper) *Application {
 				case *hapitypes.PowerEvent:
 					device := app.deviceById[e.DeviceIdOrDeviceGroupId]
 
-					if err := app.devicePower(device, *e); err != nil {
+					if err := app.devicePower(device, e); err != nil {
 						log.Error(err.Error())
 					}
 				case *hapitypes.ColorTemperatureEvent:
 					device := app.deviceById[e.Device]
 					adapter := app.adapterById[device.Conf.AdapterId]
 
-					e2 := hapitypes.NewColorTemperatureEvent(
+					adapter.Send(hapitypes.NewColorTemperatureEvent(
 						device.Conf.AdaptersDeviceId,
-						e.TemperatureInKelvin)
-					adapter.Send(&e2)
+						e.TemperatureInKelvin))
 				case *hapitypes.ColorMsg:
 					device := app.deviceById[e.DeviceId]
 					adapter := app.adapterById[device.Conf.AdapterId]
 
 					device.LastColor = e.Color
 
-					adaptedColorMsg := hapitypes.NewColorMsg(device.Conf.AdaptersDeviceId, e.Color)
-					adapter.Send(&adaptedColorMsg)
+					adapter.Send(hapitypes.NewColorMsg(
+						device.Conf.AdaptersDeviceId,
+						e.Color))
 				case *hapitypes.BrightnessEvent:
 					device := app.deviceById[e.DeviceIdOrDeviceGroupId]
 					adapter := app.adapterById[device.Conf.AdapterId]
@@ -105,20 +103,18 @@ func NewApplication(stop *stopper.Stopper) *Application {
 					device := app.deviceById[e.DeviceIdOrDeviceGroupId]
 					adapter := app.adapterById[device.Conf.AdapterId]
 
-					e2 := hapitypes.NewPlaybackEvent(device.Conf.AdaptersDeviceId, e.Action)
-					adapter.Send(&e2)
+					adapter.Send(hapitypes.NewPlaybackEvent(
+						device.Conf.AdaptersDeviceId,
+						e.Action))
+				case *hapitypes.BlinkEvent:
+					device := app.deviceById[e.DeviceId]
+					adapter := app.adapterById[device.Conf.AdapterId]
+
+					adapter.Send(hapitypes.NewBlinkEvent(device.Conf.AdaptersDeviceId))
 				case *hapitypes.InfraredEvent:
-					if powerEvent, ok := app.infraredToPowerEvent[e.Event]; ok {
-						log.Debug(fmt.Sprintf("IR: %s -> power for %s", e.Event, powerEvent.DeviceIdOrDeviceGroupId))
-
-						app.inbound.Receive(&powerEvent)
-					} else if i2i, ok := app.infraredToInfraredMsg[e.Event]; ok {
-						log.Debug(fmt.Sprintf("IR passthrough: %s -> %s", e.Event, i2i.infraredMsg.Command))
-
-						i2i.adapter.Send(&i2i.infraredMsg)
-					} else {
-						log.Debug(fmt.Sprintf("IR ignored: %s", e.Event))
-					}
+					app.publish(fmt.Sprintf("infrared:%s:%s", e.Remote, e.Event))
+				case *hapitypes.PublishEvent:
+					app.publish(e.Event)
 				default:
 					log.Error("Unsupported inbound event: " + genericEvent.InboundEventType())
 				}
@@ -129,19 +125,38 @@ func NewApplication(stop *stopper.Stopper) *Application {
 	return app
 }
 
-func (a *Application) InfraredShouldPower(key string, powerEvent hapitypes.PowerEvent) {
-	a.infraredToPowerEvent[key] = powerEvent
+func (a *Application) publish(event string) {
+	subscription, found := a.subscriptions[event]
+	if !found {
+		log.Debug(fmt.Sprintf("event %s ignored", event))
+		return
+	} else {
+		log.Debug(fmt.Sprintf("event %s", event))
+	}
+
+	for _, action := range subscription.Actions {
+		switch action.Verb {
+		case "powerOn":
+			a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindOn))
+		case "powerOff":
+			a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindOff))
+		case "powerToggle":
+			a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindToggle))
+		case "blink":
+			a.inbound.Receive(hapitypes.NewBlinkEvent(action.Device))
+		case "ir":
+			device := a.deviceById[action.Device]
+			adapter := a.adapterById[device.Conf.AdapterId]
+
+			msg := hapitypes.NewInfraredMsg(action.Device, action.IrCommand)
+			adapter.Send(&msg)
+		default:
+			panic("unknown verb: " + action.Verb)
+		}
+	}
 }
 
-func (a *Application) InfraredShouldInfrared(key string, deviceId string, command string) {
-	device := a.deviceById[deviceId]
-	adapter := a.adapterById[device.Conf.AdapterId]
-
-	msg := hapitypes.NewInfraredMsg(device.Conf.AdaptersDeviceId, command)
-	a.infraredToInfraredMsg[key] = InfraredToInfraredWrapper{adapter, msg}
-}
-
-func (a *Application) devicePower(device *hapitypes.Device, power hapitypes.PowerEvent) error {
+func (a *Application) devicePower(device *hapitypes.Device, power *hapitypes.PowerEvent) error {
 	if power.Kind == hapitypes.PowerKindOn {
 		log.Debug(fmt.Sprintf("Power on: %s", device.Conf.Name))
 
@@ -211,23 +226,10 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 		app.deviceById[deviceConf.DeviceId] = device
 	}
 
-	supportedIrPowerKinds := map[string]hapitypes.PowerKind{
-		"toggle": hapitypes.PowerKindToggle,
-		"on":     hapitypes.PowerKindOn,
-		"off":    hapitypes.PowerKindOff,
-	}
-
-	for _, powerConfig := range conf.IrPowers {
-		kind, ok := supportedIrPowerKinds[powerConfig.PowerKind]
-		if !ok {
-			panic(fmt.Errorf("Unsupported power kind: %s", powerConfig.PowerKind))
-		}
-
-		app.InfraredShouldPower(powerConfig.RemoteKey, hapitypes.NewPowerEvent(powerConfig.ToDevice, kind))
-	}
-
-	for _, ir2ir := range conf.IrToIr {
-		app.InfraredShouldInfrared(ir2ir.RemoteKey, ir2ir.ToDevice, ir2ir.IrEvent)
+	for _, subscription := range conf.Subscriptions {
+		// FIXME: how to do this better?
+		tmp := subscription
+		app.subscriptions[subscription.Event] = &tmp
 	}
 
 	return nil

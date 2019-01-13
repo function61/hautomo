@@ -15,7 +15,7 @@ var log = logger.New("lircadapter")
 
 // match lines like this: "000000037ff07bee 00 KEY_VOLUMEDOWN mceusb"
 
-var mceUsbCommandRe = regexp.MustCompile(" 00 ([a-zA-Z_0-9]+) devinput$")
+var irParseRe = regexp.MustCompile(" 00 ([a-zA-Z_0-9]+) devinput$")
 
 // reads LIRC's "$ irw" output
 func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
@@ -45,17 +45,13 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 			}
 
 			// "000000037ff07bee 00 KEY_VOLUMEDOWN mceusb" => "KEY_VOLUMEDOWN"
-			mceUsbCommand := mceUsbCommandRe.FindStringSubmatch(string(line))
-			if mceUsbCommand == nil {
+			irCommand := irParseRe.FindStringSubmatch(string(line))
+			if irCommand == nil {
 				log.Error("mismatched command format")
 				continue
 			}
 
-			e := hapitypes.NewInfraredEvent("mceusb", mceUsbCommand[1])
-
-			log.Debug(fmt.Sprintf("received %s", e.Event))
-
-			adapter.Inbound.Receive(&e)
+			adapter.Receive(hapitypes.NewInfraredEvent("mceusb", irCommand[1]))
 		}
 	}()
 

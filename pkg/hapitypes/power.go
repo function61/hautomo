@@ -17,8 +17,8 @@ func (e *PowerEvent) InboundEventType() string {
 	return "PowerEvent"
 }
 
-func NewPowerEvent(deviceIdOrDeviceGroupId string, kind PowerKind) PowerEvent {
-	return PowerEvent{
+func NewPowerEvent(deviceIdOrDeviceGroupId string, kind PowerKind) *PowerEvent {
+	return &PowerEvent{
 		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
 		Kind:                    kind,
 	}

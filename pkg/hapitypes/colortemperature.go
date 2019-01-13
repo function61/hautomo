@@ -1,7 +1,7 @@
 package hapitypes
 
-func NewColorTemperatureEvent(device string, temperatureInKelvin uint) ColorTemperatureEvent {
-	return ColorTemperatureEvent{device, temperatureInKelvin}
+func NewColorTemperatureEvent(device string, temperatureInKelvin uint) *ColorTemperatureEvent {
+	return &ColorTemperatureEvent{device, temperatureInKelvin}
 }
 
 type ColorTemperatureEvent struct {

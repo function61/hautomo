@@ -5,8 +5,8 @@ type BrightnessEvent struct {
 	Brightness              uint // 0..100 %
 }
 
-func NewBrightnessEvent(deviceIdOrDeviceGroupId string, brightness uint) BrightnessEvent {
-	return BrightnessEvent{
+func NewBrightnessEvent(deviceIdOrDeviceGroupId string, brightness uint) *BrightnessEvent {
+	return &BrightnessEvent{
 		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
 		Brightness:              brightness,
 	}

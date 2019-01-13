@@ -14,6 +14,10 @@ import (
 
 var log = logger.New("zigbee2mqtt")
 
+const (
+	z2mTopicPrefix = "zigbee2mqtt/"
+)
+
 type MqttPublish struct {
 	Topic   string
 	Message string
@@ -29,20 +33,26 @@ func deviceMsg(deviceId string, msg string) MqttPublish {
 func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	config := adapter.GetConfigFileDeprecated()
 
-	// this logic is still TODO and has to be made configurable
-	clickRecognizer := func(topicName, message []byte) {
-		if string(topicName) != "zigbee2mqtt/0x00158d000227a73c" || !strings.Contains(string(message), `"click":"single"`) {
-			return
+	m2qttDeviceObserver := func(topicName, message []byte) {
+		// "zigbee2mqtt/0x00158d000227a73c" => "0x00158d000227a73c"
+		dev := string(topicName[len(z2mTopicPrefix):])
+
+		if strings.Contains(string(message), `"click":"single"`) {
+			adapter.Receive(hapitypes.NewPublishEvent(fmt.Sprintf("zigbee2mqtt:%s:click", dev)))
 		}
 
-		log.Info("clicked")
+		// {"battery":100,"voltage":3055,"linkquality":47,"click":"double"}
+		if strings.Contains(string(message), `"click":"double"`) {
+			adapter.Receive(hapitypes.NewPublishEvent(fmt.Sprintf("zigbee2mqtt:%s:double", dev)))
+		}
 
-		toggleCabinetLights := hapitypes.NewPowerToggleEvent("45e6e09c")
+		// {"battery":100,"voltage":3055,"linkquality":60,"contact":false}
+		if strings.Contains(string(message), `"contact":false`) {
+			adapter.Receive(hapitypes.NewPublishEvent(fmt.Sprintf("zigbee2mqtt:%s:contact:false", dev)))
+		}
 
-		for i := 0; i < 4; i++ {
-			adapter.Inbound.Receive(&toggleCabinetLights)
-
-			time.Sleep(1000 * time.Millisecond)
+		if strings.Contains(string(message), `"contact":true`) {
+			adapter.Receive(hapitypes.NewPublishEvent(fmt.Sprintf("zigbee2mqtt:%s:contact:true", dev)))
 		}
 	}
 
@@ -69,6 +79,8 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 				e.Color.Red,
 				e.Color.Green,
 				e.Color.Blue))
+		case *hapitypes.BlinkEvent:
+			z2mPublish <- deviceMsg(e.DeviceId, `{"alert": "select"}`)
 		case *hapitypes.ColorTemperatureEvent:
 			deviceConf := config.FindDeviceConfigByAdaptersDeviceId(e.Device)
 
@@ -78,8 +90,9 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 				r, g, b := temperatureToRGB(float64(e.TemperatureInKelvin))
 
 				// re-publish as a RGB message
-				rgbMsg := hapitypes.NewColorMsg(e.Device, hapitypes.NewRGB(r, g, b))
-				adapter.Outbound <- &rgbMsg
+				adapter.Outbound <- hapitypes.NewColorMsg(
+					e.Device,
+					hapitypes.NewRGB(r, g, b))
 			} else {
 				z2mPublish <- deviceMsg(e.Device, fmt.Sprintf(
 					`{"color_temp": %d, "transition": 1}`,
@@ -112,7 +125,7 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 		defer log.Info("reconnect loop stopped")
 
 		for {
-			if err := mqttConnection(adapter.Conf.Zigbee2MqttAddr, clickRecognizer, z2mPublish, stop); err != nil {
+			if err := mqttConnection(adapter.Conf.Zigbee2MqttAddr, m2qttDeviceObserver, z2mPublish, stop); err != nil {
 				log.Error(fmt.Sprintf("mqttConnection error; reconnecting soon: %v", err))
 				time.Sleep(1 * time.Second)
 			}
@@ -158,7 +171,7 @@ func mqttConnection(addr string, handler client.MessageHandler, mqttPublishes <-
 	if err := mqttClient.Subscribe(&client.SubscribeOptions{
 		SubReqs: []*client.SubReq{
 			{
-				TopicFilter: []byte("zigbee2mqtt/#"), // # means catch-all
+				TopicFilter: []byte(z2mTopicPrefix + "#"), // # means catch-all
 				QoS:         mqtt.QoS0,
 				Handler:     handler,
 			},

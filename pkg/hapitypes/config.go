@@ -57,28 +57,26 @@ type DeviceConfig struct {
 	CapabilityPlayback                  bool `json:"capability_playback"`
 }
 
-type IrPowerConfig struct {
-	RemoteKey string `json:"remote_key"`
-	ToDevice  string `json:"to_device"`
-	PowerKind string `json:"power_kind"`
-}
-
-type IrToIr struct {
-	RemoteKey string `json:"remote_key"`
-	ToDevice  string `json:"to_device"`
-	IrEvent   string `json:"ir"`
-}
-
 type Person struct {
 	Id string `json:"id"`
 }
 
+type ActionConfig struct {
+	Device    string `json:"device"`
+	Verb      string `json:"verb"` // powerOn/powerOff/powerToggle/blink/ir
+	IrCommand string `json:"ir_command"`
+}
+
+type SubscribeConfig struct {
+	Event   string         `json:"event"`
+	Actions []ActionConfig `json:"action"`
+}
+
 type ConfigFile struct {
-	Adapters []AdapterConfig `json:"adapter"`
-	Devices  []DeviceConfig  `json:"device"`
-	IrPowers []IrPowerConfig `json:"ir_powers"`
-	IrToIr   []IrToIr        `json:"ir2ir"`
-	Persons  []Person        `json:"person"`
+	Adapters      []AdapterConfig   `json:"adapter"`
+	Devices       []DeviceConfig    `json:"device"`
+	Persons       []Person          `json:"person"`
+	Subscriptions []SubscribeConfig `json:"subscribe"`
 }
 
 func (c *ConfigFile) FindDeviceConfigByAdaptersDeviceId(adaptersDeviceId string) *DeviceConfig {

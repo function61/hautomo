@@ -21,8 +21,9 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 			case <-stop.Signal:
 				return
 			case <-time.After(5 * time.Second):
-				e := hapitypes.NewInfraredEvent("simulated_remote", adapter.Conf.IrSimulatorKey)
-				adapter.Inbound.Receive(&e)
+				adapter.Receive(hapitypes.NewInfraredEvent(
+					"simulated_remote",
+					adapter.Conf.IrSimulatorKey))
 			}
 		}
 	}()

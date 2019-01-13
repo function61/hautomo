@@ -5,8 +5,8 @@ type InfraredEvent struct {
 	Event  string
 }
 
-func NewInfraredEvent(remote string, event string) InfraredEvent {
-	return InfraredEvent{
+func NewInfraredEvent(remote string, event string) *InfraredEvent {
+	return &InfraredEvent{
 		Remote: remote,
 		Event:  event,
 	}
@@ -17,7 +17,7 @@ func (e *InfraredEvent) InboundEventType() string {
 }
 
 type InfraredMsg struct {
-	DeviceId string // adapter's own id
+	DeviceId string
 	Command  string
 }
 
