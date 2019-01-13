@@ -7,7 +7,6 @@ import (
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"github.com/yosssi/gmq/mqtt"
 	"github.com/yosssi/gmq/mqtt/client"
-	"strings"
 	"sync"
 	"time"
 )
@@ -34,25 +33,8 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	config := adapter.GetConfigFileDeprecated()
 
 	m2qttDeviceObserver := func(topicName, message []byte) {
-		// "zigbee2mqtt/0x00158d000227a73c" => "0x00158d000227a73c"
-		dev := string(topicName[len(z2mTopicPrefix):])
-
-		if strings.Contains(string(message), `"click":"single"`) {
-			adapter.Receive(hapitypes.NewPublishEvent(fmt.Sprintf("zigbee2mqtt:%s:click", dev)))
-		}
-
-		// {"battery":100,"voltage":3055,"linkquality":47,"click":"double"}
-		if strings.Contains(string(message), `"click":"double"`) {
-			adapter.Receive(hapitypes.NewPublishEvent(fmt.Sprintf("zigbee2mqtt:%s:double", dev)))
-		}
-
-		// {"battery":100,"voltage":3055,"linkquality":60,"contact":false}
-		if strings.Contains(string(message), `"contact":false`) {
-			adapter.Receive(hapitypes.NewPublishEvent(fmt.Sprintf("zigbee2mqtt:%s:contact:false", dev)))
-		}
-
-		if strings.Contains(string(message), `"contact":true`) {
-			adapter.Receive(hapitypes.NewPublishEvent(fmt.Sprintf("zigbee2mqtt:%s:contact:true", dev)))
+		if e := parseMsgPayload(string(topicName), string(message)); e != nil {
+			adapter.Receive(e)
 		}
 	}
 
