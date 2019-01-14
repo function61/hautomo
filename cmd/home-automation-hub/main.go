@@ -113,8 +113,16 @@ func NewApplication(stop *stopper.Stopper) *Application {
 					adapter.Send(hapitypes.NewBlinkEvent(device.Conf.AdaptersDeviceId))
 				case *hapitypes.InfraredEvent:
 					app.publish(fmt.Sprintf("infrared:%s:%s", e.Remote, e.Event))
-				case *hapitypes.PublishEvent:
-					app.publish(e.Event)
+				case *hapitypes.ContactEvent:
+					app.publish(fmt.Sprintf("contact:%s:%v", e.Device, e.Contact))
+				case *hapitypes.PushButtonEvent:
+					app.publish(fmt.Sprintf("pushbutton:%s:%s", e.Device, e.Specifier))
+				case *hapitypes.WaterLeakEvent:
+					app.publish(fmt.Sprintf("waterleak:%s:%v", e.Device, e.WaterDetected))
+				case *hapitypes.HeartbeatEvent:
+					app.publish(fmt.Sprintf("heartbeat:%s", e.Device))
+				case *hapitypes.TemperatureHumidityPressureEvent:
+					fmt.Printf("temp %v\n", e)
 				default:
 					log.Error("Unsupported inbound event: " + genericEvent.InboundEventType())
 				}

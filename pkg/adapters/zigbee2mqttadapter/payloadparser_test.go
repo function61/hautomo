@@ -1,6 +1,7 @@
 package zigbee2mqttadapter
 
 import (
+	"encoding/json"
 	"github.com/function61/gokit/assert"
 	"testing"
 )
@@ -11,38 +12,53 @@ func TestParseMsgPayload(t *testing.T) {
 
 	tests := []struct {
 		input  string
+		kind   deviceKind
 		output string
 	}{
 		{
 			input:  `{"battery":100,"voltage":3055,"linkquality":47,"click":"single"}`,
-			output: "zigbee2mqtt:0x00158d000227a73c:click",
+			kind:   deviceKindWXKG11LM,
+			output: `PushButtonEvent {"Device":"dummyId","Specifier":"single"}`,
 		},
 		{
 			input:  `{"battery":100,"voltage":3055,"linkquality":47,"click":"double"}`,
-			output: "zigbee2mqtt:0x00158d000227a73c:double",
+			kind:   deviceKindWXKG11LM,
+			output: `PushButtonEvent {"Device":"dummyId","Specifier":"double"}`,
+		},
+		{
+			input:  `{"battery":100,"voltage":3055,"linkquality":47}`,
+			kind:   deviceKindWXKG11LM,
+			output: `HeartbeatEvent {"Device":"dummyId"}`,
 		},
 		{
 			input:  `{"contact":true,"linkquality":70}`,
-			output: "zigbee2mqtt:0x00158d000227a73c:contact:true",
+			kind:   deviceKindMCCGQ11LM,
+			output: `ContactEvent {"Device":"dummyId","Contact":true}`,
 		},
 		{
 			input:  `{"contact":false,"linkquality":70}`,
-			output: "zigbee2mqtt:0x00158d000227a73c:contact:false",
+			kind:   deviceKindMCCGQ11LM,
+			output: `ContactEvent {"Device":"dummyId","Contact":false}`,
 		},
 		{
 			input:  `{"this is": "unsupported payload type"}`,
-			output: "",
+			kind:   deviceKindUnknown,
+			output: "unknown device kind for dummyId",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.output, func(t *testing.T) {
-			e := parseMsgPayload(topic, test.input)
+			e, err := parseMsgPayload(topic, func(_ string) *resolvedDevice {
+				return &resolvedDevice{"dummyId", test.kind}
+			}, test.input)
 
-			if test.output != "" {
-				assert.EqualString(t, e.Event, test.output)
+			if err != nil {
+				assert.EqualString(t, err.Error(), test.output)
 			} else {
-				assert.True(t, e == nil)
+				eventJson, err := json.Marshal(e)
+				assert.True(t, err == nil)
+				assert.EqualString(t, e.InboundEventType()+" "+string(eventJson), test.output)
 			}
 		})
 	}

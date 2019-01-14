@@ -32,10 +32,35 @@ func deviceMsg(deviceId string, msg string) MqttPublish {
 func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	config := adapter.GetConfigFileDeprecated()
 
-	m2qttDeviceObserver := func(topicName, message []byte) {
-		if e := parseMsgPayload(string(topicName), string(message)); e != nil {
-			adapter.Receive(e)
+	resolver := func(adaptersDeviceId string) *resolvedDevice {
+		for _, devConfig := range config.Devices {
+			// search for incoming messages' device config (same adapter & adapter's device id)
+			if devConfig.AdapterId != adapter.Conf.Id || devConfig.AdaptersDeviceId != adaptersDeviceId {
+				continue
+			}
+
+			kind, found := deviceTypeToZ2mType[devConfig.Type]
+			if !found {
+				kind = deviceKindUnknown
+			}
+
+			return &resolvedDevice{
+				id:   devConfig.DeviceId,
+				kind: kind,
+			}
 		}
+
+		return nil
+	}
+
+	m2qttDeviceObserver := func(topicName, message []byte) {
+		event, err := parseMsgPayload(string(topicName), resolver, string(message))
+		if err != nil {
+			log.Error(err.Error())
+			return
+		}
+
+		adapter.Receive(event)
 	}
 
 	z2mPublish := make(chan MqttPublish, 16)
