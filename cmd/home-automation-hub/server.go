@@ -24,11 +24,6 @@ type Application struct {
 	inbound       *hapitypes.InboundFabric
 }
 
-type InfraredToInfraredWrapper struct {
-	adapter     *hapitypes.Adapter
-	infraredMsg hapitypes.InfraredMsg
-}
-
 func NewApplication(stop *stopper.Stopper) *Application {
 	app := &Application{
 		adapterById:   map[string]*hapitypes.Adapter{},
