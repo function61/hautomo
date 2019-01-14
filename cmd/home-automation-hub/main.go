@@ -61,76 +61,80 @@ func NewApplication(stop *stopper.Stopper) *Application {
 			select {
 			case <-stop.Signal:
 				return
-			case genericEvent := <-app.inbound.Ch:
-				switch e := genericEvent.(type) {
-				case *hapitypes.PersonPresenceChangeEvent:
-					log.Info(fmt.Sprintf(
-						"Person %s presence changed to %v",
-						e.PersonId,
-						e.Present))
-				case *hapitypes.PowerEvent:
-					device := app.deviceById[e.DeviceIdOrDeviceGroupId]
-
-					if err := app.devicePower(device, e); err != nil {
-						log.Error(err.Error())
-					}
-				case *hapitypes.ColorTemperatureEvent:
-					device := app.deviceById[e.Device]
-					adapter := app.adapterById[device.Conf.AdapterId]
-
-					adapter.Send(hapitypes.NewColorTemperatureEvent(
-						device.Conf.AdaptersDeviceId,
-						e.TemperatureInKelvin))
-				case *hapitypes.ColorMsg:
-					device := app.deviceById[e.DeviceId]
-					adapter := app.adapterById[device.Conf.AdapterId]
-
-					device.LastColor = e.Color
-
-					adapter.Send(hapitypes.NewColorMsg(
-						device.Conf.AdaptersDeviceId,
-						e.Color))
-				case *hapitypes.BrightnessEvent:
-					device := app.deviceById[e.DeviceIdOrDeviceGroupId]
-					adapter := app.adapterById[device.Conf.AdapterId]
-
-					e2 := hapitypes.NewBrightnessMsg(
-						device.Conf.AdaptersDeviceId,
-						e.Brightness,
-						device.LastColor)
-					adapter.Send(&e2)
-				case *hapitypes.PlaybackEvent:
-					device := app.deviceById[e.DeviceIdOrDeviceGroupId]
-					adapter := app.adapterById[device.Conf.AdapterId]
-
-					adapter.Send(hapitypes.NewPlaybackEvent(
-						device.Conf.AdaptersDeviceId,
-						e.Action))
-				case *hapitypes.BlinkEvent:
-					device := app.deviceById[e.DeviceId]
-					adapter := app.adapterById[device.Conf.AdapterId]
-
-					adapter.Send(hapitypes.NewBlinkEvent(device.Conf.AdaptersDeviceId))
-				case *hapitypes.InfraredEvent:
-					app.publish(fmt.Sprintf("infrared:%s:%s", e.Remote, e.Event))
-				case *hapitypes.ContactEvent:
-					app.publish(fmt.Sprintf("contact:%s:%v", e.Device, e.Contact))
-				case *hapitypes.PushButtonEvent:
-					app.publish(fmt.Sprintf("pushbutton:%s:%s", e.Device, e.Specifier))
-				case *hapitypes.WaterLeakEvent:
-					app.publish(fmt.Sprintf("waterleak:%s:%v", e.Device, e.WaterDetected))
-				case *hapitypes.HeartbeatEvent:
-					app.publish(fmt.Sprintf("heartbeat:%s", e.Device))
-				case *hapitypes.TemperatureHumidityPressureEvent:
-					fmt.Printf("temp %v\n", e)
-				default:
-					log.Error("Unsupported inbound event: " + genericEvent.InboundEventType())
-				}
+			case event := <-app.inbound.Ch:
+				app.handleIncomingEvent(event)
 			}
 		}
 	}()
 
 	return app
+}
+
+func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
+	switch e := inboundEvent.(type) {
+	case *hapitypes.PersonPresenceChangeEvent:
+		log.Info(fmt.Sprintf(
+			"Person %s presence changed to %v",
+			e.PersonId,
+			e.Present))
+	case *hapitypes.PowerEvent:
+		device := a.deviceById[e.DeviceIdOrDeviceGroupId]
+
+		if err := a.devicePower(device, e); err != nil {
+			log.Error(err.Error())
+		}
+	case *hapitypes.ColorTemperatureEvent:
+		device := a.deviceById[e.Device]
+		adapter := a.adapterById[device.Conf.AdapterId]
+
+		adapter.Send(hapitypes.NewColorTemperatureEvent(
+			device.Conf.AdaptersDeviceId,
+			e.TemperatureInKelvin))
+	case *hapitypes.ColorMsg:
+		device := a.deviceById[e.DeviceId]
+		adapter := a.adapterById[device.Conf.AdapterId]
+
+		device.LastColor = e.Color
+
+		adapter.Send(hapitypes.NewColorMsg(
+			device.Conf.AdaptersDeviceId,
+			e.Color))
+	case *hapitypes.BrightnessEvent:
+		device := a.deviceById[e.DeviceIdOrDeviceGroupId]
+		adapter := a.adapterById[device.Conf.AdapterId]
+
+		e2 := hapitypes.NewBrightnessMsg(
+			device.Conf.AdaptersDeviceId,
+			e.Brightness,
+			device.LastColor)
+		adapter.Send(&e2)
+	case *hapitypes.PlaybackEvent:
+		device := a.deviceById[e.DeviceIdOrDeviceGroupId]
+		adapter := a.adapterById[device.Conf.AdapterId]
+
+		adapter.Send(hapitypes.NewPlaybackEvent(
+			device.Conf.AdaptersDeviceId,
+			e.Action))
+	case *hapitypes.BlinkEvent:
+		device := a.deviceById[e.DeviceId]
+		adapter := a.adapterById[device.Conf.AdapterId]
+
+		adapter.Send(hapitypes.NewBlinkEvent(device.Conf.AdaptersDeviceId))
+	case *hapitypes.InfraredEvent:
+		a.publish(fmt.Sprintf("infrared:%s:%s", e.Remote, e.Event))
+	case *hapitypes.ContactEvent:
+		a.publish(fmt.Sprintf("contact:%s:%v", e.Device, e.Contact))
+	case *hapitypes.PushButtonEvent:
+		a.publish(fmt.Sprintf("pushbutton:%s:%s", e.Device, e.Specifier))
+	case *hapitypes.WaterLeakEvent:
+		a.publish(fmt.Sprintf("waterleak:%s:%v", e.Device, e.WaterDetected))
+	case *hapitypes.HeartbeatEvent:
+		a.publish(fmt.Sprintf("heartbeat:%s", e.Device))
+	case *hapitypes.TemperatureHumidityPressureEvent:
+		fmt.Printf("temp %v\n", e)
+	default:
+		log.Error("Unsupported inbound event: " + inboundEvent.InboundEventType())
+	}
 }
 
 func (a *Application) publish(event string) {
