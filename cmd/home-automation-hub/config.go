@@ -67,6 +67,8 @@ func readAllConfFilesMerged() (io.Reader, func(), error) {
 		return nil, noop, err
 	}
 
+	// two slices of same thing because we cannot typecast slice to another
+	// https://stackoverflow.com/a/12754757
 	confFiles := []*os.File{}
 	readers := []io.Reader{}
 	for _, confFilePath := range confFilePaths {
