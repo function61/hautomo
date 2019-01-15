@@ -90,6 +90,7 @@ type Adapter struct {
 	inbound  *InboundFabric     // inbound events coming from sensors, infrared, Amazon Echo etc.
 	Outbound chan OutboundEvent // outbound events going to lights, TV, amplifier etc.
 	Logl     *logex.Leveled
+	Log      *log.Logger // if one wants to pass native logger to libraries etc.
 	confFile *ConfigFile // FIXME
 }
 
@@ -98,6 +99,7 @@ func NewAdapter(conf AdapterConfig, confFile *ConfigFile, inbound *InboundFabric
 		Conf:     conf,
 		inbound:  inbound,
 		Outbound: make(chan OutboundEvent, 32),
+		Log:      logger,
 		Logl:     logex.Levels(logger),
 		confFile: confFile,
 	}

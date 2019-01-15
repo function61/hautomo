@@ -134,6 +134,7 @@ type HarmonyHubConnection struct {
 	conn       net.Conn
 	connected  bool
 	xmlDecoder *xml.Decoder
+	logger     *log.Logger
 }
 
 func (h *HarmonyHubConnection) connectAndDoTheDance() error {
@@ -162,17 +163,18 @@ func (h *HarmonyHubConnection) connectAndDoTheDance() error {
 		return err
 	}
 
-	log.Printf("HarmonyHubConnection: connected")
+	h.logger.Printf("connected")
 
 	return nil
 }
 
-func NewHarmonyHubConnection(addr string, stop *stopper.Stopper) *HarmonyHubConnection {
+func NewHarmonyHubConnection(addr string, logger *log.Logger, stop *stopper.Stopper) *HarmonyHubConnection {
 	defer stop.Done()
 
 	harmonyHubConnection := &HarmonyHubConnection{
 		addr:      addr,
 		connected: false,
+		logger:    logger,
 	}
 
 	keepaliveTicker := time.NewTicker(20 * time.Second)
@@ -183,7 +185,7 @@ func NewHarmonyHubConnection(addr string, stop *stopper.Stopper) *HarmonyHubConn
 		for {
 			select {
 			case <-stop.Signal:
-				log.Println("harmony: stopping")
+				harmonyHubConnection.logger.Println("stopping")
 				keepaliveTicker.Stop()
 
 				if harmonyHubConnection.connected {
@@ -192,10 +194,10 @@ func NewHarmonyHubConnection(addr string, stop *stopper.Stopper) *HarmonyHubConn
 				return
 			case <-time.After(1 * time.Second):
 				if !harmonyHubConnection.connected {
-					log.Printf("harmony: connecting ...")
+					harmonyHubConnection.logger.Println("connecting..")
 
 					if err := harmonyHubConnection.connectAndDoTheDance(); err != nil {
-						log.Printf("harmony: failed to connect: %s", err.Error())
+						harmonyHubConnection.logger.Printf("connect failed: %s", err.Error())
 					} else {
 						harmonyHubConnection.connected = true
 					}
@@ -208,7 +210,7 @@ func NewHarmonyHubConnection(addr string, stop *stopper.Stopper) *HarmonyHubConn
 				// not using Send() to suppress debug logging,
 				// and this is not application level stuff anyway
 				if _, err := harmonyHubConnection.conn.Write([]byte("\n")); err != nil {
-					log.Printf("harmony: failed to send keepalive newline: %s", err.Error())
+					harmonyHubConnection.logger.Printf("failed to send keepalive newline: %s", err.Error())
 					break
 				}
 			}
@@ -298,7 +300,7 @@ func (x *HarmonyHubConnection) InitAndAuthenticate() error {
 }
 
 func (x *HarmonyHubConnection) Send(msg string) error {
-	log.Printf("harmony: > %s", msg)
+	x.logger.Printf("> %s", msg)
 
 	_, err := x.conn.Write([]byte(msg))
 
@@ -380,7 +382,7 @@ func (x *HarmonyHubConnection) Recv() error {
 		return err
 	}
 
-	log.Printf("< %s", prettyXmlName(xmlName))
+	x.logger.Printf("< %s", prettyXmlName(xmlName))
 
 	return nil
 }

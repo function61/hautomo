@@ -1,6 +1,7 @@
 package harmonyhubadapter
 
 import (
+	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"github.com/function61/home-automation-hub/pkg/harmonyhub"
@@ -11,7 +12,17 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	// stopper - it achieves the same thing
 	stopManager := stopper.NewManager()
 
-	harmonyHubConnection := harmonyhub.NewHarmonyHubConnection(adapter.Conf.HarmonyAddr, stopManager.Stopper())
+	harmonyhubEnableLogs := false
+
+	harmonyhubLogger := logex.Prefix("lib", adapter.Log)
+	if !harmonyhubEnableLogs {
+		harmonyhubLogger = logex.Discard
+	}
+
+	harmonyHubConnection := harmonyhub.NewHarmonyHubConnection(
+		adapter.Conf.HarmonyAddr,
+		harmonyhubLogger,
+		stopManager.Stopper())
 
 	go func() {
 		defer stop.Done()
