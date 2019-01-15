@@ -3,34 +3,35 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/function61/gokit/logger"
-	"github.com/function61/gokit/ossignal"
+	"github.com/function61/gokit/dynversion"
+	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
+	"log"
 )
-
-var log = logger.New("main")
 
 type Application struct {
 	adapterById   map[string]*hapitypes.Adapter
 	deviceById    map[string]*hapitypes.Device
 	subscriptions map[string]*hapitypes.SubscribeConfig
 	inbound       *hapitypes.InboundFabric
+	logl          *logex.Leveled
 }
 
-func NewApplication(stop *stopper.Stopper) *Application {
+func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
 	app := &Application{
 		adapterById:   map[string]*hapitypes.Adapter{},
 		deviceById:    map[string]*hapitypes.Device{},
 		subscriptions: map[string]*hapitypes.SubscribeConfig{},
 		inbound:       hapitypes.NewInboundFabric(),
+		logl:          logex.Levels(logger),
 	}
 
 	go func() {
 		defer stop.Done()
 
-		log.Info(fmt.Sprintf("home-automation-hub %s started", version))
-		defer log.Info("stopped")
+		app.logl.Info.Printf("home-automation-hub %s started", dynversion.Version)
+		defer app.logl.Info.Println("stopped")
 
 		for {
 			select {
@@ -48,15 +49,15 @@ func NewApplication(stop *stopper.Stopper) *Application {
 func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 	switch e := inboundEvent.(type) {
 	case *hapitypes.PersonPresenceChangeEvent:
-		log.Info(fmt.Sprintf(
+		a.logl.Info.Printf(
 			"Person %s presence changed to %v",
 			e.PersonId,
-			e.Present))
+			e.Present)
 	case *hapitypes.PowerEvent:
 		device := a.deviceById[e.DeviceIdOrDeviceGroupId]
 
 		if err := a.devicePower(device, e); err != nil {
-			log.Error(err.Error())
+			a.logl.Error.Println(err.Error())
 		}
 	case *hapitypes.ColorTemperatureEvent:
 		device := a.deviceById[e.Device]
@@ -108,17 +109,17 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 	case *hapitypes.TemperatureHumidityPressureEvent:
 		fmt.Printf("temp %v\n", e)
 	default:
-		log.Error("Unsupported inbound event: " + inboundEvent.InboundEventType())
+		a.logl.Error.Printf("Unsupported inbound event: " + inboundEvent.InboundEventType())
 	}
 }
 
 func (a *Application) publish(event string) {
 	subscription, found := a.subscriptions[event]
 	if !found {
-		log.Debug(fmt.Sprintf("event %s ignored", event))
+		a.logl.Debug.Printf("event %s ignored", event)
 		return
 	} else {
-		log.Debug(fmt.Sprintf("event %s", event))
+		a.logl.Debug.Printf("event %s", event)
 	}
 
 	for _, action := range subscription.Actions {
@@ -145,7 +146,7 @@ func (a *Application) publish(event string) {
 
 func (a *Application) devicePower(device *hapitypes.Device, power *hapitypes.PowerEvent) error {
 	if power.Kind == hapitypes.PowerKindOn {
-		log.Debug(fmt.Sprintf("Power on: %s", device.Conf.Name))
+		a.logl.Debug.Printf("Power on: %s", device.Conf.Name)
 
 		adapter := a.adapterById[device.Conf.AdapterId]
 		e := hapitypes.NewPowerMsg(device.Conf.AdaptersDeviceId, device.Conf.PowerOnCmd, true)
@@ -153,7 +154,7 @@ func (a *Application) devicePower(device *hapitypes.Device, power *hapitypes.Pow
 
 		device.ProbablyTurnedOn = true
 	} else if power.Kind == hapitypes.PowerKindOff {
-		log.Debug(fmt.Sprintf("Power off: %s", device.Conf.Name))
+		a.logl.Debug.Printf("Power off: %s", device.Conf.Name)
 
 		adapter := a.adapterById[device.Conf.AdapterId]
 		e := hapitypes.NewPowerMsg(device.Conf.AdaptersDeviceId, device.Conf.PowerOffCmd, false)
@@ -161,7 +162,7 @@ func (a *Application) devicePower(device *hapitypes.Device, power *hapitypes.Pow
 
 		device.ProbablyTurnedOn = false
 	} else if power.Kind == hapitypes.PowerKindToggle {
-		log.Debug(fmt.Sprintf("Power toggle: %s, current state = %v", device.Conf.Name, device.ProbablyTurnedOn))
+		a.logl.Debug.Printf("Power toggle: %s, current state = %v", device.Conf.Name, device.ProbablyTurnedOn)
 
 		if device.ProbablyTurnedOn {
 			return a.devicePower(device, hapitypes.NewPowerEvent(device.Conf.DeviceId, hapitypes.PowerKindOff))
@@ -175,7 +176,12 @@ func (a *Application) devicePower(device *hapitypes.Device, power *hapitypes.Pow
 	return nil
 }
 
-func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, stopManager *stopper.Manager) error {
+func configureAppAndStartAdapters(
+	app *Application,
+	conf *hapitypes.ConfigFile,
+	logger *log.Logger,
+	stopManager *stopper.Manager,
+) error {
 	for _, devGroup := range conf.DeviceGroups {
 		generatedAdapterId := devGroup.DeviceId + "Group"
 
@@ -209,7 +215,11 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 			return errors.New("unkown adapter: " + adapterConf.Type)
 		}
 
-		adapter := hapitypes.NewAdapter(adapterConf, conf, app.inbound)
+		adapter := hapitypes.NewAdapter(
+			adapterConf,
+			conf,
+			app.inbound,
+			logex.Prefix(adapterConf.Id, logger))
 
 		if err := initFn(adapter, stopManager.Stopper()); err != nil {
 			return err
@@ -236,26 +246,32 @@ func configureAppAndStartAdapters(app *Application, conf *hapitypes.ConfigFile, 
 	return nil
 }
 
-func runServer() error {
+func runServer(logger *log.Logger, stop *stopper.Stopper) error {
+	defer stop.Done()
+
+	logl := logex.Levels(logger)
+
 	conf, confErr := readConfigurationFile()
 	if confErr != nil {
 		return confErr
 	}
 
-	stopManager := stopper.NewManager()
-	defer log.Info("all components stopped")
-	defer stopManager.StopAllWorkersAndWait()
+	workers := stopper.NewManager()
+
+	defer logl.Info.Println("all components stopped")
 
 	// FIXME: main loop probably shouldn't start here, since there's a race condition
-	app := NewApplication(stopManager.Stopper())
+	app := NewApplication(logex.Prefix("hub", logger), workers.Stopper())
 
-	if err := configureAppAndStartAdapters(app, conf, stopManager); err != nil {
+	if err := configureAppAndStartAdapters(app, conf, logger, workers); err != nil {
 		return err
 	}
 
-	go handleHttp(conf, stopManager.Stopper())
+	go handleHttp(conf, logex.Prefix("handleHttp", logger), workers.Stopper())
 
-	log.Info(fmt.Sprintf("stopping due to signal %s", ossignal.WaitForInterruptOrTerminate()))
+	<-stop.Signal
+
+	workers.StopAllWorkersAndWait()
 
 	return nil
 }

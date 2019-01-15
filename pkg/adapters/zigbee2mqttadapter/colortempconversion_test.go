@@ -6,9 +6,9 @@ import (
 )
 
 func TestKelvinToMired(t *testing.T) {
-	assert.True(t, kelvinToMired(2200) == 454) // warm, warm white
-	assert.True(t, kelvinToMired(2700) == 370) // incandescent, soft white
-	assert.True(t, kelvinToMired(4000) == 250) // white
-	assert.True(t, kelvinToMired(5500) == 181) // daylight, daylight white
-	assert.True(t, kelvinToMired(7000) == 142) // cool, cool white
+	assert.Assert(t, kelvinToMired(2200) == 454) // warm, warm white
+	assert.Assert(t, kelvinToMired(2700) == 370) // incandescent, soft white
+	assert.Assert(t, kelvinToMired(4000) == 250) // white
+	assert.Assert(t, kelvinToMired(5500) == 181) // daylight, daylight white
+	assert.Assert(t, kelvinToMired(7000) == 142) // cool, cool white
 }

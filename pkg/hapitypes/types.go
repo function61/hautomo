@@ -2,7 +2,8 @@ package hapitypes
 
 import (
 	"errors"
-	"github.com/function61/gokit/logger"
+	"github.com/function61/gokit/logex"
+	"log"
 )
 
 /*
@@ -88,14 +89,16 @@ type Adapter struct {
 	Conf     AdapterConfig
 	inbound  *InboundFabric     // inbound events coming from sensors, infrared, Amazon Echo etc.
 	Outbound chan OutboundEvent // outbound events going to lights, TV, amplifier etc.
-	confFile *ConfigFile        // FIXME
+	Logl     *logex.Leveled
+	confFile *ConfigFile // FIXME
 }
 
-func NewAdapter(conf AdapterConfig, confFile *ConfigFile, inbound *InboundFabric) *Adapter {
+func NewAdapter(conf AdapterConfig, confFile *ConfigFile, inbound *InboundFabric, logger *log.Logger) *Adapter {
 	return &Adapter{
 		Conf:     conf,
 		inbound:  inbound,
 		Outbound: make(chan OutboundEvent, 32),
+		Logl:     logex.Levels(logger),
 		confFile: confFile,
 	}
 }
@@ -114,6 +117,6 @@ func (a *Adapter) Receive(e InboundEvent) {
 	a.inbound.Receive(e)
 }
 
-func (a *Adapter) LogUnsupportedEvent(e OutboundEvent, log *logger.Logger) {
-	log.Error("unsupported outbound event: " + e.OutboundEventType())
+func (a *Adapter) LogUnsupportedEvent(e OutboundEvent) {
+	a.Logl.Error.Printf("unsupported outbound event: " + e.OutboundEventType())
 }

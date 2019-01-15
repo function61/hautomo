@@ -2,15 +2,15 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/function61/gokit/logger"
+	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
+	"log"
 	"net/http"
 )
 
-func handleHttp(conf *hapitypes.ConfigFile, stop *stopper.Stopper) {
-	log := logger.New("handleHttp")
+func handleHttp(conf *hapitypes.ConfigFile, logger *log.Logger, stop *stopper.Stopper) {
+	logl := logex.Levels(logger)
 
 	defer stop.Done()
 	srv := &http.Server{Addr: ":8080"}
@@ -18,7 +18,7 @@ func handleHttp(conf *hapitypes.ConfigFile, stop *stopper.Stopper) {
 	go func() {
 		<-stop.Signal
 
-		log.Info("stopping HTTP")
+		logl.Info.Println("stopping HTTP")
 
 		_ = srv.Shutdown(nil)
 	}()
@@ -30,6 +30,6 @@ func handleHttp(conf *hapitypes.ConfigFile, stop *stopper.Stopper) {
 	})
 
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		log.Error(fmt.Sprintf("ListenAndServe(): %s", err.Error()))
+		logl.Error.Printf("ListenAndServe(): %s", err.Error())
 	}
 }

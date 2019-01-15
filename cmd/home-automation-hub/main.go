@@ -2,19 +2,20 @@ package main
 
 import (
 	"fmt"
+	"github.com/function61/gokit/dynversion"
+	"github.com/function61/gokit/logex"
+	"github.com/function61/gokit/ossignal"
+	"github.com/function61/gokit/stopper"
 	"github.com/function61/gokit/systemdinstaller"
 	"github.com/spf13/cobra"
 	"os"
 )
 
-// replaced in build process with actual version
-var version = "dev"
-
 func main() {
 	rootCmd := &cobra.Command{
 		Use:     os.Args[0],
 		Short:   "Home automation hub from function61.com",
-		Version: version,
+		Version: dynversion.Version,
 	}
 	rootCmd.AddCommand(serverEntry())
 
@@ -30,7 +31,17 @@ func serverEntry() *cobra.Command {
 		Short: "Starts the server",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := runServer(); err != nil {
+			rootLogger := logex.StandardLogger()
+
+			workers := stopper.NewManager()
+
+			go func(logl *logex.Leveled) {
+				logl.Info.Printf("stopping due to signal %s", <-ossignal.InterruptOrTerminate())
+
+				workers.StopAllWorkersAndWait()
+			}(logex.Levels(logex.Prefix("main", rootLogger)))
+
+			if err := runServer(rootLogger, workers.Stopper()); err != nil {
 				panic(err)
 			}
 		},

@@ -57,7 +57,7 @@ func TestParseMsgPayload(t *testing.T) {
 				assert.EqualString(t, err.Error(), test.output)
 			} else {
 				eventJson, err := json.Marshal(e)
-				assert.True(t, err == nil)
+				assert.Assert(t, err == nil)
 				assert.EqualString(t, e.InboundEventType()+" "+string(eventJson), test.output)
 			}
 		})

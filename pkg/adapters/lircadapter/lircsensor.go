@@ -2,16 +2,12 @@ package lircadapter
 
 import (
 	"bufio"
-	"fmt"
-	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"io"
 	"os/exec"
 	"regexp"
 )
-
-var log = logger.New("lircadapter")
 
 // match lines like this: "000000037ff07bee 00 KEY_VOLUMEDOWN mceusb"
 
@@ -56,7 +52,7 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 			// "000000037ff07bee 00 KEY_VOLUMEDOWN mceusb" => "KEY_VOLUMEDOWN"
 			irEvent := irwOutputLineToIrEvent(string(line))
 			if irEvent == nil {
-				log.Error("mismatched command format")
+				adapter.Logl.Error.Printf("mismatched command format: %s", string(line))
 				continue
 			}
 
@@ -68,12 +64,12 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	go func() {
 		defer stop.Done()
 
-		log.Info("started")
-		defer log.Info("stopped")
+		adapter.Logl.Info.Println("started")
+		defer adapter.Logl.Info.Println("stopped")
 
 		<-stop.Signal
 
-		log.Info("stopping")
+		adapter.Logl.Info.Println("stopping")
 
 		irw.Process.Kill()
 	}()
@@ -82,7 +78,7 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 		// wait to complete
 		err := irw.Wait()
 
-		log.Error(fmt.Sprintf("$ irw exited, error: %s", err.Error()))
+		adapter.Logl.Error.Printf("$ irw exited, error: %s", err.Error())
 	}()
 
 	return nil

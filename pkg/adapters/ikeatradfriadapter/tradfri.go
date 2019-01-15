@@ -1,14 +1,10 @@
 package ikeatradfriadapter
 
 import (
-	"fmt"
-	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"github.com/function61/home-automation-hub/pkg/ikeatradfri"
 )
-
-var log = logger.New("ikeatradfriadapter")
 
 func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	coapClient := ikeatradfri.NewCoapClient(
@@ -19,8 +15,8 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	go func() {
 		defer stop.Done()
 
-		log.Info("started")
-		defer log.Info("stopped")
+		adapter.Logl.Info.Println("started")
+		defer adapter.Logl.Info.Println("stopped")
 
 		for {
 			select {
@@ -47,27 +43,27 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, coapClient *ikeatradfri.C
 		}
 
 		if responseErr != nil {
-			log.Error(responseErr.Error())
+			adapter.Logl.Error.Println(responseErr.Error())
 		}
 	case *hapitypes.BrightnessMsg:
 		// 0-100 => 0-254
 		to := int(float64(e.Brightness) * 2.54)
 
 		if err := ikeatradfri.Dim(e.DeviceId, to, coapClient); err != nil {
-			log.Error(fmt.Sprintf("Dim: %s", err.Error()))
+			adapter.Logl.Error.Printf("Dim: %s", err.Error())
 		}
 	case *hapitypes.ColorMsg:
 		if err := ikeatradfri.SetRGB(e.DeviceId, e.Color.Red, e.Color.Green, e.Color.Blue, coapClient); err != nil {
-			log.Error(err.Error())
+			adapter.Logl.Error.Println(err.Error())
 		}
 	case *hapitypes.ColorTemperatureEvent:
 		if err := ikeatradfri.SetColorTemp(
 			e.Device,
 			e.TemperatureInKelvin,
 			coapClient); err != nil {
-			log.Error(err.Error())
+			adapter.Logl.Error.Println(err.Error())
 		}
 	default:
-		adapter.LogUnsupportedEvent(genericEvent, log)
+		adapter.LogUnsupportedEvent(genericEvent)
 	}
 }

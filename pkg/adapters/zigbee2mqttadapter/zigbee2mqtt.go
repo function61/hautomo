@@ -2,7 +2,6 @@ package zigbee2mqttadapter
 
 import (
 	"fmt"
-	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"github.com/yosssi/gmq/mqtt"
@@ -10,8 +9,6 @@ import (
 	"sync"
 	"time"
 )
-
-var log = logger.New("zigbee2mqtt")
 
 const (
 	z2mTopicPrefix = "zigbee2mqtt/"
@@ -56,7 +53,7 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	m2qttDeviceObserver := func(topicName, message []byte) {
 		event, err := parseMsgPayload(string(topicName), resolver, string(message))
 		if err != nil {
-			log.Error(err.Error())
+			adapter.Logl.Error.Println(err.Error())
 			return
 		}
 
@@ -108,15 +105,15 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 					kelvinToMired(e.TemperatureInKelvin)))
 			}
 		default:
-			adapter.LogUnsupportedEvent(genericEvent, log)
+			adapter.LogUnsupportedEvent(genericEvent)
 		}
 	}
 
 	go func() {
 		defer stop.Done()
-		defer log.Info("stopped")
 
-		log.Info("started")
+		adapter.Logl.Info.Println("started")
+		defer adapter.Logl.Info.Println("stopped")
 
 		for {
 			select {
@@ -131,11 +128,11 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 
 	go func(stop *stopper.Stopper) {
 		defer stop.Done()
-		defer log.Info("reconnect loop stopped")
+		defer adapter.Logl.Info.Println("reconnect loop stopped")
 
 		for {
 			if err := mqttConnection(adapter.Conf.Zigbee2MqttAddr, m2qttDeviceObserver, z2mPublish, stop); err != nil {
-				log.Error(fmt.Sprintf("mqttConnection error; reconnecting soon: %v", err))
+				adapter.Logl.Error.Printf("mqttConnection error; reconnecting soon: %v", err)
 				time.Sleep(1 * time.Second)
 			}
 

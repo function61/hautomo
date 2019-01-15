@@ -1,12 +1,9 @@
 package devicegroupadapter
 
 import (
-	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 )
-
-var log = logger.New("devicegroupadapter")
 
 // this adapter just basically copies the outbound event as multiple copies with rewritten
 // device ID and posts it as inbound again
@@ -14,8 +11,8 @@ var log = logger.New("devicegroupadapter")
 func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	go func() {
 		defer stop.Done()
-		log.Info("started")
-		defer log.Info("stopped")
+		adapter.Logl.Info.Println("started")
+		defer adapter.Logl.Info.Println("stopped")
 
 		for {
 			select {
@@ -67,6 +64,6 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 			adapter.Receive(hapitypes.NewBlinkEvent(deviceId))
 		}
 	default:
-		adapter.LogUnsupportedEvent(genericEvent, log)
+		adapter.LogUnsupportedEvent(genericEvent)
 	}
 }

@@ -36,7 +36,7 @@ func TestIrwOutputLineToIrEvent(t *testing.T) {
 				assert.EqualString(t, evt.Remote, test.expectedRemoteName)
 				assert.EqualString(t, evt.Event, test.expectedKey)
 			} else {
-				assert.True(t, evt == nil)
+				assert.Assert(t, evt == nil)
 			}
 		})
 	}

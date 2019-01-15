@@ -2,14 +2,11 @@ package trionesadapter
 
 import (
 	"context"
-	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"github.com/function61/home-automation-hub/pkg/triones"
 	"time"
 )
-
-var log = logger.New("triones")
 
 const requestTimeout = 15 * time.Second
 
@@ -19,8 +16,8 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	go func() {
 		defer stop.Done()
 
-		log.Info("started")
-		defer log.Info("stopped")
+		adapter.Logl.Info.Println("started")
+		defer adapter.Logl.Info.Println("stopped")
 
 		for {
 			select {
@@ -48,7 +45,9 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 			req = triones.RequestOff(bluetoothAddr)
 		}
 
-		sendLightRequest(req)
+		if err := sendLightRequest(req); err != nil {
+			adapter.Logl.Error.Println(err.Error())
+		}
 	case *hapitypes.BrightnessMsg:
 		lastColor := e.LastColor
 		brightness := e.Brightness
@@ -90,17 +89,17 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 			}
 		}
 
-		sendLightRequest(req)
+		if err := sendLightRequest(req); err != nil {
+			adapter.Logl.Error.Println(err.Error())
+		}
 	default:
-		adapter.LogUnsupportedEvent(genericEvent, log)
+		adapter.LogUnsupportedEvent(genericEvent)
 	}
 }
 
-func sendLightRequest(hlreq triones.Request) {
+func sendLightRequest(hlreq triones.Request) error {
 	ctx, cancel := context.WithTimeout(context.TODO(), requestTimeout)
 	defer cancel()
 
-	if err := triones.Send(ctx, hlreq); err != nil {
-		log.Error(err.Error())
-	}
+	return triones.Send(ctx, hlreq)
 }

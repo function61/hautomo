@@ -1,8 +1,7 @@
 package presencebypingadapter
 
 import (
-	"fmt"
-	"github.com/function61/gokit/logger"
+	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"golang.org/x/net/icmp"
@@ -45,9 +44,9 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 
 	go tickerLoop(adapter.Conf, adapter, forStamping, pingResponses, workers.Stopper())
 
-	go pingSender(icmpSocket, pingRequests, workers.Stopper())
+	go pingSender(icmpSocket, pingRequests, adapter.Logl, workers.Stopper())
 
-	go pingReceiver(icmpSocket, pingResponses, workers.Stopper())
+	go pingReceiver(icmpSocket, pingResponses, adapter.Logl, workers.Stopper())
 
 	go func(stop *stopper.Stopper) {
 		defer stop.Done()
@@ -164,10 +163,14 @@ func tickerLoop(
 	}
 }
 
-func pingReceiver(icmpSocket *icmp.PacketConn, pingResponses chan<- ProbeResponse, stop *stopper.Stopper) {
+func pingReceiver(
+	icmpSocket *icmp.PacketConn,
+	pingResponses chan<- ProbeResponse,
+	logl *logex.Leveled,
+	stop *stopper.Stopper,
+) {
 	defer stop.Done()
-	log := logger.New("pingReceiver")
-	defer log.Info("stopped")
+	defer logl.Info.Println("pingReceiver stopped")
 
 	go func() {
 		<-stop.Signal
@@ -179,7 +182,7 @@ func pingReceiver(icmpSocket *icmp.PacketConn, pingResponses chan<- ProbeRespons
 
 		bytesRead, peer, err := icmpSocket.ReadFrom(readBuffer)
 		if err != nil {
-			log.Error(err.Error())
+			logl.Error.Printf("pingReceiver: stopping due to %s", err.Error())
 			// probably cannot read from socket anymore
 			return
 		}
@@ -189,7 +192,7 @@ func pingReceiver(icmpSocket *icmp.PacketConn, pingResponses chan<- ProbeRespons
 		// icmpMsg, err := icmp.ParseMessage(iana.ProtocolICMP, readBuffer[:bytesRead])
 		icmpMsg, err := icmp.ParseMessage(1, readBuffer[:bytesRead])
 		if err != nil {
-			log.Error(err.Error())
+			logl.Error.Printf("pingReceiver: ParseMessage: %s", err.Error())
 			continue
 		}
 
@@ -197,22 +200,26 @@ func pingReceiver(icmpSocket *icmp.PacketConn, pingResponses chan<- ProbeRespons
 		case ipv4.ICMPTypeEchoReply:
 			echoReply := icmpMsg.Body.(*icmp.Echo)
 
-			log.Info(fmt.Sprintf("got reply from %v", peer))
+			logl.Debug.Printf("pingReceiver: got reply from %v", peer)
 
 			pingResponses <- ProbeResponse{
 				ID:      echoReply.ID,
 				Timeout: false,
 			}
 		default:
-			log.Info(fmt.Sprintf("got %+v; want echo reply", icmpMsg))
+			logl.Debug.Printf("pingReceiver: got %+v; want echo reply", icmpMsg)
 		}
 	}
 }
 
-func pingSender(icmpSocket *icmp.PacketConn, requests <-chan ProbeRequest, stop *stopper.Stopper) {
+func pingSender(
+	icmpSocket *icmp.PacketConn,
+	requests <-chan ProbeRequest,
+	logl *logex.Leveled,
+	stop *stopper.Stopper,
+) {
 	defer stop.Done()
-	log := logger.New("pingSender")
-	defer log.Info("stopped")
+	defer logl.Info.Println("pingSender stopped")
 
 	for {
 		select {
@@ -227,16 +234,16 @@ func pingSender(icmpSocket *icmp.PacketConn, requests <-chan ProbeRequest, stop 
 
 			echoRequestBytes, err := echoRequest.Marshal(nil)
 			if err != nil {
-				log.Error(err.Error())
+				logl.Error.Printf("pingSender: %s", err.Error())
 				return
 			}
 
-			log.Debug(req.IP.String())
+			logl.Debug.Printf("pingSender: %s", req.IP.String())
 
 			if _, err := icmpSocket.WriteTo(echoRequestBytes, &net.UDPAddr{
 				IP: req.IP,
 			}); err != nil {
-				log.Error(err.Error())
+				logl.Error.Printf("pingSender: stopping due to %s", err.Error())
 				// probably cannot write to socket anymore
 				return
 			}

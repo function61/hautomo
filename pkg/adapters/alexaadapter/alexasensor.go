@@ -9,15 +9,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/function61/gokit/logger"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/adapters/alexaadapter/alexadevicesync"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"regexp"
 	"time"
 )
-
-var log = logger.New("alexa")
 
 type TurnOnRequest struct {
 	DeviceIdOrDeviceGroupId string `json:"id"`
@@ -68,8 +65,8 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	go func() {
 		defer stop.Done()
 
-		log.Info("started")
-		defer log.Info("stopped")
+		adapter.Logl.Info.Println("started")
+		defer adapter.Logl.Info.Println("stopped")
 
 		for {
 			select {
@@ -93,7 +90,7 @@ func runOnce(sqsClient *sqs.SQS, adapter *hapitypes.Adapter) {
 	})
 
 	if receiveErr != nil {
-		log.Error(fmt.Sprintf("ReceiveMessage(): %s", receiveErr.Error()))
+		adapter.Logl.Error.Printf("ReceiveMessage(): %s", receiveErr.Error())
 		time.Sleep(5 * time.Second)
 		return
 	}
@@ -108,7 +105,7 @@ func runOnce(sqsClient *sqs.SQS, adapter *hapitypes.Adapter) {
 
 		msgParseErr, msgType, msgJsonBody := parseMessage(*msg.Body)
 		if msgParseErr != nil {
-			log.Error(fmt.Sprintf("parseMessage: %s", msgParseErr.Error()))
+			adapter.Logl.Error.Printf("parseMessage: %s", msgParseErr.Error())
 			continue
 		}
 
@@ -168,7 +165,7 @@ func runOnce(sqsClient *sqs.SQS, adapter *hapitypes.Adapter) {
 				req.DeviceIdOrDeviceGroupId,
 				req.ColorTemperatureInKelvin))
 		default:
-			log.Error("unknown msgType: " + msgType)
+			adapter.Logl.Error.Printf("unknown msgType: " + msgType)
 		}
 	}
 

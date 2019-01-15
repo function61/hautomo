@@ -33,10 +33,10 @@ func TestCreateAlexaConnectorSpec(t *testing.T) {
 	}
 
 	spec, err := createAlexaConnectorSpec(conf.Adapters[0], conf)
-	assert.True(t, err == nil)
+	assert.Assert(t, err == nil)
 
 	jsonBytes, err := json.MarshalIndent(spec, "", "  ")
-	assert.True(t, err == nil)
+	assert.Assert(t, err == nil)
 
 	assert.EqualString(t, string(jsonBytes), `{
   "queue": "http://dummy.com/queue",
