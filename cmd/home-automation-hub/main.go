@@ -36,7 +36,7 @@ func serverEntry() *cobra.Command {
 			workers := stopper.NewManager()
 
 			go func(logl *logex.Leveled) {
-				logl.Info.Printf("stopping due to signal %s", <-ossignal.InterruptOrTerminate())
+				logl.Info.Printf("got %s; stopping", <-ossignal.InterruptOrTerminate())
 
 				workers.StopAllWorkersAndWait()
 			}(logex.Levels(logex.Prefix("main", rootLogger)))
