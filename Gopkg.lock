@@ -44,12 +44,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e491f363b8c1188e857666a9e57b37c008fcd8717c470f9d4ff9943cd953e2f2"
+  digest = "1:21523a2250bd87bdcd9b76f7daabd26e79f4a4ba689826124914c9d16b272668"
   name = "github.com/function61/gokit"
   packages = [
     "assert",
     "backoff",
     "dynversion",
+    "hcl2json",
+    "jsonfile",
     "logex",
     "ossignal",
     "retry",
@@ -57,7 +59,7 @@
     "systemdinstaller",
   ]
   pruneopts = "UT"
-  revision = "36f64b533f39f1feaf116566e1cae0c9ae8dfe57"
+  revision = "f351b2f19dba7f57c34cce3b167d041af5990ce3"
 
 [[projects]]
   digest = "1:5abd6a22805b1919f6a6bca0ae58b13cef1f3412812f38569978f43ef02743d4"
@@ -192,12 +194,13 @@
     "github.com/aws/aws-sdk-go/service/sqs",
     "github.com/function61/gokit/assert",
     "github.com/function61/gokit/dynversion",
+    "github.com/function61/gokit/hcl2json",
+    "github.com/function61/gokit/jsonfile",
     "github.com/function61/gokit/logex",
     "github.com/function61/gokit/ossignal",
     "github.com/function61/gokit/retry",
     "github.com/function61/gokit/stopper",
     "github.com/function61/gokit/systemdinstaller",
-    "github.com/hashicorp/hcl",
     "github.com/lucasb-eyer/go-colorful",
     "github.com/spf13/cobra",
     "github.com/yosssi/gmq/mqtt",

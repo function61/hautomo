@@ -1,13 +1,10 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
+	"github.com/function61/gokit/hcl2json"
+	"github.com/function61/gokit/jsonfile"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
-	"github.com/hashicorp/hcl"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -27,41 +24,20 @@ func readConfigurationFile() (*hapitypes.ConfigFile, error) {
 }
 
 func parseConfiguration(hclContent io.Reader) (*hapitypes.ConfigFile, error) {
-	// read all files concatenated (you can catenate HCL files) into a single blob
-	hclContentBuffered, err := ioutil.ReadAll(hclContent)
+	// transform HCL into JSON, so we can unmarshal without having both JSON and HCL struct tags
+	hclAsJson, err := hcl2json.Convert(hclContent)
 	if err != nil {
 		return nil, err
 	}
 
-	// read & parse HCL to generic struct
-	var v interface{}
-	errHcl := hcl.Unmarshal(hclContentBuffered, &v)
-	if errHcl != nil {
-		return nil, fmt.Errorf("unable to parse HCL: %s", errHcl)
-	}
-
-	// re-encode the generic struct to JSON, so we can unmarshal without
-	// having both JSON and HCL struct tags
-
-	asJson, errToJson := json.MarshalIndent(v, "", "  ")
-	if errToJson != nil {
-		return nil, errToJson
-	}
-
-	jsonDecoder := json.NewDecoder(bytes.NewBuffer(asJson))
-	jsonDecoder.DisallowUnknownFields()
-
 	conf := &hapitypes.ConfigFile{}
-	if err := jsonDecoder.Decode(conf); err != nil {
-		return nil, err
-	}
-
-	return conf, nil
+	return conf, jsonfile.Unmarshal(hclAsJson, conf, true)
 }
 
 func readAllConfFilesMerged() (io.Reader, func(), error) {
 	noop := func() {}
 
+	// read all files concatenated (you can catenate HCL files) into a single blob
 	confFilePaths, err := filepath.Glob("conf/*.hcl")
 	if err != nil {
 		return nil, noop, err
