@@ -329,6 +329,12 @@ func configureAppAndStartAdapters(
 	}
 
 	for _, subscription := range conf.Subscriptions {
+		if _, exists := app.subscriptions[subscription.Event]; exists {
+			return fmt.Errorf(
+				"two subscriptions for event not yet supported; event: %s",
+				subscription.Event)
+		}
+
 		// FIXME: how to do this better?
 		tmp := subscription
 		app.subscriptions[subscription.Event] = &tmp
