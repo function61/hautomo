@@ -44,7 +44,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:21523a2250bd87bdcd9b76f7daabd26e79f4a4ba689826124914c9d16b272668"
+  digest = "1:837eaf59ed628e95943318036625e712534d280d3b122cb46c22c74d34c64ce4"
   name = "github.com/function61/gokit"
   packages = [
     "assert",
@@ -59,7 +59,7 @@
     "systemdinstaller",
   ]
   pruneopts = "UT"
-  revision = "f351b2f19dba7f57c34cce3b167d041af5990ce3"
+  revision = "cc1894e8af243cf85f161fbc07cb279f131ad69e"
 
 [[projects]]
   digest = "1:5abd6a22805b1919f6a6bca0ae58b13cef1f3412812f38569978f43ef02743d4"
