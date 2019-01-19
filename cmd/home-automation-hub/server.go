@@ -122,11 +122,10 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 		device := a.deviceById[e.DeviceIdOrDeviceGroupId]
 		adapter := a.adapterById[device.Conf.AdapterId]
 
-		e2 := hapitypes.NewBrightnessMsg(
+		adapter.Send(hapitypes.NewBrightnessMsg(
 			device.Conf.AdaptersDeviceId,
 			e.Brightness,
-			device.LastColor)
-		adapter.Send(&e2)
+			device.LastColor))
 	case *hapitypes.PlaybackEvent:
 		device := a.deviceById[e.DeviceIdOrDeviceGroupId]
 		adapter := a.adapterById[device.Conf.AdapterId]

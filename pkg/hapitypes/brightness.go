@@ -22,8 +22,8 @@ type BrightnessMsg struct {
 	LastColor  RGB
 }
 
-func NewBrightnessMsg(deviceId string, brightness uint, lastColor RGB) BrightnessMsg {
-	return BrightnessMsg{
+func NewBrightnessMsg(deviceId string, brightness uint, lastColor RGB) *BrightnessMsg {
+	return &BrightnessMsg{
 		DeviceId:   deviceId,
 		Brightness: brightness,
 		LastColor:  lastColor,
