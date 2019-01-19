@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/function61/gokit/dynversion"
+	"github.com/function61/gokit/jsonfile"
 	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
@@ -11,6 +12,8 @@ import (
 	"log"
 	"time"
 )
+
+const statefilePath = "state-snapshot.json"
 
 type Application struct {
 	adapterById   map[string]*hapitypes.Adapter
@@ -32,7 +35,7 @@ func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
 	}
 
 	app.booleans.Set("anybodyHome", true)
-	app.updateLightStatus(false)
+	app.updateEnvironmentLightStatus(false)
 
 	everyMinute := time.NewTicker(1 * time.Minute)
 	go func() {
@@ -44,9 +47,16 @@ func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
 		for {
 			select {
 			case <-stop.Signal:
+				if err := app.saveStateSnapshot(); err != nil {
+					app.logl.Error.Printf("failed saving state on shutting down: %v", err)
+				}
 				return
 			case <-everyMinute.C:
-				app.updateLightStatus(true)
+				app.updateEnvironmentLightStatus(true)
+
+				if err := app.saveStateSnapshot(); err != nil {
+					app.logl.Error.Printf("failed saving state: %v", err)
+				}
 			case event := <-app.inbound.Ch:
 				app.handleIncomingEvent(event)
 			}
@@ -56,12 +66,27 @@ func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
 	return app
 }
 
-func (a *Application) updateLightStatus(broadcastChanges bool) {
+func (a *Application) updateEnvironmentLightStatus(broadcastChanges bool) {
 	hasLight := suntimes.IsBetweenGoldenHours(time.Now(), suntimes.Tampere)
 	changed, _ := a.booleans.Set("environmentHasLight", hasLight)
 	if changed && broadcastChanges {
 		a.logl.Info.Printf("environmentHasLight changed to %v", hasLight)
 	}
+}
+
+func (a *Application) saveStateSnapshot() error {
+	statefile := hapitypes.NewStatefile()
+
+	for _, device := range a.deviceById {
+		snap, err := device.SnapshotState()
+		if err != nil {
+			return err
+		}
+
+		statefile.Devices[device.Conf.DeviceId] = *snap
+	}
+
+	return jsonfile.Write(statefilePath, &statefile)
 }
 
 func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
@@ -319,12 +344,28 @@ func configureAppAndStartAdapters(
 		app.adapterById[adapter.Conf.Id] = adapter
 	}
 
+	statefile := hapitypes.NewStatefile()
+	if err := jsonfile.Read(statefilePath, &statefile, true); err != nil {
+		return err
+	}
+
 	for _, deviceConf := range conf.Devices {
 		if _, exists := app.deviceById[deviceConf.DeviceId]; exists {
 			return fmt.Errorf("duplicate device id %s", deviceConf.DeviceId)
 		}
 
-		device := hapitypes.NewDevice(deviceConf)
+		snapshot, snapshotFound := statefile.Devices[deviceConf.DeviceId]
+		if !snapshotFound {
+			snapshot = hapitypes.DeviceStateSnapshot{
+				ProbablyTurnedOn: false,
+				LastColor:        hapitypes.RGB{Red: 255, Green: 255, Blue: 255},
+			}
+		}
+
+		device, err := hapitypes.NewDevice(deviceConf, snapshot)
+		if err != nil {
+			return err
+		}
 		app.deviceById[deviceConf.DeviceId] = device
 	}
 
@@ -364,7 +405,7 @@ func runServer(logger *log.Logger, stop *stopper.Stopper) error {
 		return err
 	}
 
-	go handleHttp(conf, logex.Prefix("handleHttp", logger), workers.Stopper())
+	go handleHttp(app, conf, logex.Prefix("handleHttp", logger), workers.Stopper())
 
 	<-stop.Signal
 

@@ -88,7 +88,11 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 		case *hapitypes.ColorTemperatureEvent:
 			deviceConf := config.FindDeviceConfigByAdaptersDeviceId(e.Device)
 
-			caps := hapitypes.ResolveDeviceType(deviceConf.Type).Capabilities
+			deviceType, err := hapitypes.ResolveDeviceType(deviceConf.Type)
+			if err != nil {
+				panic(err)
+			}
+			caps := deviceType.Capabilities
 
 			// for some reason IKEA lights with color temp & RGB abilities, do not support
 			// color_temp message, so we transparently convert it into a RGB message

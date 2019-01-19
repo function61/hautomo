@@ -63,7 +63,12 @@ func createAlexaConnectorSpec(sqsAdapter hapitypes.AdapterConfig, conf *hapitype
 			return nil, fmt.Errorf("unsupported AlexaCategory: %s", device.AlexaCategory)
 		}
 
-		caps := hapitypes.ResolveDeviceType(device.Type).Capabilities
+		deviceType, err := hapitypes.ResolveDeviceType(device.Type)
+		if err != nil {
+			return nil, err
+		}
+
+		caps := deviceType.Capabilities
 
 		alexaCapabilities := []string{}
 		maybePushCap(&alexaCapabilities, caps.Power, "PowerController")

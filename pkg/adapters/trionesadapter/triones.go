@@ -64,7 +64,11 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 		bluetoothAddr := e.DeviceId
 
 		deviceConf := conf.FindDeviceConfigByAdaptersDeviceId(bluetoothAddr)
-		caps := hapitypes.ResolveDeviceType(deviceConf.Type).Capabilities
+		deviceType, err := hapitypes.ResolveDeviceType(deviceConf.Type)
+		if err != nil {
+			panic(err)
+		}
+		caps := deviceType.Capabilities
 
 		var req triones.Request
 		if e.Color.IsGrayscale() && caps.ColorSeparateWhiteChannel {

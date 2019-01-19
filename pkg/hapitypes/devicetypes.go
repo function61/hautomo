@@ -1,5 +1,9 @@
 package hapitypes
 
+import (
+	"fmt"
+)
+
 // for zigbee devices see https://koenkk.github.io/zigbee2mqtt/information/supported_devices.html
 var deviceTypes = map[string]*DeviceType{
 	"ikea-trådfri-noncolored": &DeviceType{
@@ -94,13 +98,13 @@ var deviceTypes = map[string]*DeviceType{
 	},
 }
 
-func ResolveDeviceType(t string) *DeviceType {
+func ResolveDeviceType(t string) (*DeviceType, error) {
 	typ, found := deviceTypes[t]
 	if !found {
-		panic("device type not found: " + t)
+		return nil, fmt.Errorf("device type not found: %s", t)
 	}
 
-	return typ
+	return typ, nil
 }
 
 type DeviceType struct {

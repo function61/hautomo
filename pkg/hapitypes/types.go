@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/function61/gokit/logex"
 	"log"
+	"time"
 )
 
 /*
@@ -54,21 +55,35 @@ var ErrDeviceNotFound = errors.New("device not found")
 type Device struct {
 	Conf DeviceConfig
 
+	DeviceType DeviceType
+
 	// probably turned on if true
 	// might be turned on even if false,
 	ProbablyTurnedOn bool
 
 	LastColor RGB
+
+	LastTemperatureHumidityPressureEvent *TemperatureHumidityPressureEvent
+
+	LastOnline *time.Time
+
+	LinkQuality    uint // 0-100 %
+	BatteryPct     uint // 0-100 %
+	BatteryVoltage uint // [mV]
 }
 
-func NewDevice(conf DeviceConfig) *Device {
-	return &Device{
-		Conf: conf,
-
-		// state
-		ProbablyTurnedOn: false,
-		LastColor:        RGB{255, 255, 255},
+func NewDevice(conf DeviceConfig, snapshot DeviceStateSnapshot) (*Device, error) {
+	deviceType, err := ResolveDeviceType(conf.Type)
+	if err != nil {
+		return nil, err
 	}
+
+	d := &Device{
+		Conf:       conf,
+		DeviceType: *deviceType,
+	}
+
+	return d, d.RestoreStateFromSnapshot(snapshot)
 }
 
 type DeviceGroup struct {
