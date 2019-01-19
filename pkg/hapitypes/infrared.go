@@ -21,8 +21,8 @@ type InfraredMsg struct {
 	Command  string
 }
 
-func NewInfraredMsg(deviceId string, command string) InfraredMsg {
-	return InfraredMsg{
+func NewInfraredMsg(deviceId string, command string) *InfraredMsg {
+	return &InfraredMsg{
 		DeviceId: deviceId,
 		Command:  command,
 	}

@@ -215,8 +215,9 @@ func (a *Application) runAction(action hapitypes.ActionConfig) error {
 		device := a.deviceById[action.Device]
 		adapter := a.adapterById[device.Conf.AdapterId]
 
-		msg := hapitypes.NewInfraredMsg(action.Device, action.IrCommand)
-		adapter.Send(&msg)
+		adapter.Send(hapitypes.NewInfraredMsg(
+			device.Conf.AdaptersDeviceId,
+			action.IrCommand))
 	default:
 		return fmt.Errorf("unknown verb: %s", action.Verb)
 	}
