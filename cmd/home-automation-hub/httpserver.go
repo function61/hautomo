@@ -13,7 +13,7 @@ func handleHttp(conf *hapitypes.ConfigFile, logger *log.Logger, stop *stopper.St
 	logl := logex.Levels(logger)
 
 	defer stop.Done()
-	srv := &http.Server{Addr: ":8080"}
+	srv := &http.Server{Addr: ":8097"}
 
 	go func() {
 		<-stop.Signal
