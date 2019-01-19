@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
+	"strings"
 )
 
 type resolvedDevice struct {
@@ -13,7 +14,12 @@ type resolvedDevice struct {
 
 type deviceResolver func(deviceId string) *resolvedDevice
 
-func parseMsgPayload(topicName string, resolver deviceResolver, message string) (hapitypes.InboundEvent, error) {
+func parseMsgPayload(topicName string, resolver deviceResolver, message string) ([]hapitypes.InboundEvent, error) {
+	// block "zigbee2mqtt/0x00158d000227a73c/set", which is probably publishes made by us
+	if strings.HasSuffix(topicName, "/set") {
+		return nil, nil
+	}
+
 	// "zigbee2mqtt/0x00158d000227a73c" => "0x00158d000227a73c"
 	foreignId := topicName[len(z2mTopicPrefix):]
 
