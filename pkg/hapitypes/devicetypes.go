@@ -7,9 +7,9 @@ import (
 // for zigbee devices see https://koenkk.github.io/zigbee2mqtt/information/supported_devices.html
 var deviceTypes = map[string]*DeviceType{
 	"ikea-trådfri-noncolored": &DeviceType{
-		Name:         "Trådfri non-colored",
+		Name:         "Trådfri non-colored E14",
 		Manufacturer: "IKEA",
-		Model:        "todo",
+		Model:        "LED1536G5",
 		Capabilities: Capabilities{
 			Power:            true,
 			Brightness:       true,
@@ -17,9 +17,9 @@ var deviceTypes = map[string]*DeviceType{
 		},
 	},
 	"ikea-trådfri-rgb": &DeviceType{
-		Name:         "Trådfri RGB",
+		Name:         "Trådfri RGB E27",
 		Manufacturer: "IKEA",
-		Model:        "todo",
+		Model:        "LED1624G9",
 		Capabilities: Capabilities{
 			Power:            true,
 			Brightness:       true,
@@ -30,7 +30,7 @@ var deviceTypes = map[string]*DeviceType{
 	"ikea-trådfri-smartplug": &DeviceType{
 		Name:         "Trådfri smartplug",
 		Manufacturer: "IKEA",
-		Model:        "todo",
+		Model:        "E1603",
 		Capabilities: Capabilities{
 			Power: true,
 		},
