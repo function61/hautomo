@@ -62,10 +62,11 @@ type Person struct {
 }
 
 type ActionConfig struct {
-	Device    string `json:"device"`
-	Verb      string `json:"verb"` // powerOn/powerOff/powerToggle/blink/ir/setBooleanFalse/setBooleanTrue
-	IrCommand string `json:"ir_command"`
-	Boolean   string `json:"boolean"`
+	Device          string `json:"device"`
+	Verb            string `json:"verb"`             // powerOn/powerOff/powerToggle/blink/ir/setBooleanFalse/setBooleanTrue/sleep
+	IrCommand       string `json:"ir_command"`       // used by: ir
+	Boolean         string `json:"boolean"`          // used by: setBooleanTrue/setBooleanFalse
+	DurationSeconds int    `json:"duration_seconds"` // used by: sleep
 }
 
 type ConditionConfig struct {

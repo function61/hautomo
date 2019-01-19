@@ -187,6 +187,8 @@ func (a *Application) publish(event string) {
 
 func (a *Application) runAction(action hapitypes.ActionConfig) error {
 	switch action.Verb {
+	case "sleep":
+		time.Sleep(time.Duration(action.DurationSeconds) * time.Second)
 	case "powerOn":
 		a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindOn))
 	case "powerOff":
