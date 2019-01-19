@@ -236,6 +236,8 @@ func (a *Application) devicePower(device *hapitypes.Device, power *hapitypes.Pow
 			true))
 
 		device.ProbablyTurnedOn = true
+
+		a.publish(fmt.Sprintf("device:%s:power:on", device.Conf.DeviceId))
 	} else if power.Kind == hapitypes.PowerKindOff {
 		a.logl.Debug.Printf("Power off: %s", device.Conf.Name)
 
@@ -246,6 +248,8 @@ func (a *Application) devicePower(device *hapitypes.Device, power *hapitypes.Pow
 			false))
 
 		device.ProbablyTurnedOn = false
+
+		a.publish(fmt.Sprintf("device:%s:power:off", device.Conf.DeviceId))
 	} else if power.Kind == hapitypes.PowerKindToggle {
 		a.logl.Debug.Printf("Power toggle: %s, current state = %v", device.Conf.Name, device.ProbablyTurnedOn)
 
