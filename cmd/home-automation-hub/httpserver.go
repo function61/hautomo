@@ -28,7 +28,7 @@ const tpl = `
 	<th>type</th>
 	<th>battery</th>
 	<th>link quality</th>
-	<th>last online</th>
+	<th>last heartbeat</th>
 	<th>temp</th>
 </tr>
 </thead>
