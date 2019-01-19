@@ -24,6 +24,11 @@ func parseMsgPayload(topicName string, resolver deviceResolver, message string) 
 
 	ourId := resolved.id
 
+	events := []hapitypes.InboundEvent{}
+	push := func(e hapitypes.InboundEvent) {
+		events = append(events, e)
+	}
+
 	switch resolved.kind {
 	case deviceKindWXKG11LM:
 		payload := WXKG11LM{}
@@ -31,42 +36,54 @@ func parseMsgPayload(topicName string, resolver deviceResolver, message string) 
 			return nil, err
 		}
 
-		if payload.Click == nil {
-			return hapitypes.NewHeartbeatEvent(ourId), nil
+		if payload.Click != nil {
+			push(hapitypes.NewPushButtonEvent(ourId, *payload.Click))
 		}
 
-		return hapitypes.NewPushButtonEvent(ourId, *payload.Click), nil
+		push(hapitypes.NewLinkQualityEvent(ourId, payload.LinkQuality))
+		push(hapitypes.NewBatteryStatusEvent(ourId, payload.Battery, payload.Voltage))
 	case deviceKindMCCGQ11LM:
 		payload := MCCGQ11LM{}
 		if err := decJson(&payload, message); err != nil {
 			return nil, err
 		}
 
-		return hapitypes.NewContactEvent(ourId, payload.Contact), nil
+		push(hapitypes.NewContactEvent(ourId, payload.Contact))
+
+		push(hapitypes.NewLinkQualityEvent(ourId, payload.LinkQuality))
+		push(hapitypes.NewBatteryStatusEvent(ourId, payload.Battery, payload.Voltage))
 	case deviceKindSJCGQ11LM:
 		payload := SJCGQ11LM{}
 		if err := decJson(&payload, message); err != nil {
 			return nil, err
 		}
 
-		return hapitypes.NewWaterLeakEvent(ourId, payload.WaterLeak), nil
+		push(hapitypes.NewWaterLeakEvent(ourId, payload.WaterLeak))
+
+		push(hapitypes.NewLinkQualityEvent(ourId, payload.LinkQuality))
+		push(hapitypes.NewBatteryStatusEvent(ourId, payload.Battery, payload.Voltage))
 	case deviceKindWSDCGQ11LM:
 		payload := WSDCGQ11LM{}
 		if err := decJson(&payload, message); err != nil {
 			return nil, err
 		}
 
-		return hapitypes.NewTemperatureHumidityPressureEvent(
+		push(hapitypes.NewTemperatureHumidityPressureEvent(
 			ourId,
 			payload.Temperature,
 			payload.Humidity,
 			payload.Pressure,
-		), nil
+		))
+
+		push(hapitypes.NewLinkQualityEvent(ourId, payload.LinkQuality))
+		push(hapitypes.NewBatteryStatusEvent(ourId, payload.Battery, payload.Voltage))
 	case deviceKindUnknown:
 		return nil, fmt.Errorf("unknown device kind for %s", ourId)
 	default:
 		return nil, fmt.Errorf("unsupported device kind for %s, %d", ourId, resolved.kind)
 	}
+
+	return events, nil
 }
 
 func decJson(ref interface{}, data string) error {

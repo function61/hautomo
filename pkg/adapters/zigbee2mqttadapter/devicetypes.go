@@ -18,34 +18,36 @@ var deviceTypeToZ2mType = map[string]deviceKind{
 	"aqara-temperature-humidity": deviceKindWSDCGQ11LM,
 }
 
-// TODO: these have more additional fields than just battery+voltage
-
 // {"battery":100,"voltage":3055,"linkquality":47,"click":"double"}
 type WXKG11LM struct {
-	Battery uint    `json:"battery"`
-	Voltage uint    `json:"voltage"`
-	Click   *string `json:"click"` // single/double/... (unset if heartbeat)
+	Click       *string `json:"click"` // single/double/... (unset if heartbeat)
+	Battery     uint    `json:"battery"`
+	Voltage     uint    `json:"voltage"`
+	LinkQuality uint    `json:"linkquality"`
 }
 
 // {"battery":100,"voltage":3085,"linkquality":52,"contact":true}
 type MCCGQ11LM struct {
-	Battery uint `json:"battery"`
-	Voltage uint `json:"voltage"`
-	Contact bool `json:"contact"`
+	Contact     bool `json:"contact"`
+	Battery     uint `json:"battery"`
+	Voltage     uint `json:"voltage"`
+	LinkQuality uint `json:"linkquality"`
 }
 
 // {"water_leak":false,"linkquality":49,"battery":100,"voltage":3055}
 type SJCGQ11LM struct {
-	Battery   uint `json:"battery"`
-	Voltage   uint `json:"voltage"`
-	WaterLeak bool `json:"water_leak"`
+	WaterLeak   bool `json:"water_leak"`
+	Battery     uint `json:"battery"`
+	Voltage     uint `json:"voltage"`
+	LinkQuality uint `json:"linkquality"`
 }
 
 // {"temperature":24.04,"linkquality":89,"humidity":25.91,"pressure":963,"battery":100,"voltage":3135}
 type WSDCGQ11LM struct {
-	Battery     uint    `json:"battery"`
-	Voltage     uint    `json:"voltage"`
 	Temperature float64 `json:"temperature"`
 	Humidity    float64 `json:"humidity"`
 	Pressure    float64 `json:"pressure"`
+	Battery     uint    `json:"battery"`
+	Voltage     uint    `json:"voltage"`
+	LinkQuality uint    `json:"linkquality"`
 }

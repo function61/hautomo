@@ -142,18 +142,39 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 	case *hapitypes.InfraredEvent:
 		a.publish(fmt.Sprintf("infrared:%s:%s", e.Remote, e.Event))
 	case *hapitypes.ContactEvent:
+		a.updateLastOnline(e.Device)
 		a.publish(fmt.Sprintf("contact:%s:%v", e.Device, e.Contact))
 	case *hapitypes.PushButtonEvent:
+		a.updateLastOnline(e.Device)
 		a.publish(fmt.Sprintf("pushbutton:%s:%s", e.Device, e.Specifier))
 	case *hapitypes.WaterLeakEvent:
+		a.updateLastOnline(e.Device)
 		a.publish(fmt.Sprintf("waterleak:%s:%v", e.Device, e.WaterDetected))
-	case *hapitypes.HeartbeatEvent:
-		a.publish(fmt.Sprintf("heartbeat:%s", e.Device))
+	case *hapitypes.LinkQualityEvent:
+		a.updateLastOnline(e.Device)
+
+		device := a.deviceById[e.Device]
+		device.LinkQuality = e.LinkQuality
+	case *hapitypes.BatteryStatusEvent:
+		a.updateLastOnline(e.Device)
+
+		device := a.deviceById[e.Device]
+		device.BatteryPct = e.BatteryPct
+		device.BatteryVoltage = e.Voltage
 	case *hapitypes.TemperatureHumidityPressureEvent:
-		fmt.Printf("temp %v\n", e)
+		device := a.deviceById[e.Device]
+		device.LastTemperatureHumidityPressureEvent = e
+
+		a.updateLastOnline(e.Device)
 	default:
 		a.logl.Error.Printf("Unsupported inbound event: " + inboundEvent.InboundEventType())
 	}
+}
+
+func (a *Application) updateLastOnline(deviceId string) {
+	device := a.deviceById[deviceId]
+	now := time.Now()
+	device.LastOnline = &now
 }
 
 func (a *Application) publish(event string) {

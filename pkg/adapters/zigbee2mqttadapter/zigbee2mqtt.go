@@ -51,13 +51,15 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	}
 
 	m2qttDeviceObserver := func(topicName, message []byte) {
-		event, err := parseMsgPayload(string(topicName), resolver, string(message))
+		events, err := parseMsgPayload(string(topicName), resolver, string(message))
 		if err != nil {
 			adapter.Logl.Error.Println(err.Error())
 			return
 		}
 
-		adapter.Receive(event)
+		for _, event := range events {
+			adapter.Receive(event)
+		}
 	}
 
 	z2mPublish := make(chan MqttPublish, 16)
