@@ -127,6 +127,14 @@
   version = "v1.0.2"
 
 [[projects]]
+  branch = "master"
+  digest = "1:8a8d9df7ef5e6cd647f899b59a03200cb826467d2e0d4b7c83360d28709dc151"
+  name = "github.com/yaslama/astrocalc"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "05990314385846e1098642ff8abdf2e8d5960168"
+
+[[projects]]
   digest = "1:354f484e2e0407e47113cabaea24401f1f96d43e6590ff830d5589a7fef7c736"
   name = "github.com/yosssi/gmq"
   packages = [
@@ -203,6 +211,7 @@
     "github.com/function61/gokit/systemdinstaller",
     "github.com/lucasb-eyer/go-colorful",
     "github.com/spf13/cobra",
+    "github.com/yaslama/astrocalc",
     "github.com/yosssi/gmq/mqtt",
     "github.com/yosssi/gmq/mqtt/client",
     "golang.org/x/net/html/charset",

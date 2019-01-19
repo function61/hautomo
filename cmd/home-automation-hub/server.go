@@ -7,7 +7,9 @@ import (
 	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
+	"github.com/function61/home-automation-hub/pkg/suntimes"
 	"log"
+	"time"
 )
 
 type Application struct {
@@ -15,6 +17,7 @@ type Application struct {
 	deviceById    map[string]*hapitypes.Device
 	subscriptions map[string]*hapitypes.SubscribeConfig
 	inbound       *hapitypes.InboundFabric
+	booleans      *booleanStorage
 	logl          *logex.Leveled
 }
 
@@ -24,9 +27,14 @@ func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
 		deviceById:    map[string]*hapitypes.Device{},
 		subscriptions: map[string]*hapitypes.SubscribeConfig{},
 		inbound:       hapitypes.NewInboundFabric(),
+		booleans:      NewBooleanStorage("anybodyHome", "environmentHasLight"),
 		logl:          logex.Levels(logger),
 	}
 
+	app.booleans.Set("anybodyHome", true)
+	app.updateLightStatus(false)
+
+	everyMinute := time.NewTicker(1 * time.Minute)
 	go func() {
 		defer stop.Done()
 
@@ -37,6 +45,8 @@ func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
 			select {
 			case <-stop.Signal:
 				return
+			case <-everyMinute.C:
+				app.updateLightStatus(true)
 			case event := <-app.inbound.Ch:
 				app.handleIncomingEvent(event)
 			}
@@ -44,6 +54,14 @@ func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
 	}()
 
 	return app
+}
+
+func (a *Application) updateLightStatus(broadcastChanges bool) {
+	hasLight := suntimes.IsBetweenGoldenHours(time.Now(), suntimes.Tampere)
+	changed, _ := a.booleans.Set("environmentHasLight", hasLight)
+	if changed && broadcastChanges {
+		a.logl.Info.Printf("environmentHasLight changed to %v", hasLight)
+	}
 }
 
 func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
@@ -122,26 +140,88 @@ func (a *Application) publish(event string) {
 		a.logl.Debug.Printf("event %s", event)
 	}
 
-	for _, action := range subscription.Actions {
-		switch action.Verb {
-		case "powerOn":
-			a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindOn))
-		case "powerOff":
-			a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindOff))
-		case "powerToggle":
-			a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindToggle))
-		case "blink":
-			a.inbound.Receive(hapitypes.NewBlinkEvent(action.Device))
-		case "ir":
-			device := a.deviceById[action.Device]
-			adapter := a.adapterById[device.Conf.AdapterId]
+	for _, condition := range subscription.Conditions {
+		switch condition.Type {
+		case "boolean-not-changed-within":
+			lastChange, err := a.booleans.GetLastChangeTime(condition.Boolean)
+			if err != nil {
+				a.logl.Error.Printf("error evaluating condition: %v", err)
+				return
+			}
 
-			msg := hapitypes.NewInfraredMsg(action.Device, action.IrCommand)
-			adapter.Send(&msg)
-		default:
-			panic("unknown verb: " + action.Verb)
+			if time.Since(lastChange).Seconds() < float64(condition.DurationSeconds) {
+				a.logl.Debug.Printf(
+					"boolean %s changed within %d seconds - bailing out",
+					condition.Boolean,
+					condition.DurationSeconds)
+				return
+			}
+		case "boolean-is-false":
+			fallthrough
+		case "boolean-is-true":
+			val, err := a.booleans.Get(condition.Boolean)
+			if err != nil {
+				a.logl.Error.Printf("error evaluating condition: %v", err)
+				return
+			}
+
+			expectedValue := condition.Type == "boolean-is-true"
+
+			if val != expectedValue {
+				a.logl.Debug.Printf(
+					"bool %s expected %v but got %v - bailing out",
+					condition.Boolean,
+					expectedValue,
+					val)
+				return
+			}
 		}
 	}
+
+	for _, action := range subscription.Actions {
+		if err := a.runAction(action); err != nil {
+			a.logl.Error.Printf("failure running action: %v", err)
+		}
+	}
+}
+
+func (a *Application) runAction(action hapitypes.ActionConfig) error {
+	switch action.Verb {
+	case "powerOn":
+		a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindOn))
+	case "powerOff":
+		a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindOff))
+	case "powerToggle":
+		a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindToggle))
+	case "blink":
+		a.inbound.Receive(hapitypes.NewBlinkEvent(action.Device))
+	case "setBooleanTrue":
+		fallthrough
+	case "setBooleanFalse":
+		value := action.Verb == "setBooleanTrue"
+		changed, err := a.booleans.Set(action.Boolean, value)
+		if err != nil {
+			return err
+		}
+
+		if changed {
+			if value {
+				a.publish(fmt.Sprintf("boolean:%s:changes-to-true", action.Boolean))
+			} else {
+				a.publish(fmt.Sprintf("boolean:%s:changes-to-false", action.Boolean))
+			}
+		}
+	case "ir":
+		device := a.deviceById[action.Device]
+		adapter := a.adapterById[device.Conf.AdapterId]
+
+		msg := hapitypes.NewInfraredMsg(action.Device, action.IrCommand)
+		adapter.Send(&msg)
+	default:
+		return fmt.Errorf("unknown verb: %s", action.Verb)
+	}
+
+	return nil
 }
 
 func (a *Application) devicePower(device *hapitypes.Device, power *hapitypes.PowerEvent) error {

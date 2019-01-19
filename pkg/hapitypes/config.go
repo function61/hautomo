@@ -63,13 +63,21 @@ type Person struct {
 
 type ActionConfig struct {
 	Device    string `json:"device"`
-	Verb      string `json:"verb"` // powerOn/powerOff/powerToggle/blink/ir
+	Verb      string `json:"verb"` // powerOn/powerOff/powerToggle/blink/ir/setBooleanFalse/setBooleanTrue
 	IrCommand string `json:"ir_command"`
+	Boolean   string `json:"boolean"`
+}
+
+type ConditionConfig struct {
+	Type            string `json:"type"` // boolean-is-true/boolean-is-false/boolean-not-changed-within
+	Boolean         string `json:"boolean"`
+	DurationSeconds int    `json:"duration_seconds"`
 }
 
 type SubscribeConfig struct {
-	Event   string         `json:"event"`
-	Actions []ActionConfig `json:"action"`
+	Event      string            `json:"event"`
+	Actions    []ActionConfig    `json:"action"`
+	Conditions []ConditionConfig `json:"condition"`
 }
 
 type ConfigFile struct {
