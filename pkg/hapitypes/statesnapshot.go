@@ -28,6 +28,7 @@ type DeviceStateSnapshot struct {
 
 func (d *Device) SnapshotState() (*DeviceStateSnapshot, error) {
 	return &DeviceStateSnapshot{
+		ProbablyTurnedOn:                     d.ProbablyTurnedOn,
 		LastColor:                            d.LastColor,
 		LastTemperatureHumidityPressureEvent: d.LastTemperatureHumidityPressureEvent,
 		LastOnline:                           d.LastOnline,
@@ -38,6 +39,7 @@ func (d *Device) SnapshotState() (*DeviceStateSnapshot, error) {
 }
 
 func (d *Device) RestoreStateFromSnapshot(snapshot DeviceStateSnapshot) error {
+	d.ProbablyTurnedOn = snapshot.ProbablyTurnedOn
 	d.LastColor = snapshot.LastColor
 	d.LastTemperatureHumidityPressureEvent = snapshot.LastTemperatureHumidityPressureEvent
 	d.LastOnline = snapshot.LastOnline
