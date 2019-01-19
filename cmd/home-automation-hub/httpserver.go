@@ -30,6 +30,8 @@ func handleHttp(conf *hapitypes.ConfigFile, logger *log.Logger, stop *stopper.St
 		enc.Encode(conf)
 	})
 
+	logl.Info.Printf("Starting to listen at %s", srv.Addr)
+
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		logl.Error.Printf("ListenAndServe(): %s", err.Error())
 	}
