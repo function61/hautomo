@@ -37,8 +37,8 @@ type PowerMsg struct {
 	On           bool
 }
 
-func NewPowerMsg(deviceId string, powerCommand string, on bool) PowerMsg {
-	return PowerMsg{
+func NewPowerMsg(deviceId string, powerCommand string, on bool) *PowerMsg {
+	return &PowerMsg{
 		DeviceId:     deviceId,
 		PowerCommand: powerCommand,
 		On:           on,

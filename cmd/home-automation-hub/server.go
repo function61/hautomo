@@ -230,16 +230,20 @@ func (a *Application) devicePower(device *hapitypes.Device, power *hapitypes.Pow
 		a.logl.Debug.Printf("Power on: %s", device.Conf.Name)
 
 		adapter := a.adapterById[device.Conf.AdapterId]
-		e := hapitypes.NewPowerMsg(device.Conf.AdaptersDeviceId, device.Conf.PowerOnCmd, true)
-		adapter.Send(&e)
+		adapter.Send(hapitypes.NewPowerMsg(
+			device.Conf.AdaptersDeviceId,
+			device.Conf.PowerOnCmd,
+			true))
 
 		device.ProbablyTurnedOn = true
 	} else if power.Kind == hapitypes.PowerKindOff {
 		a.logl.Debug.Printf("Power off: %s", device.Conf.Name)
 
 		adapter := a.adapterById[device.Conf.AdapterId]
-		e := hapitypes.NewPowerMsg(device.Conf.AdaptersDeviceId, device.Conf.PowerOffCmd, false)
-		adapter.Send(&e)
+		adapter.Send(hapitypes.NewPowerMsg(
+			device.Conf.AdaptersDeviceId,
+			device.Conf.PowerOffCmd,
+			false))
 
 		device.ProbablyTurnedOn = false
 	} else if power.Kind == hapitypes.PowerKindToggle {
