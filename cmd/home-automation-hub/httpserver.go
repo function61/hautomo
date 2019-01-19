@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/stopper"
@@ -20,7 +21,7 @@ func handleHttp(conf *hapitypes.ConfigFile, logger *log.Logger, stop *stopper.St
 
 		logl.Info.Println("stopping HTTP")
 
-		_ = srv.Shutdown(nil)
+		_ = srv.Shutdown(context.TODO())
 	}()
 
 	http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
