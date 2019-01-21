@@ -118,6 +118,8 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 		adapter.Send(hapitypes.NewColorMsg(
 			device.Conf.AdaptersDeviceId,
 			e.Color))
+	case *hapitypes.PublishEvent:
+		a.publish(e.Topic)
 	case *hapitypes.BrightnessEvent:
 		device := a.deviceById[e.DeviceIdOrDeviceGroupId]
 		adapter := a.adapterById[device.Conf.AdapterId]
