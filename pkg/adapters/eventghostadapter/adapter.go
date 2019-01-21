@@ -29,6 +29,20 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 
 	go runServer(adapter, passwordToDeviceId, workers)
 
+	send := func(deviceId string, req EgReq) {
+		conn, found := clientConns[deviceId]
+		if !found {
+			adapter.Logl.Error.Printf("unknown device %s", deviceId)
+			return
+		}
+
+		select {
+		case conn.Requests <- req:
+		default:
+			adapter.Logl.Error.Printf("device %s queue is full; message discarded", deviceId)
+		}
+	}
+
 	go func() {
 		defer stop.Done()
 		defer workers.StopAllWorkersAndWait()
@@ -42,17 +56,15 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 				return
 			case genericEvent := <-adapter.Outbound:
 				switch e := genericEvent.(type) {
+				case *hapitypes.NotificationEvent:
+					send(e.Device, EgReq{
+						Event:   "OSD",
+						Payload: []string{e.Message},
+					})
 				case *hapitypes.PlaybackEvent:
-					conn, found := clientConns[e.Device]
-					if !found {
-						adapter.Logl.Error.Printf("unknown device %s", e.Device)
-						break
-					}
-
-					// TODO: non-blocking submit
-					conn.Requests <- EgReq{
+					send(e.Device, EgReq{
 						Event: "Playback." + e.Action,
-					}
+					})
 				default:
 					adapter.LogUnsupportedEvent(genericEvent)
 				}

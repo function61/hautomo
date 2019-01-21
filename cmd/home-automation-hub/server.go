@@ -140,6 +140,11 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 		adapter := a.adapterById[device.Conf.AdapterId]
 
 		adapter.Send(hapitypes.NewBlinkEvent(device.Conf.AdaptersDeviceId))
+	case *hapitypes.NotificationEvent:
+		device := a.deviceById[e.Device]
+		adapter := a.adapterById[device.Conf.AdapterId]
+
+		adapter.Send(hapitypes.NewNotificationEvent(device.Conf.AdaptersDeviceId, e.Message))
 	case *hapitypes.InfraredEvent:
 		device := a.deviceById[e.Device]
 		adapter := a.adapterById[device.Conf.AdapterId]
@@ -273,6 +278,10 @@ func (a *Application) runAction(action hapitypes.ActionConfig) error {
 		a.inbound.Receive(hapitypes.NewPlaybackEvent(
 			action.Device,
 			action.PlaybackAction))
+	case "notify":
+		a.inbound.Receive(hapitypes.NewNotificationEvent(
+			action.Device,
+			action.NotifyMessage))
 	default:
 		return fmt.Errorf("unknown verb: %s", action.Verb)
 	}
