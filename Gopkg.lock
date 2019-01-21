@@ -44,7 +44,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:837eaf59ed628e95943318036625e712534d280d3b122cb46c22c74d34c64ce4"
+  digest = "1:734f8e9521a6b97f65fa2eaa5f7d60a520df5657571f6bc929de58913268b789"
   name = "github.com/function61/gokit"
   packages = [
     "assert",
@@ -57,9 +57,10 @@
     "retry",
     "stopper",
     "systemdinstaller",
+    "tcpkeepalive",
   ]
   pruneopts = "UT"
-  revision = "cc1894e8af243cf85f161fbc07cb279f131ad69e"
+  revision = "7169e3d27e3011c2ab512c5baea675569bb33ece"
 
 [[projects]]
   digest = "1:5abd6a22805b1919f6a6bca0ae58b13cef1f3412812f38569978f43ef02743d4"
@@ -209,6 +210,7 @@
     "github.com/function61/gokit/retry",
     "github.com/function61/gokit/stopper",
     "github.com/function61/gokit/systemdinstaller",
+    "github.com/function61/gokit/tcpkeepalive",
     "github.com/lucasb-eyer/go-colorful",
     "github.com/spf13/cobra",
     "github.com/yaslama/astrocalc",

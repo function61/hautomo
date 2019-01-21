@@ -1,10 +1,11 @@
-package eventghostnetworkclient
+package eventghostnetwork
 
 import (
 	"bufio"
 	"crypto/md5"
 	"errors"
 	"fmt"
+	"github.com/function61/gokit/tcpkeepalive"
 	"log"
 	"net"
 	"strings"
@@ -36,7 +37,7 @@ type EventghostConnection struct {
 	outgoing  chan []byte
 }
 
-func NewEventghostConnection(addr string, secret string) *EventghostConnection {
+func NewEventghostConnection(addr string, secret string, logger *log.Logger) *EventghostConnection {
 	egc := &EventghostConnection{
 		secret:    secret,
 		addr:      addr,
@@ -44,24 +45,13 @@ func NewEventghostConnection(addr string, secret string) *EventghostConnection {
 		outgoing:  make(chan []byte, 10),
 	}
 
-	// keepalive thread
-	go func() {
-		for {
-			time.Sleep(30 * time.Second)
-
-			if egc.connected {
-				egc.Send("keepalive", nil)
-			}
-		}
-	}()
-
 	// connection manager
 	go func() {
 		// do forever
 		for {
 			if err := egc.connectAuthAndServe(); err != nil {
 				egc.connected = false
-				log.Printf("EventghostConnection: failed to connect/auth: %s", err.Error())
+				logger.Printf("failed to connect/auth: %s", err.Error())
 				time.Sleep(5 * time.Second)
 				continue // try again
 			}
@@ -72,7 +62,11 @@ func NewEventghostConnection(addr string, secret string) *EventghostConnection {
 }
 
 func (e *EventghostConnection) connectAuthAndServe() error {
-	conn, err := net.Dial("tcp", e.addr)
+	dialer := net.Dialer{
+		Timeout:   3 * time.Second,
+		KeepAlive: tcpkeepalive.DefaultDuration,
+	}
+	conn, err := dialer.Dial("tcp", e.addr)
 	if err != nil {
 		return err
 	}
@@ -94,18 +88,33 @@ func (e *EventghostConnection) connectAuthAndServe() error {
 		return err
 	}
 
+	succesfullyConnected := make(chan interface{})
+
+	// for some reason EventGhost does not respond anything (but keeps the TCP socket open)
+	// if we give the wrong password (even though the source code looks like it should
+	// properly close). this was observed with tcpdump
+	go func() {
+		select {
+		case <-time.After(1 * time.Second):
+			conn.Close()
+			return
+		case <-succesfullyConnected:
+			return // cancels closing timeout
+		}
+	}()
+
 	accept, errAccept := readOne(lineScanner)
 	if errAccept != nil {
+		close(succesfullyConnected)
 		return errAccept
 	}
+	close(succesfullyConnected)
 
 	if accept != "accept" {
 		return errExpectingAccept
 	}
 
 	e.connected = true
-
-	log.Printf("EventghostConnection: connected")
 
 	for outgoing := range e.outgoing {
 		if _, err := conn.Write(outgoing); err != nil {
