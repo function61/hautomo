@@ -265,6 +265,13 @@ func (a *Application) runAction(action hapitypes.ActionConfig) error {
 		adapter.Send(hapitypes.NewInfraredMsg(
 			device.Conf.AdaptersDeviceId,
 			action.IrCommand))
+	case "playback":
+		device := a.deviceById[action.Device]
+		adapter := a.adapterById[device.Conf.AdapterId]
+
+		adapter.Send(hapitypes.NewPlaybackEvent(
+			device.Conf.AdaptersDeviceId,
+			action.PlaybackAction))
 	default:
 		return fmt.Errorf("unknown verb: %s", action.Verb)
 	}
