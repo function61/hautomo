@@ -96,6 +96,14 @@ var deviceTypes = map[string]*DeviceType{
 		Model:        "WXKG11LM",
 		BatteryType:  "CR2032",
 	},
+	"eventghostClient": &DeviceType{
+		Name:         "EventGhost client",
+		Manufacturer: "EventGhost",
+		Model:        "EventGhost",
+		Capabilities: Capabilities{
+			Playback: true,
+		},
+	},
 }
 
 func ResolveDeviceType(t string) (*DeviceType, error) {

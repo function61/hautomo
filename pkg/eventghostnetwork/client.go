@@ -71,7 +71,7 @@ func (e *EventghostConnection) connectAuthAndServe() error {
 		return err
 	}
 
-	if _, err := conn.Write([]byte("quintessence\n")); err != nil {
+	if _, err := conn.Write([]byte(magicKnock + "\n")); err != nil {
 		return err
 	}
 

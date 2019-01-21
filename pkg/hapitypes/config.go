@@ -24,9 +24,6 @@ type AdapterConfig struct {
 
 	IrSimulatorKey string `json:"irsimulator_button,omitempty"`
 
-	EventghostAddr   string `json:"eventghost_addr,omitempty"`
-	EventghostSecret string `json:"eventghost_secret,omitempty"`
-
 	TradfriUrl  string `json:"tradfri_url"`
 	TradfriUser string `json:"tradfri_user"`
 	TradfriPsk  string `json:"tradfri_psk"`
@@ -48,6 +45,9 @@ type DeviceConfig struct {
 	PowerOnCmd       string `json:"power_on_cmd,omitempty"`
 	PowerOffCmd      string `json:"power_off_cmd,omitempty"`
 	AlexaCategory    string `json:"alexa_category,omitempty"`
+
+	EventghostAddr   string `json:"eventghost_addr,omitempty"` // if specified, we connect to the PC direction for sending events
+	EventghostSecret string `json:"eventghost_secret,omitempty"`
 }
 
 // these are transparently generated to adapter + device combo
