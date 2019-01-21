@@ -38,7 +38,11 @@ const tpl = `
 	<td>{{.Device.ProbablyTurnedOn}}</td>
 	<td>{{.Device.Conf.DeviceId}}</td>
 	<td>{{.Device.DeviceType.Manufacturer}} {{.Device.DeviceType.Model}}</td>
+{{if .Device.DeviceType.BatteryType}}
 	<td title="type: {{.Device.DeviceType.BatteryType}} voltage: {{.Device.BatteryVoltage}} mV">{{.Device.BatteryPct}} %</td>
+{{else}}
+	<td></td>
+{{end}}
 	<td>{{.Device.LinkQuality}} %</td>
 	<td>{{.LastOnlineFormatted}}</td>
 	<td>{{if .Device.LastTemperatureHumidityPressureEvent}}
