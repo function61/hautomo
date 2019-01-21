@@ -1,14 +1,14 @@
 package hapitypes
 
 type PlaybackEvent struct {
-	DeviceIdOrDeviceGroupId string
-	Action                  string
+	Device string
+	Action string
 }
 
-func NewPlaybackEvent(deviceIdOrDeviceGroupId string, action string) *PlaybackEvent {
+func NewPlaybackEvent(device string, action string) *PlaybackEvent {
 	return &PlaybackEvent{
-		DeviceIdOrDeviceGroupId: deviceIdOrDeviceGroupId,
-		Action:                  action,
+		Device: device,
+		Action: action,
 	}
 }
 
