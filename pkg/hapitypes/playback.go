@@ -19,3 +19,7 @@ func (e *PlaybackEvent) InboundEventType() string {
 func (e *PlaybackEvent) OutboundEventType() string {
 	return "PlaybackEvent"
 }
+
+func (e *PlaybackEvent) RedirectInbound(toDeviceId string) InboundEvent {
+	return NewPlaybackEvent(toDeviceId, e.Action)
+}

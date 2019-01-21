@@ -19,3 +19,7 @@ func (e *ColorMsg) InboundEventType() string {
 func (e *ColorMsg) OutboundEventType() string {
 	return "ColorMsg"
 }
+
+func (e *ColorMsg) RedirectInbound(toDeviceId string) InboundEvent {
+	return NewColorMsg(toDeviceId, e.Color)
+}

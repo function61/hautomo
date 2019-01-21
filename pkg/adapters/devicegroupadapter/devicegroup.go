@@ -18,52 +18,13 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 			select {
 			case <-stop.Signal:
 				return
-			case genericEvent := <-adapter.Outbound:
-				handleEvent(genericEvent, adapter)
+			case event := <-adapter.Outbound:
+				for _, to := range adapter.Conf.DevicegroupDevices {
+					adapter.Receive(event.RedirectInbound(to))
+				}
 			}
 		}
 	}()
 
 	return nil
-}
-
-func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapter) {
-	group := adapter.Conf.DevicegroupDevices // shorthand
-
-	switch e := genericEvent.(type) {
-	case *hapitypes.ColorMsg:
-		for _, deviceId := range group {
-			adapter.Receive(hapitypes.NewColorMsg(deviceId, e.Color))
-		}
-	case *hapitypes.PlaybackEvent:
-		for _, deviceId := range group {
-			adapter.Receive(hapitypes.NewPlaybackEvent(
-				deviceId,
-				e.Action))
-		}
-	case *hapitypes.BrightnessMsg:
-		for _, deviceId := range group {
-			adapter.Receive(hapitypes.NewBrightnessEvent(deviceId, e.Brightness))
-		}
-	case *hapitypes.ColorTemperatureEvent:
-		for _, deviceId := range group {
-			adapter.Receive(hapitypes.NewColorTemperatureEvent(
-				deviceId,
-				e.TemperatureInKelvin))
-		}
-	case *hapitypes.PowerMsg:
-		for _, deviceId := range group {
-			if e.On {
-				adapter.Receive(hapitypes.NewPowerEvent(deviceId, hapitypes.PowerKindOn))
-			} else {
-				adapter.Receive(hapitypes.NewPowerEvent(deviceId, hapitypes.PowerKindOff))
-			}
-		}
-	case *hapitypes.BlinkEvent:
-		for _, deviceId := range group {
-			adapter.Receive(hapitypes.NewBlinkEvent(deviceId))
-		}
-	default:
-		adapter.LogUnsupportedEvent(genericEvent)
-	}
 }

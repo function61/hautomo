@@ -1,14 +1,30 @@
 package hapitypes
 
-type InfraredEvent struct {
+type RawInfraredEvent struct {
 	Remote string
 	Event  string
 }
 
-func NewInfraredEvent(remote string, event string) *InfraredEvent {
-	return &InfraredEvent{
+func NewRawInfraredEvent(remote string, event string) *RawInfraredEvent {
+	return &RawInfraredEvent{
 		Remote: remote,
 		Event:  event,
+	}
+}
+
+func (e *RawInfraredEvent) InboundEventType() string {
+	return "RawInfraredEvent"
+}
+
+type InfraredEvent struct {
+	Device  string
+	Command string
+}
+
+func NewInfraredEvent(device string, command string) *InfraredEvent {
+	return &InfraredEvent{
+		Device:  device,
+		Command: command,
 	}
 }
 
@@ -16,18 +32,10 @@ func (e *InfraredEvent) InboundEventType() string {
 	return "InfraredEvent"
 }
 
-type InfraredMsg struct {
-	DeviceId string
-	Command  string
+func (e *InfraredEvent) OutboundEventType() string {
+	return "InfraredEvent"
 }
 
-func NewInfraredMsg(deviceId string, command string) *InfraredMsg {
-	return &InfraredMsg{
-		DeviceId: deviceId,
-		Command:  command,
-	}
-}
-
-func (e *InfraredMsg) OutboundEventType() string {
-	return "InfraredMsg"
+func (e *InfraredEvent) RedirectInbound(toDeviceId string) InboundEvent {
+	return NewInfraredEvent(toDeviceId, e.Command)
 }

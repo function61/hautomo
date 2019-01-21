@@ -15,3 +15,7 @@ func (e *BlinkEvent) InboundEventType() string {
 func (e *BlinkEvent) OutboundEventType() string {
 	return "BlinkEvent"
 }
+
+func (e *BlinkEvent) RedirectInbound(toDeviceId string) InboundEvent {
+	return NewBlinkEvent(toDeviceId)
+}

@@ -13,13 +13,13 @@ import (
 
 var irwOutputParseRe = regexp.MustCompile(`^[0-9a-f]{16} 00 ([^ ]+) (.+)$`)
 
-func irwOutputLineToIrEvent(line string) *hapitypes.InfraredEvent {
+func irwOutputLineToIrEvent(line string) *hapitypes.RawInfraredEvent {
 	irCommand := irwOutputParseRe.FindStringSubmatch(line)
 	if irCommand == nil {
 		return nil
 	}
 
-	return hapitypes.NewInfraredEvent(irCommand[2], irCommand[1])
+	return hapitypes.NewRawInfraredEvent(irCommand[2], irCommand[1])
 }
 
 // reads LIRC's "$ irw" output

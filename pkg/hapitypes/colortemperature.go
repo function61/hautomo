@@ -16,3 +16,7 @@ func (e *ColorTemperatureEvent) InboundEventType() string {
 func (e *ColorTemperatureEvent) OutboundEventType() string {
 	return "ColorTemperatureEvent"
 }
+
+func (e *ColorTemperatureEvent) RedirectInbound(toDeviceId string) InboundEvent {
+	return NewColorTemperatureEvent(toDeviceId, e.TemperatureInKelvin)
+}

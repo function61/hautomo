@@ -20,12 +20,12 @@ import (
 	inbound 							outbound
 	--------------------------------------------
 	PowerEvent							PowerMsg
-	InfraredEvent						InfraredMsg
 	BrightnessEvent						BrightnessMsg
 */
 
 type OutboundEvent interface {
 	OutboundEventType() string
+	RedirectInbound(toDeviceId string) InboundEvent
 }
 
 type InboundEvent interface {

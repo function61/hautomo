@@ -42,8 +42,8 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 					if err := harmonyHubConnection.HoldAndRelease(e.DeviceId, e.PowerCommand); err != nil {
 						adapter.Logl.Error.Printf("HoldAndRelease: %s", err.Error())
 					}
-				case *hapitypes.InfraredMsg:
-					if err := harmonyHubConnection.HoldAndRelease(e.DeviceId, e.Command); err != nil {
+				case *hapitypes.InfraredEvent:
+					if err := harmonyHubConnection.HoldAndRelease(e.Device, e.Command); err != nil {
 						adapter.Logl.Error.Printf("HoldAndRelease: %s", err.Error())
 					}
 				default:

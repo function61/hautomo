@@ -33,3 +33,7 @@ func NewBrightnessMsg(deviceId string, brightness uint, lastColor RGB) *Brightne
 func (e *BrightnessMsg) OutboundEventType() string {
 	return "BrightnessMsg"
 }
+
+func (e *BrightnessMsg) RedirectInbound(toDeviceId string) InboundEvent {
+	return NewBrightnessEvent(toDeviceId, e.Brightness)
+}

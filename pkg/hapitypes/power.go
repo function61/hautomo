@@ -48,3 +48,10 @@ func NewPowerMsg(deviceId string, powerCommand string, on bool) *PowerMsg {
 func (e *PowerMsg) OutboundEventType() string {
 	return "PowerMsg"
 }
+
+func (e *PowerMsg) RedirectInbound(toDeviceId string) InboundEvent {
+	if e.On {
+		return NewPowerEvent(toDeviceId, PowerKindOn)
+	}
+	return NewPowerEvent(toDeviceId, PowerKindOff)
+}
