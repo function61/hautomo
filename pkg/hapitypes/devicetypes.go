@@ -77,6 +77,9 @@ var deviceTypes = map[string]*DeviceType{
 		Manufacturer: "Xiaomi",
 		Model:        "WSDCGQ11LM",
 		BatteryType:  "CR2032",
+		Capabilities: Capabilities{
+			ReportsTemperature: true,
+		},
 	},
 	"aqara-water-leak": &DeviceType{
 		Name:         "Aqara water leak sensor",
@@ -131,4 +134,5 @@ type Capabilities struct {
 	ColorTemperature          bool `json:"colortemperature"`
 	ColorSeparateWhiteChannel bool `json:"color_separate_white_channel"`
 	Playback                  bool `json:"playback"`
+	ReportsTemperature        bool `json:"reports_temperature"`
 }

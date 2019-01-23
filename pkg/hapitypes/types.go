@@ -3,6 +3,7 @@ package hapitypes
 import (
 	"errors"
 	"github.com/function61/gokit/logex"
+	"github.com/function61/home-automation-hub/pkg/constmetrics"
 	"log"
 	"time"
 )
@@ -64,6 +65,10 @@ type Device struct {
 	LastColor RGB
 
 	LastTemperatureHumidityPressureEvent *TemperatureHumidityPressureEvent
+
+	TemperatureMetric *constmetrics.Ref
+	HumidityMetric    *constmetrics.Ref
+	PressureMetric    *constmetrics.Ref
 
 	LastOnline *time.Time
 

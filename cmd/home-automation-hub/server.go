@@ -7,8 +7,10 @@ import (
 	"github.com/function61/gokit/jsonfile"
 	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/stopper"
+	"github.com/function61/home-automation-hub/pkg/constmetrics"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"github.com/function61/home-automation-hub/pkg/suntimes"
+	"github.com/prometheus/client_golang/prometheus"
 	"log"
 	"time"
 )
@@ -21,6 +23,7 @@ type Application struct {
 	subscriptions map[string]*hapitypes.SubscribeConfig
 	inbound       *hapitypes.InboundFabric
 	booleans      *booleanStorage
+	constMetrics  *constmetrics.Collector
 	logl          *logex.Leveled
 }
 
@@ -31,8 +34,11 @@ func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
 		subscriptions: map[string]*hapitypes.SubscribeConfig{},
 		inbound:       hapitypes.NewInboundFabric(),
 		booleans:      NewBooleanStorage("anybodyHome", "environmentHasLight"),
+		constMetrics:  constmetrics.NewCollector(),
 		logl:          logex.Levels(logger),
 	}
+
+	prometheus.MustRegister(app.constMetrics)
 
 	app.booleans.Set("anybodyHome", true)
 	app.updateEnvironmentLightStatus(false)
@@ -175,6 +181,18 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 	case *hapitypes.TemperatureHumidityPressureEvent:
 		device := a.deviceById[e.Device]
 		device.LastTemperatureHumidityPressureEvent = e
+
+		now := time.Now()
+
+		if device.TemperatureMetric != nil {
+			a.constMetrics.Observe(device.TemperatureMetric, e.Temperature, now)
+		}
+		if device.HumidityMetric != nil {
+			a.constMetrics.Observe(device.HumidityMetric, e.Humidity, now)
+		}
+		if device.PressureMetric != nil {
+			a.constMetrics.Observe(device.PressureMetric, e.Pressure, now)
+		}
 
 		a.updateLastOnline(e.Device)
 	default:
@@ -403,6 +421,25 @@ func configureAppAndStartAdapters(
 		if err != nil {
 			return err
 		}
+
+		if device.DeviceType.Capabilities.ReportsTemperature {
+			device.TemperatureMetric = app.constMetrics.Register(
+				"temperature",
+				"Temperature in Celsius",
+				"sensor",
+				device.Conf.DeviceId)
+			device.HumidityMetric = app.constMetrics.Register(
+				"humidity",
+				"Relative humidity [%]",
+				"sensor",
+				device.Conf.DeviceId)
+			device.PressureMetric = app.constMetrics.Register(
+				"pressure",
+				"Air pressure, in [TODO]",
+				"sensor",
+				device.Conf.DeviceId)
+		}
+
 		app.deviceById[deviceConf.DeviceId] = device
 	}
 

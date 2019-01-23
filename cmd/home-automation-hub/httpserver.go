@@ -6,6 +6,7 @@ import (
 	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"html/template"
 	"log"
 	"net/http"
@@ -78,6 +79,8 @@ func handleHttp(app *Application, conf *hapitypes.ConfigFile, logger *log.Logger
 		enc.SetIndent("", "  ")
 		enc.Encode(conf)
 	})
+
+	http.Handle("/metrics", promhttp.Handler())
 
 	http.HandleFunc("/ui", func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.New("name").Parse(tpl)
