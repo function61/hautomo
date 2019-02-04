@@ -105,6 +105,12 @@ var deviceTypes = map[string]*DeviceType{
 		Model:        "WXKG11LM",
 		BatteryType:  "CR2032",
 	},
+	"aqara-doublekeyswitch": &DeviceType{
+		Name:         "Aqara wireless double key switch",
+		Manufacturer: "Xiaomi",
+		Model:        "WXKG02LM",
+		BatteryType:  "CR2032",
+	},
 	"eventghostClient": &DeviceType{
 		Name:         "EventGhost client",
 		Manufacturer: "EventGhost",

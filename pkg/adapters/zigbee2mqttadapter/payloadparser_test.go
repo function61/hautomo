@@ -57,6 +57,12 @@ BatteryStatusEvent {"Device":"dummyId","BatteryPct":0,"Voltage":0}`,
 LinkQualityEvent {"Device":"dummyId","LinkQuality":68}`,
 		},
 		{
+			input: `{"click":"right_double","linkquality":97}`,
+			kind:  deviceKindWXKG02LM,
+			output: `PushButtonEvent {"Device":"dummyId","Specifier":"right_double"}
+LinkQualityEvent {"Device":"dummyId","LinkQuality":97}`,
+		},
+		{
 			input:  `{"this is": "unsupported payload type"}`,
 			kind:   deviceKindUnknown,
 			output: "unknown device kind for dummyId",

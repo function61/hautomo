@@ -5,6 +5,7 @@ type deviceKind int
 const (
 	deviceKindUnknown    deviceKind = iota
 	deviceKindWXKG11LM              // button
+	deviceKindWXKG02LM              // double button switch
 	deviceKindMCCGQ11LM             // door/window sensor
 	deviceKindSJCGQ11LM             // water leak
 	deviceKindWSDCGQ11LM            // temperature
@@ -14,6 +15,7 @@ const (
 // TODO: how to guarantee that these are kept in-sync?
 var deviceTypeToZ2mType = map[string]deviceKind{
 	"aqara-button":               deviceKindWXKG11LM,
+	"aqara-doublekeyswitch":      deviceKindWXKG02LM,
 	"aqara-doorwindow":           deviceKindMCCGQ11LM,
 	"aqara-water-leak":           deviceKindSJCGQ11LM,
 	"aqara-temperature-humidity": deviceKindWSDCGQ11LM,
@@ -58,5 +60,11 @@ type WSDCGQ11LM struct {
 	Pressure    float64 `json:"pressure"`
 	Battery     uint    `json:"battery"`
 	Voltage     uint    `json:"voltage"`
+	LinkQuality uint    `json:"linkquality"`
+}
+
+// {"click":"left","linkquality":97}
+type WXKG02LM struct {
+	Click       *string `json:"click"` // (probably unset if heartbeat) left|left_long|right|right_long|left_double|right_double|both|both_double
 	LinkQuality uint    `json:"linkquality"`
 }
