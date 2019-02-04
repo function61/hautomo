@@ -158,6 +158,9 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 		adapter.Send(hapitypes.NewInfraredEvent(device.Conf.AdaptersDeviceId, e.Command))
 	case *hapitypes.RawInfraredEvent:
 		a.publish(fmt.Sprintf("infrared:%s:%s", e.Remote, e.Event))
+	case *hapitypes.MotionEvent:
+		a.updateLastOnline(e.Device)
+		a.publish(fmt.Sprintf("motion:%s:%v", e.Device, e.Movement))
 	case *hapitypes.ContactEvent:
 		a.updateLastOnline(e.Device)
 		a.publish(fmt.Sprintf("contact:%s:%v", e.Device, e.Contact))
