@@ -5,6 +5,7 @@ import (
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/home-automation-hub/pkg/hapitypes"
 	"github.com/function61/home-automation-hub/pkg/triones"
+	"log"
 	"time"
 )
 
@@ -45,7 +46,7 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 			req = triones.RequestOff(bluetoothAddr)
 		}
 
-		if err := sendLightRequest(req); err != nil {
+		if err := sendLightRequest(req, adapter.Log); err != nil {
 			adapter.Logl.Error.Println(err.Error())
 		}
 	case *hapitypes.BrightnessMsg:
@@ -93,7 +94,7 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 			}
 		}
 
-		if err := sendLightRequest(req); err != nil {
+		if err := sendLightRequest(req, adapter.Log); err != nil {
 			adapter.Logl.Error.Println(err.Error())
 		}
 	default:
@@ -101,9 +102,9 @@ func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapte
 	}
 }
 
-func sendLightRequest(hlreq triones.Request) error {
+func sendLightRequest(hlreq triones.Request, logger *log.Logger) error {
 	ctx, cancel := context.WithTimeout(context.TODO(), requestTimeout)
 	defer cancel()
 
-	return triones.Send(ctx, hlreq)
+	return triones.Send(ctx, hlreq, logger)
 }

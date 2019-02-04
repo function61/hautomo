@@ -5,15 +5,17 @@ package triones
 import (
 	"context"
 	"fmt"
+	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/retry"
 	"log"
 	"os/exec"
 	"time"
 )
 
-func Send(ctx context.Context, req Request) error {
+func Send(ctx context.Context, req Request, logger *log.Logger) error {
 	ifFails := func(err error) {
-		log.Printf("triones %s", err.Error())
+		// retry has enough context about "attempt failure"
+		logex.Levels(logger).Error.Println(err.Error())
 	}
 
 	gatttool := gattToolArgs(req.BluetoothAddr, requestToHex(req))
