@@ -253,11 +253,14 @@ func (a *Application) publish(event string) {
 		}
 	}
 
-	for _, action := range subscription.Actions {
-		if err := a.runAction(action); err != nil {
-			a.logl.Error.Printf("failure running action: %v", err)
+	// run async, so sleep actions don't disturb handling of actions before/after sleeping
+	go func() {
+		for _, action := range subscription.Actions {
+			if err := a.runAction(action); err != nil {
+				a.logl.Error.Printf("failure running action: %v", err)
+			}
 		}
-	}
+	}()
 }
 
 func (a *Application) runAction(action hapitypes.ActionConfig) error {
