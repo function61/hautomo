@@ -51,6 +51,12 @@ LinkQualityEvent {"Device":"dummyId","LinkQuality":70}
 BatteryStatusEvent {"Device":"dummyId","BatteryPct":0,"Voltage":0}`,
 		},
 		{
+			input: `{"illuminance":60,"linkquality":68,"occupancy":true}`,
+			kind:  deviceKindRTCGQ11LM,
+			output: `MotionEvent {"Device":"dummyId","Movement":true,"Illuminance":60}
+LinkQualityEvent {"Device":"dummyId","LinkQuality":68}`,
+		},
+		{
 			input:  `{"this is": "unsupported payload type"}`,
 			kind:   deviceKindUnknown,
 			output: "unknown device kind for dummyId",

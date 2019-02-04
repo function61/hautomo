@@ -36,6 +36,14 @@ func parseMsgPayload(topicName string, resolver deviceResolver, message string) 
 	}
 
 	switch resolved.kind {
+	case deviceKindRTCGQ11LM:
+		payload := RTCGQ11LM{}
+		if err := decJson(&payload, message); err != nil {
+			return nil, err
+		}
+
+		push(hapitypes.NewMotionEvent(ourId, payload.Occupancy, payload.Illuminance))
+		push(hapitypes.NewLinkQualityEvent(ourId, payload.LinkQuality))
 	case deviceKindWXKG11LM:
 		payload := WXKG11LM{}
 		if err := decJson(&payload, message); err != nil {

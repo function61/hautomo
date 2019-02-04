@@ -8,6 +8,7 @@ const (
 	deviceKindMCCGQ11LM             // door/window sensor
 	deviceKindSJCGQ11LM             // water leak
 	deviceKindWSDCGQ11LM            // temperature
+	deviceKindRTCGQ11LM             // motion sensor
 )
 
 // TODO: how to guarantee that these are kept in-sync?
@@ -16,6 +17,7 @@ var deviceTypeToZ2mType = map[string]deviceKind{
 	"aqara-doorwindow":           deviceKindMCCGQ11LM,
 	"aqara-water-leak":           deviceKindSJCGQ11LM,
 	"aqara-temperature-humidity": deviceKindWSDCGQ11LM,
+	"aqara-motion-sensor":        deviceKindRTCGQ11LM,
 }
 
 // {"battery":100,"voltage":3055,"linkquality":47,"click":"double"}
@@ -39,6 +41,13 @@ type SJCGQ11LM struct {
 	WaterLeak   bool `json:"water_leak"`
 	Battery     uint `json:"battery"`
 	Voltage     uint `json:"voltage"`
+	LinkQuality uint `json:"linkquality"`
+}
+
+// {"illuminance":60,"linkquality":68,"occupancy":true}
+type RTCGQ11LM struct {
+	Occupancy   bool `json:"occupancy"`
+	Illuminance uint `json:"illuminance"`
 	LinkQuality uint `json:"linkquality"`
 }
 
