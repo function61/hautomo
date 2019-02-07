@@ -164,6 +164,9 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 	case *hapitypes.ContactEvent:
 		a.updateLastOnline(e.Device)
 		a.publish(fmt.Sprintf("contact:%s:%v", e.Device, e.Contact))
+	case *hapitypes.VibrationEvent:
+		a.updateLastOnline(e.Device)
+		a.publish(fmt.Sprintf("vibration:%s", e.Device))
 	case *hapitypes.PushButtonEvent:
 		a.updateLastOnline(e.Device)
 		a.publish(fmt.Sprintf("pushbutton:%s:%s", e.Device, e.Specifier))
