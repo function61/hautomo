@@ -99,6 +99,12 @@ var deviceTypes = map[string]*DeviceType{
 		Model:        "MCCGQ11LM",
 		BatteryType:  "CR1632",
 	},
+	"aqara-vibration-sensor": &DeviceType{
+		Name:         "Aqara vibration sensor",
+		Manufacturer: "Xiaomi",
+		Model:        "DJT11LM",
+		BatteryType:  "CR2032",
+	},
 	"aqara-button": &DeviceType{
 		Name:         "Aqara wireless button",
 		Manufacturer: "Xiaomi",

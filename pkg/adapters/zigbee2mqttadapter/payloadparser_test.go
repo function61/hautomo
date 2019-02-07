@@ -51,6 +51,13 @@ LinkQualityEvent {"Device":"dummyId","LinkQuality":70}
 BatteryStatusEvent {"Device":"dummyId","BatteryPct":0,"Voltage":0}`,
 		},
 		{
+			input: `{"angle_x":2,"angle_y":0,"angle_z":88,"angle_x_absolute":88,"angle_y_absolute":90,"linkquality":68,"battery":100,"voltage":3115,"action":"vibration"}`,
+			kind:  deviceKindDJT11LM,
+			output: `VibrationEvent {"Device":"dummyId"}
+LinkQualityEvent {"Device":"dummyId","LinkQuality":68}
+BatteryStatusEvent {"Device":"dummyId","BatteryPct":100,"Voltage":3115}`,
+		},
+		{
 			input: `{"illuminance":60,"linkquality":68,"occupancy":true}`,
 			kind:  deviceKindRTCGQ11LM,
 			output: `MotionEvent {"Device":"dummyId","Movement":true,"Illuminance":60}

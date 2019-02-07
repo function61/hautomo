@@ -10,6 +10,7 @@ const (
 	deviceKindSJCGQ11LM             // water leak
 	deviceKindWSDCGQ11LM            // temperature
 	deviceKindRTCGQ11LM             // motion sensor
+	deviceKindDJT11LM               // vibration sensor
 )
 
 // TODO: how to guarantee that these are kept in-sync?
@@ -20,6 +21,7 @@ var deviceTypeToZ2mType = map[string]deviceKind{
 	"aqara-water-leak":           deviceKindSJCGQ11LM,
 	"aqara-temperature-humidity": deviceKindWSDCGQ11LM,
 	"aqara-motion-sensor":        deviceKindRTCGQ11LM,
+	"aqara-vibration-sensor":     deviceKindDJT11LM,
 }
 
 // {"battery":100,"voltage":3055,"linkquality":47,"click":"double"}
@@ -67,4 +69,17 @@ type WSDCGQ11LM struct {
 type WXKG02LM struct {
 	Click       *string `json:"click"` // (probably unset if heartbeat) left|left_long|right|right_long|left_double|right_double|both|both_double
 	LinkQuality uint    `json:"linkquality"`
+}
+
+// {"angle_x":2,"angle_y":0,"angle_z":88,"angle_x_absolute":88,"angle_y_absolute":90,"linkquality":68,"battery":100,"voltage":3115,"action":"vibration"}
+type DJT11LM struct {
+	Action         string `json:"action"` // drop|tilt|vibration
+	AngleX         int    `json:"angle_x"`
+	AngleY         int    `json:"angle_y"`
+	AngleZ         int    `json:"angle_z"`
+	AngleXAbsolute int    `json:"angle_x_absolute"`
+	AngleYAbsolute int    `json:"angle_y_absolute"`
+	Battery        uint   `json:"battery"`
+	Voltage        uint   `json:"voltage"`
+	LinkQuality    uint   `json:"linkquality"`
 }

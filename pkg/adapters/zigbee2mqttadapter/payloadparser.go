@@ -44,6 +44,18 @@ func parseMsgPayload(topicName string, resolver deviceResolver, message string) 
 
 		push(hapitypes.NewMotionEvent(ourId, payload.Occupancy, payload.Illuminance))
 		push(hapitypes.NewLinkQualityEvent(ourId, payload.LinkQuality))
+	case deviceKindDJT11LM:
+		payload := DJT11LM{}
+		if err := decJson(&payload, message); err != nil {
+			return nil, err
+		}
+
+		if payload.Action != "" {
+			push(hapitypes.NewVibrationEvent(ourId))
+		}
+
+		push(hapitypes.NewLinkQualityEvent(ourId, payload.LinkQuality))
+		push(hapitypes.NewBatteryStatusEvent(ourId, payload.Battery, payload.Voltage))
 	case deviceKindWXKG11LM:
 		payload := WXKG11LM{}
 		if err := decJson(&payload, message); err != nil {
