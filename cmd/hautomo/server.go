@@ -63,6 +63,8 @@ func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
 				}
 				return
 			case <-every5s.C:
+				// TODO: generate a tick inbound event, and thus we'd be able to use
+				//       handleIncomingEvent() for this?
 				app.applyPowerDiffs()
 			case <-everyMinute.C:
 				app.updateEnvironmentLightStatus(true)
@@ -137,6 +139,7 @@ func (a *Application) saveStateSnapshot() error {
 }
 
 func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
+	// TODO: maybe record this in the inbound event, so we can get more accurate time
 	now := time.Now()
 
 	switch e := inboundEvent.(type) {
