@@ -21,10 +21,12 @@ type Application struct {
 	adapterById   map[string]*hapitypes.Adapter
 	deviceById    map[string]*hapitypes.Device
 	subscriptions map[string]*hapitypes.SubscribeConfig
+	powerManager  *PowerManager
 	inbound       *hapitypes.InboundFabric
 	booleans      *booleanStorage
 	constMetrics  *constmetrics.Collector
 	logl          *logex.Leveled
+	policyEngine  *policyEngine
 }
 
 func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
@@ -32,6 +34,7 @@ func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
 		adapterById:   map[string]*hapitypes.Adapter{},
 		deviceById:    map[string]*hapitypes.Device{},
 		subscriptions: map[string]*hapitypes.SubscribeConfig{},
+		powerManager:  NewPowerManager(),
 		inbound:       hapitypes.NewInboundFabric(),
 		booleans:      NewBooleanStorage("anybodyHome", "environmentHasLight"),
 		constMetrics:  constmetrics.NewCollector(),
@@ -44,6 +47,8 @@ func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
 	app.updateEnvironmentLightStatus(false)
 
 	everyMinute := time.NewTicker(1 * time.Minute)
+	every5s := time.NewTicker(5 * time.Second)
+
 	go func() {
 		defer stop.Done()
 
@@ -57,6 +62,8 @@ func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
 					app.logl.Error.Printf("failed saving state on shutting down: %v", err)
 				}
 				return
+			case <-every5s.C:
+				app.applyPowerDiffs()
 			case <-everyMinute.C:
 				app.updateEnvironmentLightStatus(true)
 
@@ -65,11 +72,41 @@ func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
 				}
 			case event := <-app.inbound.Ch:
 				app.handleIncomingEvent(event)
+
+				app.applyPowerDiffs()
 			}
 		}
 	}()
 
 	return app
+}
+
+func (a *Application) applyPowerDiffs() {
+	a.policyEngine.evaluatePowerPolicies(a.powerManager)
+
+	for _, diff := range a.powerManager.Diff() {
+		device := a.deviceById[diff.Device]
+
+		var msg *hapitypes.PowerMsg
+		if diff.On {
+			a.publish(fmt.Sprintf("device:%s:power:on", device.Conf.DeviceId))
+			msg = hapitypes.NewPowerMsg(
+				device.Conf.AdaptersDeviceId,
+				device.Conf.PowerOnCmd,
+				true)
+		} else {
+			a.publish(fmt.Sprintf("device:%s:power:off", device.Conf.DeviceId))
+			msg = hapitypes.NewPowerMsg(
+				device.Conf.AdaptersDeviceId,
+				device.Conf.PowerOffCmd,
+				false)
+		}
+
+		adapter := a.adapterById[device.Conf.AdapterId]
+		adapter.Send(msg)
+
+		a.powerManager.ApplyDiff(diff)
+	}
 }
 
 func (a *Application) updateEnvironmentLightStatus(broadcastChanges bool) {
@@ -89,6 +126,8 @@ func (a *Application) saveStateSnapshot() error {
 			return err
 		}
 
+		snap.ProbablyTurnedOn = a.powerManager.GetActual(device.Conf.DeviceId)
+
 		statefile.Devices[device.Conf.DeviceId] = *snap
 	}
 
@@ -105,9 +144,8 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 	case *hapitypes.PowerEvent:
 		device := a.deviceById[e.DeviceIdOrDeviceGroupId]
 
-		if err := a.devicePower(device, e); err != nil {
-			a.logl.Error.Println(err.Error())
-		}
+		// no need to call applyPowerDiffs(), as it will get called automatically after handleIncomingEvent()
+		a.powerManager.Set(device.Conf.DeviceId, e.Kind)
 	case *hapitypes.ColorTemperatureEvent:
 		device := a.deviceById[e.Device]
 		adapter := a.adapterById[device.Conf.AdapterId]
@@ -159,7 +197,9 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 	case *hapitypes.RawInfraredEvent:
 		a.publish(fmt.Sprintf("infrared:%s:%s", e.Remote, e.Event))
 	case *hapitypes.MotionEvent:
-		a.updateLastOnline(e.Device)
+		dev := a.updateLastOnline(e.Device)
+		now := time.Now()
+		dev.LastMotion = &now
 		a.publish(fmt.Sprintf("motion:%s:%v", e.Device, e.Movement))
 	case *hapitypes.ContactEvent:
 		a.updateLastOnline(e.Device)
@@ -206,10 +246,11 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 	}
 }
 
-func (a *Application) updateLastOnline(deviceId string) {
+func (a *Application) updateLastOnline(deviceId string) *hapitypes.Device {
 	device := a.deviceById[deviceId]
 	now := time.Now()
 	device.LastOnline = &now
+	return device
 }
 
 func (a *Application) publish(event string) {
@@ -316,46 +357,6 @@ func (a *Application) runAction(action hapitypes.ActionConfig) error {
 	return nil
 }
 
-func (a *Application) devicePower(device *hapitypes.Device, power *hapitypes.PowerEvent) error {
-	if power.Kind == hapitypes.PowerKindOn {
-		a.logl.Debug.Printf("Power on: %s", device.Conf.Name)
-
-		adapter := a.adapterById[device.Conf.AdapterId]
-		adapter.Send(hapitypes.NewPowerMsg(
-			device.Conf.AdaptersDeviceId,
-			device.Conf.PowerOnCmd,
-			true))
-
-		device.ProbablyTurnedOn = true
-
-		a.publish(fmt.Sprintf("device:%s:power:on", device.Conf.DeviceId))
-	} else if power.Kind == hapitypes.PowerKindOff {
-		a.logl.Debug.Printf("Power off: %s", device.Conf.Name)
-
-		adapter := a.adapterById[device.Conf.AdapterId]
-		adapter.Send(hapitypes.NewPowerMsg(
-			device.Conf.AdaptersDeviceId,
-			device.Conf.PowerOffCmd,
-			false))
-
-		device.ProbablyTurnedOn = false
-
-		a.publish(fmt.Sprintf("device:%s:power:off", device.Conf.DeviceId))
-	} else if power.Kind == hapitypes.PowerKindToggle {
-		a.logl.Debug.Printf("Power toggle: %s, current state = %v", device.Conf.Name, device.ProbablyTurnedOn)
-
-		if device.ProbablyTurnedOn {
-			return a.devicePower(device, hapitypes.NewPowerEvent(device.Conf.DeviceId, hapitypes.PowerKindOff))
-		} else {
-			return a.devicePower(device, hapitypes.NewPowerEvent(device.Conf.DeviceId, hapitypes.PowerKindOn))
-		}
-	} else {
-		return errors.New("unknown power kind")
-	}
-
-	return nil
-}
-
 func configureAppAndStartAdapters(
 	app *Application,
 	conf *hapitypes.ConfigFile,
@@ -431,6 +432,12 @@ func configureAppAndStartAdapters(
 			return err
 		}
 
+		if deviceConf.Description != "Device group" {
+			app.powerManager.Register(deviceConf.DeviceId, snapshot.ProbablyTurnedOn)
+		} else {
+			app.powerManager.RegisterDeviceGroup(deviceConf.DeviceId, snapshot.ProbablyTurnedOn)
+		}
+
 		if device.DeviceType.Capabilities.ReportsTemperature {
 			device.TemperatureMetric = app.constMetrics.Register(
 				"temperature",
@@ -463,6 +470,8 @@ func configureAppAndStartAdapters(
 		tmp := subscription
 		app.subscriptions[subscription.Event] = &tmp
 	}
+
+	app.policyEngine = newPolicyEngine(app.booleans, app.deviceById["kitchenMotion"])
 
 	return nil
 }
