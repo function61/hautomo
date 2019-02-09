@@ -70,8 +70,9 @@ type Device struct {
 	HumidityMetric    *constmetrics.Ref
 	PressureMetric    *constmetrics.Ref
 
-	LastOnline *time.Time
-	LastMotion *time.Time
+	LastOnline             *time.Time
+	LastMotion             *time.Time
+	LastExplicitPowerEvent *time.Time
 
 	LinkQuality    uint // 0-100 %
 	BatteryPct     uint // 0-100 %

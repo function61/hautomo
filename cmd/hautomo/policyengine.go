@@ -8,12 +8,18 @@ import (
 // policy idea: https://twitter.com/bradfitz/status/1056736707477819392
 type policyEngine struct {
 	booleans            *booleanStorage
+	kitchenLight        *hapitypes.Device
 	kitchenMotionSensor *hapitypes.Device
 }
 
-func newPolicyEngine(booleans *booleanStorage, kitchenMotionSensor *hapitypes.Device) *policyEngine {
+func newPolicyEngine(
+	booleans *booleanStorage,
+	kitchenLight *hapitypes.Device,
+	kitchenMotionSensor *hapitypes.Device,
+) *policyEngine {
 	return &policyEngine{
 		booleans:            booleans,
+		kitchenLight:        kitchenLight,
 		kitchenMotionSensor: kitchenMotionSensor,
 	}
 }
@@ -27,24 +33,41 @@ func (p *policyEngine) evaluatePowerPolicies(powerManager *PowerManager) {
 		}
 	}
 
-	powerManager.Set("kitchenLight", boolToPowerKind(p.shouldKitchenLightBeOn()))
+	on := p.shouldKitchenLightBeOn()
+	if on != nil { // is nil if we don't want to act
+		powerManager.Set("kitchenLight", boolToPowerKind(*on))
+	}
 }
 
-func (p *policyEngine) shouldKitchenLightBeOn() bool {
+func (p *policyEngine) shouldKitchenLightBeOn() *bool {
+	now := time.Now()
+
+	if p.kitchenLight.LastExplicitPowerEvent != nil {
+		fifteenMinutesAgo := now.Add(-15 * time.Minute)
+
+		if p.kitchenLight.LastExplicitPowerEvent.After(fifteenMinutesAgo) {
+			return nil
+		}
+	}
+
 	if anybodyHome, _ := p.booleans.Get("anybodyHome"); !anybodyHome {
-		return false
+		return bptr(false)
 	}
 
 	if environmentHasLight, _ := p.booleans.Get("environmentHasLight"); environmentHasLight {
-		return false
+		return bptr(false)
 	}
 
 	lastMotion := p.kitchenMotionSensor.LastMotion
 	if lastMotion == nil {
-		return false
+		return bptr(false)
 	}
 
-	twoMinutesAgo := time.Now().Add(-2 * time.Minute)
+	twoMinutesAgo := now.Add(-2 * time.Minute)
 
-	return lastMotion.After(twoMinutesAgo)
+	return bptr(lastMotion.After(twoMinutesAgo))
+}
+
+func bptr(b bool) *bool {
+	return &b
 }

@@ -102,6 +102,8 @@ func (a *Application) applyPowerDiffs() {
 				false)
 		}
 
+		device.ProbablyTurnedOn = diff.On
+
 		adapter := a.adapterById[device.Conf.AdapterId]
 		adapter.Send(msg)
 
@@ -135,6 +137,8 @@ func (a *Application) saveStateSnapshot() error {
 }
 
 func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
+	now := time.Now()
+
 	switch e := inboundEvent.(type) {
 	case *hapitypes.PersonPresenceChangeEvent:
 		a.logl.Info.Printf(
@@ -144,8 +148,18 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 	case *hapitypes.PowerEvent:
 		device := a.deviceById[e.DeviceIdOrDeviceGroupId]
 
+		// for explicit (= non-computed. computed are like events and policies) sets we
+		// want to force a diff so the power is acted on if the power state is different
+		// than what home automation thinks it currently should be
+		if e.Explicit || isDeviceGroup(device) {
+			device.LastExplicitPowerEvent = &now
+
+			a.powerManager.SetExplicit(device.Conf.DeviceId, e.Kind)
+		} else {
+			a.powerManager.Set(device.Conf.DeviceId, e.Kind)
+		}
+
 		// no need to call applyPowerDiffs(), as it will get called automatically after handleIncomingEvent()
-		a.powerManager.Set(device.Conf.DeviceId, e.Kind)
 	case *hapitypes.ColorTemperatureEvent:
 		device := a.deviceById[e.Device]
 		adapter := a.adapterById[device.Conf.AdapterId]
@@ -198,7 +212,6 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 		a.publish(fmt.Sprintf("infrared:%s:%s", e.Remote, e.Event))
 	case *hapitypes.MotionEvent:
 		dev := a.updateLastOnline(e.Device)
-		now := time.Now()
 		dev.LastMotion = &now
 		a.publish(fmt.Sprintf("motion:%s:%v", e.Device, e.Movement))
 	case *hapitypes.ContactEvent:
@@ -227,8 +240,6 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 	case *hapitypes.TemperatureHumidityPressureEvent:
 		device := a.deviceById[e.Device]
 		device.LastTemperatureHumidityPressureEvent = e
-
-		now := time.Now()
 
 		if device.TemperatureMetric != nil {
 			a.constMetrics.Observe(device.TemperatureMetric, e.Temperature, now)
@@ -315,11 +326,11 @@ func (a *Application) runAction(action hapitypes.ActionConfig) error {
 	case "sleep":
 		time.Sleep(time.Duration(action.DurationSeconds) * time.Second)
 	case "powerOn":
-		a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindOn))
+		a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindOn, false))
 	case "powerOff":
-		a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindOff))
+		a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindOff, false))
 	case "powerToggle":
-		a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindToggle))
+		a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindToggle, false))
 	case "blink":
 		a.inbound.Receive(hapitypes.NewBlinkEvent(action.Device))
 	case "setBooleanTrue":
@@ -381,7 +392,7 @@ func configureAppAndStartAdapters(
 			DeviceId:      devGroup.DeviceId,
 			AdapterId:     adapterConf.Id,
 			Name:          devGroup.Name,
-			Description:   "Device group",
+			Description:   deviceGroupDescription,
 			AlexaCategory: firstDeviceOfGroup.AlexaCategory,
 			Type:          firstDeviceOfGroup.Type, // TODO: compute lowest common denominator type?
 		}
@@ -432,11 +443,7 @@ func configureAppAndStartAdapters(
 			return err
 		}
 
-		if deviceConf.Description != "Device group" {
-			app.powerManager.Register(deviceConf.DeviceId, snapshot.ProbablyTurnedOn)
-		} else {
-			app.powerManager.RegisterDeviceGroup(deviceConf.DeviceId, snapshot.ProbablyTurnedOn)
-		}
+		app.powerManager.Register(deviceConf.DeviceId, snapshot.ProbablyTurnedOn)
 
 		if device.DeviceType.Capabilities.ReportsTemperature {
 			device.TemperatureMetric = app.constMetrics.Register(
@@ -471,7 +478,10 @@ func configureAppAndStartAdapters(
 		app.subscriptions[subscription.Event] = &tmp
 	}
 
-	app.policyEngine = newPolicyEngine(app.booleans, app.deviceById["kitchenMotion"])
+	app.policyEngine = newPolicyEngine(
+		app.booleans,
+		app.deviceById["kitchenLight"],
+		app.deviceById["kitchenMotion"])
 
 	return nil
 }
@@ -504,4 +514,12 @@ func runServer(logger *log.Logger, stop *stopper.Stopper) error {
 	workers.StopAllWorkersAndWait()
 
 	return nil
+}
+
+// needed for ugly isDeviceGroup()
+const deviceGroupDescription = "Device group"
+
+// FIXME: ugly
+func isDeviceGroup(device *hapitypes.Device) bool {
+	return device.Conf.Description == deviceGroupDescription
 }

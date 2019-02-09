@@ -10,17 +10,15 @@ type PowerDiff struct {
 }
 
 type PowerManager struct {
-	desired       map[string]bool
-	actual        map[string]bool
-	isDeviceGroup map[string]bool
+	desired map[string]bool
+	actual  map[string]bool
 }
 
 // implements desired state reconciliation for controlling device's power
 func NewPowerManager() *PowerManager {
 	return &PowerManager{
-		desired:       map[string]bool{},
-		actual:        map[string]bool{},
-		isDeviceGroup: map[string]bool{},
+		desired: map[string]bool{},
+		actual:  map[string]bool{},
 	}
 }
 
@@ -33,31 +31,28 @@ func (p *PowerManager) Register(deviceId string, isOn bool) {
 	p.actual[deviceId] = isOn
 }
 
-func (p *PowerManager) RegisterDeviceGroup(deviceId string, isOn bool) {
-	p.Register(deviceId, isOn)
+func (p *PowerManager) SetExplicit(deviceId string, power hapitypes.PowerKind) {
+	p.Set(deviceId, power)
 
-	p.isDeviceGroup[deviceId] = true
+	// for explicit sets, we want to always force a diff. this hack does it
+	p.actual[deviceId] = !p.desired[deviceId]
 }
 
 func (p *PowerManager) Set(deviceId string, power hapitypes.PowerKind) {
-	var desired bool
+	p.desired[deviceId] = p.getDesired(deviceId, power)
+}
+
+func (p *PowerManager) getDesired(deviceId string, power hapitypes.PowerKind) bool {
 	switch power {
 	case hapitypes.PowerKindOn:
-		desired = true
+		return true
 	case hapitypes.PowerKindOff:
-		desired = false
+		return false
 	case hapitypes.PowerKindToggle:
-		desired = !p.actual[deviceId]
+		return !p.actual[deviceId]
 	default:
 		panic("unknown PowerKind")
 	}
-
-	// if this was a device group, hack actual as different so diffs will get always applied
-	if _, isDeviceGroup := p.isDeviceGroup[deviceId]; isDeviceGroup {
-		p.actual[deviceId] = !desired
-	}
-
-	p.desired[deviceId] = desired
 }
 
 func (p *PowerManager) ApplyDiff(pd PowerDiff) {

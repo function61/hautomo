@@ -118,7 +118,8 @@ func runOnce(sqsClient *sqs.SQS, adapter *hapitypes.Adapter) {
 
 			adapter.Receive(hapitypes.NewPowerEvent(
 				req.DeviceIdOrDeviceGroupId,
-				hapitypes.PowerKindOn))
+				hapitypes.PowerKindOn,
+				true))
 		case "turn_off":
 			var req TurnOffRequest
 			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
@@ -127,7 +128,8 @@ func runOnce(sqsClient *sqs.SQS, adapter *hapitypes.Adapter) {
 
 			adapter.Receive(hapitypes.NewPowerEvent(
 				req.DeviceIdOrDeviceGroupId,
-				hapitypes.PowerKindOff))
+				hapitypes.PowerKindOff,
+				true))
 		case "color":
 			var req ColorRequest
 			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {

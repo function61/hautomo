@@ -34,22 +34,24 @@ func TestPowerManager(t *testing.T) {
 	assert.EqualString(t, serialize(pm.Diff()), "foo => off")
 }
 
-func TestPowerManagerWithDeviceGroup(t *testing.T) {
+func TestPowerManagerWithExplicit(t *testing.T) {
 	pm := NewPowerManager()
-	pm.Register("notGroup", true)
-	pm.RegisterDeviceGroup("isGroup", true)
+	pm.Register("dev", true)
 
-	pm.Set("notGroup", hapitypes.PowerKindOn) // should not do anything
+	pm.Set("dev", hapitypes.PowerKindOn) // should not do anything
 	assert.Assert(t, len(pm.Diff()) == 0)
 
-	pm.Set("isGroup", hapitypes.PowerKindOn)
+	pm.SetExplicit("dev", hapitypes.PowerKindOn)
 	pd := pm.Diff()
-	assert.EqualString(t, serialize(pd), "isGroup => on")
+	assert.EqualString(t, serialize(pd), "dev => on")
 	pm.ApplyDiff(pd[0])
 	assert.Assert(t, len(pm.Diff()) == 0)
 
-	pm.Set("isGroup", hapitypes.PowerKindOn) // asking for on again should again yield diff
-	assert.EqualString(t, serialize(pm.Diff()), "isGroup => on")
+	pm.Set("dev", hapitypes.PowerKindOn)
+	assert.Assert(t, len(pm.Diff()) == 0)
+
+	pm.SetExplicit("dev", hapitypes.PowerKindOn)
+	assert.EqualString(t, serialize(pm.Diff()), "dev => on")
 }
 
 func serialize(diffs []PowerDiff) string {
