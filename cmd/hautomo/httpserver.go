@@ -48,7 +48,7 @@ const tpl = `
 	<td>{{.LastOnlineFormatted}}</td>
 	<td>{{if .Device.LastTemperatureHumidityPressureEvent}}
 		temp {{.Device.LastTemperatureHumidityPressureEvent.Temperature}}
-		humidify {{.Device.LastTemperatureHumidityPressureEvent.Humidity}}
+		humidity {{.Device.LastTemperatureHumidityPressureEvent.Humidity}}
 		pressure {{.Device.LastTemperatureHumidityPressureEvent.Pressure}}
 	{{end}}</td>
 </tr>
