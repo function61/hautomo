@@ -234,6 +234,8 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 
 		device := a.deviceById[e.Device]
 		device.LinkQuality = e.LinkQuality
+
+		a.constMetrics.Observe(device.LinkQualityMetric, float64(e.LinkQuality), now)
 	case *hapitypes.BatteryStatusEvent:
 		a.updateLastOnline(e.Device)
 
@@ -451,6 +453,12 @@ func configureAppAndStartAdapters(
 		}
 
 		app.powerManager.Register(deviceConf.DeviceId, snapshot.ProbablyTurnedOn)
+
+		device.LinkQualityMetric = app.constMetrics.Register(
+			"ha_link_quality",
+			"Link quality [%]",
+			"sensor",
+			device.Conf.DeviceId)
 
 		if device.DeviceType.BatteryType != "" {
 			device.BatteryPctMetric = app.constMetrics.Register(

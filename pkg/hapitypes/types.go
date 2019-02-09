@@ -66,6 +66,8 @@ type Device struct {
 
 	LastTemperatureHumidityPressureEvent *TemperatureHumidityPressureEvent
 
+	// metrics
+	LinkQualityMetric *constmetrics.Ref
 	TemperatureMetric *constmetrics.Ref
 	HumidityMetric    *constmetrics.Ref
 	PressureMetric    *constmetrics.Ref
