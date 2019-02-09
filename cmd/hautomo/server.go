@@ -454,7 +454,7 @@ func configureAppAndStartAdapters(
 
 		if device.DeviceType.BatteryType != "" {
 			device.BatteryPctMetric = app.constMetrics.Register(
-				"battery_pct",
+				"ha_battery_pct",
 				"Battery [%]",
 				"sensor",
 				device.Conf.DeviceId)
@@ -462,17 +462,17 @@ func configureAppAndStartAdapters(
 
 		if device.DeviceType.Capabilities.ReportsTemperature {
 			device.TemperatureMetric = app.constMetrics.Register(
-				"temperature",
+				"ha_temperature",
 				"Temperature in Celsius",
 				"sensor",
 				device.Conf.DeviceId)
 			device.HumidityMetric = app.constMetrics.Register(
-				"humidity",
+				"ha_humidity",
 				"Relative humidity [%]",
 				"sensor",
 				device.Conf.DeviceId)
 			device.PressureMetric = app.constMetrics.Register(
-				"pressure",
+				"ha_pressure",
 				"Air pressure, in [TODO]",
 				"sensor",
 				device.Conf.DeviceId)
