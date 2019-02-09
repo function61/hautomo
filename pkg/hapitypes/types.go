@@ -69,6 +69,7 @@ type Device struct {
 	TemperatureMetric *constmetrics.Ref
 	HumidityMetric    *constmetrics.Ref
 	PressureMetric    *constmetrics.Ref
+	BatteryPctMetric  *constmetrics.Ref
 
 	LastOnline             *time.Time
 	LastMotion             *time.Time

@@ -237,6 +237,10 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 		device := a.deviceById[e.Device]
 		device.BatteryPct = e.BatteryPct
 		device.BatteryVoltage = e.Voltage
+
+		if device.BatteryPctMetric != nil {
+			a.constMetrics.Observe(device.BatteryPctMetric, float64(e.BatteryPct), now)
+		}
 	case *hapitypes.TemperatureHumidityPressureEvent:
 		device := a.deviceById[e.Device]
 		device.LastTemperatureHumidityPressureEvent = e
@@ -444,6 +448,14 @@ func configureAppAndStartAdapters(
 		}
 
 		app.powerManager.Register(deviceConf.DeviceId, snapshot.ProbablyTurnedOn)
+
+		if device.DeviceType.BatteryType != "" {
+			device.BatteryPctMetric = app.constMetrics.Register(
+				"battery_pct",
+				"Battery [%]",
+				"sensor",
+				device.Conf.DeviceId)
+		}
 
 		if device.DeviceType.Capabilities.ReportsTemperature {
 			device.TemperatureMetric = app.constMetrics.Register(
