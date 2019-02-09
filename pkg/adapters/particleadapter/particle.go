@@ -3,8 +3,8 @@ package particleadapter
 import (
 	"errors"
 	"github.com/function61/gokit/stopper"
-	"github.com/function61/home-automation-hub/pkg/hapitypes"
-	"github.com/function61/home-automation-hub/pkg/particleapi"
+	"github.com/function61/hautomo/pkg/hapitypes"
+	"github.com/function61/hautomo/pkg/particleapi"
 )
 
 func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {

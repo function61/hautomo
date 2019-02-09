@@ -1,5 +1,5 @@
-[![Build Status](https://img.shields.io/travis/function61/home-automation-hub.svg?style=for-the-badge)](https://travis-ci.org/function61/home-automation-hub)
-[![Download](https://img.shields.io/bintray/v/function61/home-automation-hub/main.svg?style=for-the-badge&label=Download)](https://bintray.com/function61/home-automation-hub/main/_latestVersion#files)
+[![Build Status](https://img.shields.io/travis/function61/hautomo.svg?style=for-the-badge)](https://travis-ci.org/function61/hautomo)
+[![Download](https://img.shields.io/bintray/v/function61/dl/hautomo.svg?style=for-the-badge&label=Download)](https://bintray.com/function61/dl/hautomo/_latestVersion#files)
 
 Home automation hub built to serve my specific requirements.
 
@@ -33,6 +33,8 @@ Configuring
 -----------
 
 Configured using [HCL syntax](https://www.terraform.io/docs/configuration/syntax.html). Example config file:
+
+(TODO: some of the options here are outdated)
 
 ```
 
@@ -100,10 +102,3 @@ ir2ir {
 }
 
 ```
-
-
-TODO
-----
-
-- Write TODO list
-

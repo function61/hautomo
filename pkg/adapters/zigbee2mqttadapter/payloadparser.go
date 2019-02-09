@@ -3,7 +3,7 @@ package zigbee2mqttadapter
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/function61/home-automation-hub/pkg/hapitypes"
+	"github.com/function61/hautomo/pkg/hapitypes"
 	"strings"
 )
 

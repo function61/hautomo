@@ -2,7 +2,7 @@ package devicegroupadapter
 
 import (
 	"github.com/function61/gokit/stopper"
-	"github.com/function61/home-automation-hub/pkg/hapitypes"
+	"github.com/function61/hautomo/pkg/hapitypes"
 )
 
 // this adapter just basically copies the outbound event as multiple copies with rewritten

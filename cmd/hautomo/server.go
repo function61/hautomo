@@ -7,9 +7,9 @@ import (
 	"github.com/function61/gokit/jsonfile"
 	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/stopper"
-	"github.com/function61/home-automation-hub/pkg/constmetrics"
-	"github.com/function61/home-automation-hub/pkg/hapitypes"
-	"github.com/function61/home-automation-hub/pkg/suntimes"
+	"github.com/function61/hautomo/pkg/constmetrics"
+	"github.com/function61/hautomo/pkg/hapitypes"
+	"github.com/function61/hautomo/pkg/suntimes"
 	"github.com/prometheus/client_golang/prometheus"
 	"log"
 	"time"
@@ -52,7 +52,7 @@ func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
 	go func() {
 		defer stop.Done()
 
-		app.logl.Info.Printf("home-automation-hub %s started", dynversion.Version)
+		app.logl.Info.Printf("Hautomo %s started", dynversion.Version)
 		defer app.logl.Info.Println("stopped")
 
 		for {

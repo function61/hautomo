@@ -4,7 +4,7 @@ package dummyadapter
 
 import (
 	"github.com/function61/gokit/stopper"
-	"github.com/function61/home-automation-hub/pkg/hapitypes"
+	"github.com/function61/hautomo/pkg/hapitypes"
 )
 
 func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {

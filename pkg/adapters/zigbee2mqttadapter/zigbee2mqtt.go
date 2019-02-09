@@ -3,7 +3,7 @@ package zigbee2mqttadapter
 import (
 	"fmt"
 	"github.com/function61/gokit/stopper"
-	"github.com/function61/home-automation-hub/pkg/hapitypes"
+	"github.com/function61/hautomo/pkg/hapitypes"
 	"github.com/yosssi/gmq/mqtt"
 	"github.com/yosssi/gmq/mqtt/client"
 	"sync"
@@ -175,7 +175,7 @@ func mqttConnection(addr string, handler client.MessageHandler, mqttPublishes <-
 	if err := mqttClient.Connect(&client.ConnectOptions{
 		Network:  "tcp",
 		Address:  addr,
-		ClientID: []byte("home-automation-hub"),
+		ClientID: []byte("Hautomo"),
 	}); err != nil {
 		return err
 	}

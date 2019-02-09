@@ -3,8 +3,8 @@ package trionesadapter
 import (
 	"context"
 	"github.com/function61/gokit/stopper"
-	"github.com/function61/home-automation-hub/pkg/hapitypes"
-	"github.com/function61/home-automation-hub/pkg/triones"
+	"github.com/function61/hautomo/pkg/hapitypes"
+	"github.com/function61/hautomo/pkg/triones"
 	"log"
 	"time"
 )

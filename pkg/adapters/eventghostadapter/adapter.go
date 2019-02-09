@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/stopper"
-	"github.com/function61/home-automation-hub/pkg/eventghostnetwork"
-	"github.com/function61/home-automation-hub/pkg/hapitypes"
+	"github.com/function61/hautomo/pkg/eventghostnetwork"
+	"github.com/function61/hautomo/pkg/hapitypes"
 	"log"
 	"strings"
 )

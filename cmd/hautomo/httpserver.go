@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/stopper"
-	"github.com/function61/home-automation-hub/pkg/hapitypes"
+	"github.com/function61/hautomo/pkg/hapitypes"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"html/template"
 	"log"
@@ -17,7 +17,7 @@ import (
 const tpl = `
 <html>
 <head>
-	<title>home-automation-hub</title>
+	<title>Hautomo</title>
 </head>
 <body>
 

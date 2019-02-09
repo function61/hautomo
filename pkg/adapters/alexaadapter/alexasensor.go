@@ -10,8 +10,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/function61/gokit/stopper"
-	"github.com/function61/home-automation-hub/pkg/adapters/alexaadapter/alexadevicesync"
-	"github.com/function61/home-automation-hub/pkg/hapitypes"
+	"github.com/function61/hautomo/pkg/adapters/alexaadapter/alexadevicesync"
+	"github.com/function61/hautomo/pkg/hapitypes"
 	"regexp"
 	"time"
 )

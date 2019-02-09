@@ -3,7 +3,7 @@ package presencebypingadapter
 import (
 	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/stopper"
-	"github.com/function61/home-automation-hub/pkg/hapitypes"
+	"github.com/function61/hautomo/pkg/hapitypes"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
 	"net"

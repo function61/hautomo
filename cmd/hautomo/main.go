@@ -14,7 +14,7 @@ import (
 func main() {
 	rootCmd := &cobra.Command{
 		Use:     os.Args[0],
-		Short:   "Home automation hub from function61.com",
+		Short:   "Home Automation hub from function61.com",
 		Version: dynversion.Version,
 	}
 	rootCmd.AddCommand(serverEntry())
@@ -64,7 +64,7 @@ func serverEntry() *cobra.Command {
 		Short: "Install unit file to start this on startup",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			systemdHints, err := systemdinstaller.InstallSystemdServiceFile("homeautomation", []string{"server"}, "home automation hub")
+			systemdHints, err := systemdinstaller.InstallSystemdServiceFile("hautomo", []string{"server"}, "Home Automation")
 			if err != nil {
 				panic(err)
 			}

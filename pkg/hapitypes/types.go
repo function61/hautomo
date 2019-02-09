@@ -3,7 +3,7 @@ package hapitypes
 import (
 	"errors"
 	"github.com/function61/gokit/logex"
-	"github.com/function61/home-automation-hub/pkg/constmetrics"
+	"github.com/function61/hautomo/pkg/constmetrics"
 	"log"
 	"time"
 )

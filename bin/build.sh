@@ -2,9 +2,8 @@
 
 source /build-common.sh
 
-COMPILE_IN_DIRECTORY="cmd/home-automation-hub"
-BINARY_NAME="home-automation-hub"
-BINTRAY_PROJECT="function61/home-automation-hub"
+COMPILE_IN_DIRECTORY="cmd/hautomo"
+BINARY_NAME="hautomo"
 GOFMT_TARGETS="cmd/ pkg/"
 
 standardBuildProcess

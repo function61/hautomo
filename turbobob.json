@@ -1,13 +1,13 @@
 {
 	"for_description_of_this_file_see": "https://github.com/function61/turbobob",
 	"version_major": 1,
-	"project_name": "home-automation-hub",
+	"project_name": "hautomo",
 	"builders": [
 		{
 			"name": "default",
 			"uses": "docker://fn61/buildkit-golang:20190125_1536_1b2a32b5",
-			"mount_destination": "/go/src/github.com/function61/home-automation-hub",
-			"workdir": "/go/src/github.com/function61/home-automation-hub",
+			"mount_destination": "/go/src/github.com/function61/hautomo",
+			"workdir": "/go/src/github.com/function61/hautomo",
 			"commands": {
 				"build": ["bin/build.sh"],
 				"dev": ["bash"]
