@@ -35,6 +35,12 @@ var deviceTypes = map[string]*DeviceType{
 			Power: true,
 		},
 	},
+	"ikea-trådfri-remote": &DeviceType{
+		Name:         "Trådfri remote",
+		Manufacturer: "IKEA",
+		Model:        "E1524",
+		BatteryType:  "CR2032",
+	},
 	"ledstrip-rgb": &DeviceType{
 		Name:         "LED strip RGB",
 		Manufacturer: "Generic",

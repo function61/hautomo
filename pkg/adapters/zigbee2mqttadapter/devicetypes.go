@@ -11,6 +11,7 @@ const (
 	deviceKindWSDCGQ11LM            // temperature
 	deviceKindRTCGQ11LM             // motion sensor
 	deviceKindDJT11LM               // vibration sensor
+	deviceKindE1524                 // Trådfri remote
 )
 
 // TODO: how to guarantee that these are kept in-sync?
@@ -22,6 +23,7 @@ var deviceTypeToZ2mType = map[string]deviceKind{
 	"aqara-temperature-humidity": deviceKindWSDCGQ11LM,
 	"aqara-motion-sensor":        deviceKindRTCGQ11LM,
 	"aqara-vibration-sensor":     deviceKindDJT11LM,
+	"ikea-trådfri-remote":        deviceKindE1524,
 }
 
 // {"battery":100,"voltage":3055,"linkquality":47,"click":"double"}
@@ -82,4 +84,15 @@ type DJT11LM struct {
 	Battery        uint   `json:"battery"`
 	Voltage        uint   `json:"voltage"`
 	LinkQuality    uint   `json:"linkquality"`
+}
+
+// {"action":"toggle","linkquality":84}
+type E1524 struct {
+	// toggle
+	// brightness_down_{click,hold,release}
+	// brightness_up_{click,hold,release}
+	// arrow_left_{click,hold,release}
+	// arrow_right_{click,hold,release}
+	Action      string `json:"action"`
+	LinkQuality uint   `json:"linkquality"`
 }

@@ -70,6 +70,12 @@ LinkQualityEvent {"Device":"dummyId","LinkQuality":68}`,
 LinkQualityEvent {"Device":"dummyId","LinkQuality":97}`,
 		},
 		{
+			input: `{"action":"brightness_down_click","linkquality":34}`,
+			kind:  deviceKindE1524,
+			output: `PushButtonEvent {"Device":"dummyId","Specifier":"brightness_down_click"}
+LinkQualityEvent {"Device":"dummyId","LinkQuality":34}`,
+		},
+		{
 			input:  `{"this is": "unsupported payload type"}`,
 			kind:   deviceKindUnknown,
 			output: "unknown device kind for dummyId",

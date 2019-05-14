@@ -114,6 +114,14 @@ func parseMsgPayload(topicName string, resolver deviceResolver, message string) 
 
 		push(hapitypes.NewLinkQualityEvent(ourId, payload.LinkQuality))
 		push(hapitypes.NewBatteryStatusEvent(ourId, payload.Battery, payload.Voltage))
+	case deviceKindE1524:
+		payload := E1524{}
+		if err := decJson(&payload, message); err != nil {
+			return nil, err
+		}
+
+		push(hapitypes.NewPushButtonEvent(ourId, payload.Action))
+		push(hapitypes.NewLinkQualityEvent(ourId, payload.LinkQuality))
 	case deviceKindUnknown:
 		return nil, fmt.Errorf("unknown device kind for %s", ourId)
 	default:
