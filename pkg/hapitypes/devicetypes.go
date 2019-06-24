@@ -70,6 +70,14 @@ var deviceTypes = map[string]*DeviceType{
 			Power: true,
 		},
 	},
+	"sonoff-basic": &DeviceType{
+		Name:         "Sonoff Basic",
+		Manufacturer: "Sonoff",
+		Model:        "Sonoff Basic",
+		Capabilities: Capabilities{
+			Power: true,
+		},
+	},
 	"tv-philips-55PUS7909": &DeviceType{
 		Name:         "Philips 55PUS7909",
 		Manufacturer: "Philips",
