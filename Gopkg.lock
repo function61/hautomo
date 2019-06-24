@@ -52,12 +52,13 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:734f8e9521a6b97f65fa2eaa5f7d60a520df5657571f6bc929de58913268b789"
+  digest = "1:95248c255449219e83652b8bd2ff8aca0523c3e756791e05b216b7e24f5455e7"
   name = "github.com/function61/gokit"
   packages = [
     "assert",
     "backoff",
     "dynversion",
+    "ezhttp",
     "hcl2json",
     "jsonfile",
     "logex",
@@ -272,6 +273,7 @@
     "github.com/aws/aws-sdk-go/service/sqs",
     "github.com/function61/gokit/assert",
     "github.com/function61/gokit/dynversion",
+    "github.com/function61/gokit/ezhttp",
     "github.com/function61/gokit/hcl2json",
     "github.com/function61/gokit/jsonfile",
     "github.com/function61/gokit/logex",
