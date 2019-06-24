@@ -220,7 +220,8 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 		}
 		a.publish(fmt.Sprintf("motion:%s:%v", e.Device, e.Movement))
 	case *hapitypes.ContactEvent:
-		a.updateLastOnline(e.Device)
+		dev := a.updateLastOnline(e.Device)
+		dev.LastContact = e
 		a.publish(fmt.Sprintf("contact:%s:%v", e.Device, e.Contact))
 	case *hapitypes.VibrationEvent:
 		a.updateLastOnline(e.Device)

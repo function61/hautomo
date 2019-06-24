@@ -76,6 +76,7 @@ type Device struct {
 	LastOnline             *time.Time
 	LastMotion             *time.Time
 	LastExplicitPowerEvent *time.Time
+	LastContact            *ContactEvent
 
 	LinkQuality    uint // 0-100 %
 	BatteryPct     uint // 0-100 %
