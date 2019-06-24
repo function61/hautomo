@@ -506,8 +506,9 @@ func configureAppAndStartAdapters(
 
 	app.policyEngine = newPolicyEngine(
 		app.booleans,
-		app.deviceById["kitchenLight"],
-		app.deviceById["kitchenMotion"])
+		func(key string) *hapitypes.Device {
+			return app.deviceById[key]
+		})
 
 	return nil
 }
