@@ -215,7 +215,9 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 		a.publish(fmt.Sprintf("infrared:%s:%s", e.Remote, e.Event))
 	case *hapitypes.MotionEvent:
 		dev := a.updateLastOnline(e.Device)
-		dev.LastMotion = &now
+		if e.Movement {
+			dev.LastMotion = &now
+		}
 		a.publish(fmt.Sprintf("motion:%s:%v", e.Device, e.Movement))
 	case *hapitypes.ContactEvent:
 		a.updateLastOnline(e.Device)
