@@ -42,6 +42,15 @@ func (p *PowerManager) Set(deviceId string, power hapitypes.PowerKind) {
 	p.desired[deviceId] = p.getDesired(deviceId, power)
 }
 
+// just set actual state to something without triggering a diff that would send a message.
+// one case for wanting this is sending brightness msg which will implicitly turn the bulb
+// on even though we didn't send an explicit power message
+func (p *PowerManager) SetBypassingDiffs(deviceId string, power hapitypes.PowerKind) {
+	p.Set(deviceId, power)
+
+	p.actual[deviceId] = p.desired[deviceId]
+}
+
 func (p *PowerManager) getDesired(deviceId string, power hapitypes.PowerKind) bool {
 	switch power {
 	case hapitypes.PowerKindOn:

@@ -54,6 +54,18 @@ func TestPowerManagerWithExplicit(t *testing.T) {
 	assert.EqualString(t, serialize(pm.Diff()), "dev => on")
 }
 
+func TestPowerManagerSetBypassingDiffs(t *testing.T) {
+	pm := NewPowerManager()
+	pm.Register("dev", true)
+
+	assert.Assert(t, len(pm.Diff()) == 0)
+
+	// Set(off) would normally cause diff
+	pm.SetBypassingDiffs("dev", hapitypes.PowerKindOff)
+
+	assert.Assert(t, len(pm.Diff()) == 0)
+}
+
 func serialize(diffs []PowerDiff) string {
 	serialized := []string{}
 

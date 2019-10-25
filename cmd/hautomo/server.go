@@ -185,6 +185,8 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 		device := a.deviceById[e.DeviceIdOrDeviceGroupId]
 		adapter := a.adapterById[device.Conf.AdapterId]
 
+		a.powerManager.SetBypassingDiffs(device.Conf.DeviceId, hapitypes.PowerKindOn)
+
 		adapter.Send(hapitypes.NewBrightnessMsg(
 			device.Conf.AdaptersDeviceId,
 			e.Brightness,
