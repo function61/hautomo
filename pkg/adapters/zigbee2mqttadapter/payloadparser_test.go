@@ -5,6 +5,7 @@ import (
 	"github.com/function61/gokit/assert"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestParseMsgPayload(t *testing.T) {
@@ -39,14 +40,14 @@ BatteryStatusEvent {"Device":"dummyId","BatteryPct":100,"Voltage":3055}`,
 		{
 			input: `{"contact":true,"linkquality":70}`,
 			kind:  deviceKindMCCGQ11LM,
-			output: `ContactEvent {"Device":"dummyId","Contact":true}
+			output: `ContactEvent {"Device":"dummyId","Contact":true,"When":"2019-10-25T20:23:00Z"}
 LinkQualityEvent {"Device":"dummyId","LinkQuality":70}
 BatteryStatusEvent {"Device":"dummyId","BatteryPct":0,"Voltage":0}`,
 		},
 		{
 			input: `{"contact":false,"linkquality":70}`,
 			kind:  deviceKindMCCGQ11LM,
-			output: `ContactEvent {"Device":"dummyId","Contact":false}
+			output: `ContactEvent {"Device":"dummyId","Contact":false,"When":"2019-10-25T20:23:00Z"}
 LinkQualityEvent {"Device":"dummyId","LinkQuality":70}
 BatteryStatusEvent {"Device":"dummyId","BatteryPct":0,"Voltage":0}`,
 		},
@@ -82,11 +83,13 @@ LinkQualityEvent {"Device":"dummyId","LinkQuality":34}`,
 		},
 	}
 
+	now := time.Date(2019, 10, 25, 20, 23, 0, 0, time.UTC)
+
 	for _, test := range tests {
 		t.Run(test.output, func(t *testing.T) {
 			events, err := parseMsgPayload(topic, func(_ string) *resolvedDevice {
 				return &resolvedDevice{"dummyId", test.kind}
-			}, test.input)
+			}, test.input, now)
 
 			if err != nil {
 				assert.EqualString(t, err.Error(), test.output)

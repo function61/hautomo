@@ -10,8 +10,8 @@ type ContactEvent struct {
 	When    time.Time
 }
 
-func NewContactEvent(deviceId string, contact bool) *ContactEvent {
-	return &ContactEvent{deviceId, contact, time.Now()}
+func NewContactEvent(deviceId string, contact bool, now time.Time) *ContactEvent {
+	return &ContactEvent{deviceId, contact, now}
 }
 
 func (e *ContactEvent) InboundEventType() string {

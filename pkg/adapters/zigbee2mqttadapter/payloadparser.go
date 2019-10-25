@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"strings"
+	"time"
 )
 
 type resolvedDevice struct {
@@ -14,7 +15,7 @@ type resolvedDevice struct {
 
 type deviceResolver func(deviceId string) *resolvedDevice
 
-func parseMsgPayload(topicName string, resolver deviceResolver, message string) ([]hapitypes.InboundEvent, error) {
+func parseMsgPayload(topicName string, resolver deviceResolver, message string, now time.Time) ([]hapitypes.InboundEvent, error) {
 	// block "zigbee2mqtt/0x00158d000227a73c/set", which is probably publishes made by us
 	if strings.HasSuffix(topicName, "/set") {
 		return nil, nil
@@ -85,7 +86,7 @@ func parseMsgPayload(topicName string, resolver deviceResolver, message string) 
 			return nil, err
 		}
 
-		push(hapitypes.NewContactEvent(ourId, payload.Contact))
+		push(hapitypes.NewContactEvent(ourId, payload.Contact, now))
 
 		push(hapitypes.NewLinkQualityEvent(ourId, payload.LinkQuality))
 		push(hapitypes.NewBatteryStatusEvent(ourId, payload.Battery, payload.Voltage))

@@ -51,7 +51,7 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	}
 
 	m2qttDeviceObserver := func(topicName, message []byte) {
-		events, err := parseMsgPayload(string(topicName), resolver, string(message))
+		events, err := parseMsgPayload(string(topicName), resolver, string(message), time.Now())
 		if err != nil {
 			adapter.Logl.Error.Println(err.Error())
 			return
