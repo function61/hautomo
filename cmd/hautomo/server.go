@@ -221,8 +221,14 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 		a.publish(fmt.Sprintf("motion:%s:%v", e.Device, e.Movement))
 	case *hapitypes.ContactEvent:
 		dev := a.updateLastOnline(e.Device)
+		contactChanged := false
+		if dev.LastContact != nil {
+			contactChanged = dev.LastContact.Contact != e.Contact
+		}
 		dev.LastContact = e
-		a.publish(fmt.Sprintf("contact:%s:%v", e.Device, e.Contact))
+		if contactChanged {
+			a.publish(fmt.Sprintf("contact:%s:%v", e.Device, e.Contact))
+		}
 	case *hapitypes.VibrationEvent:
 		a.updateLastOnline(e.Device)
 		a.publish(fmt.Sprintf("vibration:%s", e.Device))
