@@ -72,7 +72,9 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 
 		adapter.Logl.Info.Println("stopping")
 
-		irw.Process.Kill()
+		if err := irw.Process.Kill(); err != nil {
+			adapter.Logl.Error.Printf("irw kill: %v", err)
+		}
 	}()
 
 	go func() {

@@ -87,6 +87,8 @@ LinkQualityEvent {"Device":"dummyId","LinkQuality":34}`,
 	now := time.Date(2019, 10, 25, 20, 23, 0, 0, time.UTC)
 
 	for _, test := range tests {
+		test := test // pin
+
 		t.Run(test.output, func(t *testing.T) {
 			events, err := parseMsgPayload(topic, func(_ string) *resolvedDevice {
 				return &resolvedDevice{"dummyId", test.kind}

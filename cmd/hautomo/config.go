@@ -10,10 +10,6 @@ import (
 	"github.com/function61/hautomo/pkg/hapitypes"
 )
 
-const (
-	confFilePath = "conf.hcl"
-)
-
 func readConfigurationFile() (*hapitypes.ConfigFile, error) {
 	merged, free, err := readAllConfFilesMerged()
 	if err != nil {

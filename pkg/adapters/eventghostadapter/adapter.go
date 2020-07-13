@@ -78,7 +78,7 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 
 func runServer(adapter *hapitypes.Adapter, passwordToDeviceId map[string]string, workers *stopper.Manager) {
 	passwords := []string{}
-	for password, _ := range passwordToDeviceId {
+	for password := range passwordToDeviceId {
 		passwords = append(passwords, password)
 	}
 

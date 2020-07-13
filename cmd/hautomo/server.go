@@ -44,7 +44,7 @@ func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
 
 	prometheus.MustRegister(app.constMetrics)
 
-	app.booleans.Set("anybodyHome", true)
+	_, _ = app.booleans.Set("anybodyHome", true)
 	app.updateEnvironmentLightStatus(false)
 
 	everyMinute := time.NewTicker(1 * time.Minute)

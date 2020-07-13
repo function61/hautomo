@@ -216,7 +216,6 @@ func mqttConnection(addr string, handler client.MessageHandler, mqttPublishes <-
 	case <-broken:
 		return brokenErr
 	case <-stop.Signal:
-		mqttClient.Disconnect()
-		return nil
+		return mqttClient.Disconnect()
 	}
 }

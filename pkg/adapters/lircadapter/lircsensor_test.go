@@ -30,6 +30,8 @@ func TestIrwOutputLineToIrEvent(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test := test // pin
+
 		t.Run(test.input, func(t *testing.T) {
 			evt := irwOutputLineToIrEvent(test.input)
 

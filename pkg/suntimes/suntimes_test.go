@@ -44,6 +44,8 @@ func TestIsBetweenGoldenHours(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test := test // pin
+
 		t.Run(test.time, func(t *testing.T) {
 			now, err := time.ParseInLocation(testDateFormat, test.time, helsinki)
 			assert.Assert(t, err == nil)

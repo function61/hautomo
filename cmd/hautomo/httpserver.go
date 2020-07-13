@@ -78,7 +78,7 @@ func handleHttp(app *Application, conf *hapitypes.ConfigFile, logger *log.Logger
 	http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
-		enc.Encode(conf)
+		_ = enc.Encode(conf)
 	})
 
 	http.Handle("/metrics", promhttp.Handler())

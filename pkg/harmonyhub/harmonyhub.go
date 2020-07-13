@@ -190,7 +190,9 @@ func NewHarmonyHubConnection(addr string, logger *log.Logger, stop *stopper.Stop
 				keepaliveTicker.Stop()
 
 				if harmonyHubConnection.connected {
-					harmonyHubConnection.EndStream()
+					if err := harmonyHubConnection.EndStream(); err != nil {
+						harmonyHubConnection.logger.Printf("EndStream: %v", err)
+					}
 				}
 				return
 			case <-time.After(1 * time.Second):
@@ -292,9 +294,9 @@ func (x *HarmonyHubConnection) InitAndAuthenticate() error {
 			// which gives a description of what failed if there was no text element
 			errorMessage = v.Any.Local
 		}
-		return errors.New("auth failure: " + errorMessage)
+		return fmt.Errorf("auth failure: %s", errorMessage)
 	default:
-		return errors.New(fmt.Sprintf("expected <success> or <failure>, got %s", prettyXmlName(authRespElName)))
+		return fmt.Errorf("expected <success> or <failure>, got %s", prettyXmlName(authRespElName))
 	}
 
 	return nil
