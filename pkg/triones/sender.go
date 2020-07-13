@@ -5,11 +5,12 @@ package triones
 import (
 	"context"
 	"fmt"
-	"github.com/function61/gokit/logex"
-	"github.com/function61/gokit/retry"
 	"log"
 	"os/exec"
 	"time"
+
+	"github.com/function61/gokit/logex"
+	"github.com/function61/gokit/retry"
 )
 
 func Send(ctx context.Context, req Request, logger *log.Logger) error {

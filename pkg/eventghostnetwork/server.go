@@ -2,12 +2,13 @@ package eventghostnetwork
 
 import (
 	"bufio"
-	"github.com/function61/gokit/stopper"
-	"github.com/function61/gokit/tcpkeepalive"
 	"io"
 	"log"
 	"net"
 	"strings"
+
+	"github.com/function61/gokit/stopper"
+	"github.com/function61/gokit/tcpkeepalive"
 )
 
 // you can give multiple passwords to differentiate between multiple computers

@@ -2,10 +2,11 @@ package hapitypes
 
 import (
 	"errors"
-	"github.com/function61/gokit/logex"
-	"github.com/function61/hautomo/pkg/constmetrics"
 	"log"
 	"time"
+
+	"github.com/function61/gokit/logex"
+	"github.com/function61/hautomo/pkg/constmetrics"
 )
 
 /*

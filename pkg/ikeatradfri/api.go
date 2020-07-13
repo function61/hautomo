@@ -3,6 +3,7 @@ package ikeatradfri
 import (
 	"errors"
 	"fmt"
+
 	"github.com/lucasb-eyer/go-colorful"
 )
 

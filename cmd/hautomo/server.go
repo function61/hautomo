@@ -3,6 +3,9 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/function61/gokit/dynversion"
 	"github.com/function61/gokit/jsonfile"
 	"github.com/function61/gokit/logex"
@@ -11,8 +14,6 @@ import (
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"github.com/function61/hautomo/pkg/suntimes"
 	"github.com/prometheus/client_golang/prometheus"
-	"log"
-	"time"
 )
 
 const statefilePath = "state-snapshot.json"

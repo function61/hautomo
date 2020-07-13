@@ -2,8 +2,9 @@ package harmonyhub
 
 import (
 	"encoding/xml"
-	"github.com/function61/gokit/assert"
 	"testing"
+
+	"github.com/function61/gokit/assert"
 )
 
 func TestSaslAuth(t *testing.T) {

@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/function61/gokit/dynversion"
 	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/ossignal"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/gokit/systemdinstaller"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 func main() {

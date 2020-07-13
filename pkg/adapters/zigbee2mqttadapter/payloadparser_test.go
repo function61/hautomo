@@ -2,10 +2,11 @@ package zigbee2mqttadapter
 
 import (
 	"encoding/json"
-	"github.com/function61/gokit/assert"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/function61/gokit/assert"
 )
 
 func TestParseMsgPayload(t *testing.T) {

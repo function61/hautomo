@@ -3,9 +3,10 @@ package zigbee2mqttadapter
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/function61/hautomo/pkg/hapitypes"
 	"strings"
 	"time"
+
+	"github.com/function61/hautomo/pkg/hapitypes"
 )
 
 type resolvedDevice struct {

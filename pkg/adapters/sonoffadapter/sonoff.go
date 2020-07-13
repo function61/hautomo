@@ -2,10 +2,11 @@ package sonoffadapter
 
 import (
 	"context"
+	"time"
+
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"github.com/function61/hautomo/pkg/sonoff"
-	"time"
 )
 
 func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {

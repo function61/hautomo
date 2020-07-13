@@ -2,9 +2,10 @@ package particleapi
 
 import (
 	"context"
-	"github.com/function61/gokit/ezhttp"
 	"net/url"
 	"strings"
+
+	"github.com/function61/gokit/ezhttp"
 )
 
 func Invoke(device string, command string, arg string, accessToken string) error {

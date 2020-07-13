@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github.com/function61/gokit/logex"
-	"github.com/function61/gokit/stopper"
-	"github.com/function61/hautomo/pkg/hapitypes"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"html/template"
 	"log"
 	"net/http"
 	"sort"
 	"time"
+
+	"github.com/function61/gokit/logex"
+	"github.com/function61/gokit/stopper"
+	"github.com/function61/hautomo/pkg/hapitypes"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const tpl = `

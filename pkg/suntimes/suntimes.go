@@ -1,8 +1,9 @@
 package suntimes
 
 import (
-	"github.com/yaslama/astrocalc"
 	"time"
+
+	"github.com/yaslama/astrocalc"
 )
 
 type latLng struct {

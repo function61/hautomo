@@ -2,12 +2,13 @@ package eventghostadapter
 
 import (
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/hautomo/pkg/eventghostnetwork"
 	"github.com/function61/hautomo/pkg/hapitypes"
-	"log"
-	"strings"
 )
 
 type EgReq struct {

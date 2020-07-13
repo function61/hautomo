@@ -1,8 +1,9 @@
 package zigbee2mqttadapter
 
 import (
-	"github.com/function61/gokit/assert"
 	"testing"
+
+	"github.com/function61/gokit/assert"
 )
 
 func TestKelvinToMired(t *testing.T) {

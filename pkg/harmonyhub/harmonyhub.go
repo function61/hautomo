@@ -5,11 +5,12 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/function61/gokit/stopper"
-	"golang.org/x/net/html/charset"
 	"log"
 	"net"
 	"time"
+
+	"github.com/function61/gokit/stopper"
+	"golang.org/x/net/html/charset"
 )
 
 var errNotConnected = errors.New("not connected")

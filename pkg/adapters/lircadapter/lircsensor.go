@@ -2,11 +2,12 @@ package lircadapter
 
 import (
 	"bufio"
-	"github.com/function61/gokit/stopper"
-	"github.com/function61/hautomo/pkg/hapitypes"
 	"io"
 	"os/exec"
 	"regexp"
+
+	"github.com/function61/gokit/stopper"
+	"github.com/function61/hautomo/pkg/hapitypes"
 )
 
 // match lines like this: "000000037ff07bee 00 KEY_VOLUMEDOWN mceusb"

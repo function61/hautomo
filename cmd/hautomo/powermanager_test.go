@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/function61/gokit/assert"
-	"github.com/function61/hautomo/pkg/hapitypes"
 	"strings"
 	"testing"
+
+	"github.com/function61/gokit/assert"
+	"github.com/function61/hautomo/pkg/hapitypes"
 )
 
 func TestPowerManager(t *testing.T) {

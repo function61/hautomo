@@ -5,11 +5,12 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
-	"github.com/function61/gokit/tcpkeepalive"
 	"log"
 	"net"
 	"strings"
 	"time"
+
+	"github.com/function61/gokit/tcpkeepalive"
 )
 
 var (

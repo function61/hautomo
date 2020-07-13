@@ -2,11 +2,12 @@ package trionesadapter
 
 import (
 	"context"
+	"log"
+	"time"
+
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"github.com/function61/hautomo/pkg/triones"
-	"log"
-	"time"
 )
 
 const requestTimeout = 15 * time.Second

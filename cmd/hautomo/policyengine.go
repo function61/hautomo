@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/function61/hautomo/pkg/hapitypes"
 	"time"
+
+	"github.com/function61/hautomo/pkg/hapitypes"
 )
 
 var (

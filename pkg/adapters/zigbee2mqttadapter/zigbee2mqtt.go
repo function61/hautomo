@@ -2,12 +2,13 @@ package zigbee2mqttadapter
 
 import (
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"github.com/yosssi/gmq/mqtt"
 	"github.com/yosssi/gmq/mqtt/client"
-	"sync"
-	"time"
 )
 
 const (

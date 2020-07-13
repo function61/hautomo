@@ -1,9 +1,10 @@
 package constmetrics
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Ref struct {

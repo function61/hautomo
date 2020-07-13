@@ -4,6 +4,7 @@ package sonoff
 import (
 	"context"
 	"fmt"
+
 	"github.com/function61/gokit/ezhttp"
 )
 

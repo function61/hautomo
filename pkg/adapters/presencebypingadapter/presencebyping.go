@@ -1,14 +1,15 @@
 package presencebypingadapter
 
 import (
+	"net"
+	"sync"
+	"time"
+
 	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
-	"net"
-	"sync"
-	"time"
 )
 
 type ProbeRequest struct {

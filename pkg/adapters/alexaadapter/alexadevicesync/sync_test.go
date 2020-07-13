@@ -2,9 +2,10 @@ package alexadevicesync
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/function61/gokit/assert"
 	"github.com/function61/hautomo/pkg/hapitypes"
-	"testing"
 )
 
 func TestCreateAlexaConnectorSpec(t *testing.T) {

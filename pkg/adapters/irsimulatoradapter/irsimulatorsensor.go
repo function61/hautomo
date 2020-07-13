@@ -1,9 +1,10 @@
 package irsimulatoradapter
 
 import (
+	"time"
+
 	"github.com/function61/gokit/stopper"
 	"github.com/function61/hautomo/pkg/hapitypes"
-	"time"
 )
 
 func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
