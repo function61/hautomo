@@ -2,10 +2,7 @@ package alexaadapter
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"regexp"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -13,39 +10,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/function61/hautomo/pkg/adapters/alexaadapter/aamessages"
 	"github.com/function61/hautomo/pkg/adapters/alexaadapter/alexadevicesync"
 	"github.com/function61/hautomo/pkg/hapitypes"
 )
-
-type TurnOnRequest struct {
-	DeviceIdOrDeviceGroupId string `json:"id"`
-}
-
-type TurnOffRequest struct {
-	DeviceIdOrDeviceGroupId string `json:"id"`
-}
-
-type ColorRequest struct {
-	DeviceIdOrDeviceGroupId string `json:"id"`
-	Red                     uint8  `json:"red"`
-	Green                   uint8  `json:"green"`
-	Blue                    uint8  `json:"blue"`
-}
-
-type BrightnessRequest struct {
-	DeviceIdOrDeviceGroupId string `json:"id"`
-	Brightness              uint   `json:"brightness"` // 0-100
-}
-
-type PlaybackRequest struct {
-	DeviceIdOrDeviceGroupId string `json:"id"`
-	Action                  string `json:"action"`
-}
-
-type ColorTemperatureRequest struct {
-	DeviceIdOrDeviceGroupId  string `json:"id"`
-	ColorTemperatureInKelvin uint   `json:"colorTemperatureInKelvin"`
-}
 
 func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 	if err := alexadevicesync.Sync(adapter.Conf, adapter.GetConfigFileDeprecated()); err != nil {
@@ -68,11 +36,13 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 		default:
 		}
 
-		runOnce(ctx, sqsClient, adapter)
+		if err := runOnce(ctx, sqsClient, adapter); err != nil {
+			return err // stop ("crash")
+		}
 	}
 }
 
-func runOnce(ctx context.Context, sqsClient *sqs.SQS, adapter *hapitypes.Adapter) {
+func runOnce(ctx context.Context, sqsClient *sqs.SQS, adapter *hapitypes.Adapter) error {
 	result, receiveErr := sqsClient.ReceiveMessageWithContext(ctx, &sqs.ReceiveMessageInput{
 		MaxNumberOfMessages: aws.Int64(10),
 		QueueUrl:            &adapter.Conf.SqsQueueUrl,
@@ -82,7 +52,7 @@ func runOnce(ctx context.Context, sqsClient *sqs.SQS, adapter *hapitypes.Adapter
 	if receiveErr != nil {
 		adapter.Logl.Error.Printf("ReceiveMessage(): %s", receiveErr.Error())
 		time.Sleep(5 * time.Second)
-		return
+		return nil
 	}
 
 	ackList := []*sqs.DeleteMessageBatchRequestEntry{}
@@ -93,71 +63,41 @@ func runOnce(ctx context.Context, sqsClient *sqs.SQS, adapter *hapitypes.Adapter
 			ReceiptHandle: msg.ReceiptHandle,
 		})
 
-		msgParseErr, msgType, msgJsonBody := parseMessage(*msg.Body)
-		if msgParseErr != nil {
-			adapter.Logl.Error.Printf("parseMessage: %s", msgParseErr.Error())
+		msg, errMsgParse := aamessages.Unmarshal(*msg.Body)
+		if errMsgParse != nil {
+			adapter.Logl.Error.Printf("aamessages.Unmarshal: %s", errMsgParse.Error())
 			continue
 		}
 
-		switch msgType {
-		case "turn_on":
-			var req TurnOnRequest
-			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
-				panic(err)
-			}
-
+		switch req := msg.(type) {
+		case *aamessages.TurnOnRequest:
 			adapter.Receive(hapitypes.NewPowerEvent(
 				req.DeviceIdOrDeviceGroupId,
 				hapitypes.PowerKindOn,
 				true))
-		case "turn_off":
-			var req TurnOffRequest
-			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
-				panic(err)
-			}
-
+		case *aamessages.TurnOffRequest:
 			adapter.Receive(hapitypes.NewPowerEvent(
 				req.DeviceIdOrDeviceGroupId,
 				hapitypes.PowerKindOff,
 				true))
-		case "color":
-			var req ColorRequest
-			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
-				panic(err)
-			}
-
+		case *aamessages.ColorRequest:
 			adapter.Receive(hapitypes.NewColorMsg(
 				req.DeviceIdOrDeviceGroupId,
 				hapitypes.NewRGB(req.Red, req.Green, req.Blue)))
-		case "brightness":
-			var req BrightnessRequest
-			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
-				panic(err)
-			}
-
+		case *aamessages.BrightnessRequest:
 			adapter.Receive(hapitypes.NewBrightnessEvent(
 				req.DeviceIdOrDeviceGroupId,
 				req.Brightness))
-		case "playback":
-			var req PlaybackRequest
-			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
-				panic(err)
-			}
-
+		case *aamessages.PlaybackRequest:
 			adapter.Receive(hapitypes.NewPlaybackEvent(
 				req.DeviceIdOrDeviceGroupId,
 				req.Action))
-		case "colorTemperature":
-			var req ColorTemperatureRequest
-			if err := json.Unmarshal([]byte(msgJsonBody), &req); err != nil {
-				panic(err)
-			}
-
+		case *aamessages.ColorTemperatureRequest:
 			adapter.Receive(hapitypes.NewColorTemperatureEvent(
 				req.DeviceIdOrDeviceGroupId,
 				req.ColorTemperatureInKelvin))
 		default:
-			adapter.Logl.Error.Printf("unknown msgType: " + msgType)
+			adapter.Logl.Error.Printf("unknown msg kind: %s", msg.Kind())
 		}
 	}
 
@@ -170,18 +110,9 @@ func runOnce(ctx context.Context, sqsClient *sqs.SQS, adapter *hapitypes.Adapter
 		})
 
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
-}
 
-var parseMessageRegexp = regexp.MustCompile(`^([a-zA-Z_0-9]+) (.+)$`)
-
-func parseMessage(input string) (error, string, string) {
-	match := parseMessageRegexp.FindStringSubmatch(input)
-	if match == nil {
-		return errors.New("parseMessage(): invalid format"), "", ""
-	}
-
-	return nil, match[1], match[2]
+	return nil
 }
