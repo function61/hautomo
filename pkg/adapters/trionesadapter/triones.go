@@ -5,33 +5,23 @@ import (
 	"log"
 	"time"
 
-	"github.com/function61/gokit/stopper"
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"github.com/function61/hautomo/pkg/triones"
 )
 
 const requestTimeout = 15 * time.Second
 
-func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
+func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 	conf := adapter.GetConfigFileDeprecated()
 
-	go func() {
-		defer stop.Done()
-
-		adapter.Logl.Info.Println("started")
-		defer adapter.Logl.Info.Println("stopped")
-
-		for {
-			select {
-			case <-stop.Signal:
-				return
-			case genericEvent := <-adapter.Outbound:
-				handleEvent(genericEvent, adapter, conf)
-			}
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case genericEvent := <-adapter.Outbound:
+			handleEvent(genericEvent, adapter, conf)
 		}
-	}()
-
-	return nil
+	}
 }
 
 func handleEvent(genericEvent hapitypes.OutboundEvent, adapter *hapitypes.Adapter, conf *hapitypes.ConfigFile) {

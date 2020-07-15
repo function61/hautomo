@@ -1,7 +1,8 @@
 package main
 
 import (
-	"github.com/function61/gokit/stopper"
+	"context"
+
 	"github.com/function61/hautomo/pkg/adapters/alexaadapter"
 	"github.com/function61/hautomo/pkg/adapters/devicegroupadapter"
 	"github.com/function61/hautomo/pkg/adapters/dummyadapter"
@@ -18,7 +19,7 @@ import (
 	"github.com/function61/hautomo/pkg/hapitypes"
 )
 
-type AdapterInitFn func(adapter *hapitypes.Adapter, stop *stopper.Stopper) error
+type AdapterInitFn func(ctx context.Context, adapter *hapitypes.Adapter) error
 
 var adapters = map[string]AdapterInitFn{
 	"devicegroup":    devicegroupadapter.Start,

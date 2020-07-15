@@ -1,12 +1,13 @@
 package eventghostadapter
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
 
 	"github.com/function61/gokit/logex"
-	"github.com/function61/gokit/stopper"
+	"github.com/function61/gokit/taskrunner"
 	"github.com/function61/hautomo/pkg/eventghostnetwork"
 	"github.com/function61/hautomo/pkg/hapitypes"
 )
@@ -20,15 +21,28 @@ type DeviceConn struct {
 	Requests chan EgReq
 }
 
-func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
-	workers := stopper.NewManager()
+func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
+	serverAndClientConnections := taskrunner.New(ctx, nil)
 
-	passwordToDeviceId, clientConns, err := startup(adapter, workers)
+	// connect client to all computers we wish to send EventGhost commands to
+	passwordToDeviceId, clientConns, err := readConfAndConnectToClients(adapter, func(eventghostAddr string, eventghostSecret string, deviceConn *DeviceConn) {
+		serverAndClientConnections.Start(eventghostAddr, func(ctx context.Context) error {
+			return handleClientConnection(
+				ctx,
+				eventghostAddr,
+				eventghostSecret,
+				deviceConn,
+				logex.Prefix(eventghostAddr, adapter.Log))
+		})
+	})
 	if err != nil {
 		return err
 	}
 
-	go runServer(adapter, passwordToDeviceId, workers)
+	// start server to receive EventGhost-sent events to Hautomo
+	serverAndClientConnections.Start("server", func(ctx context.Context) error {
+		return runServer(ctx, adapter, passwordToDeviceId)
+	})
 
 	send := func(deviceId string, req EgReq) {
 		conn, found := clientConns[deviceId]
@@ -44,39 +58,35 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 		}
 	}
 
-	go func() {
-		defer stop.Done()
-		defer workers.StopAllWorkersAndWait()
-
-		adapter.Logl.Info.Println("started")
-		defer adapter.Logl.Info.Println("stopped")
-
-		for {
-			select {
-			case <-stop.Signal:
-				return
-			case genericEvent := <-adapter.Outbound:
-				switch e := genericEvent.(type) {
-				case *hapitypes.NotificationEvent:
-					send(e.Device, EgReq{
-						Event:   "OSD",
-						Payload: []string{e.Message},
-					})
-				case *hapitypes.PlaybackEvent:
-					send(e.Device, EgReq{
-						Event: "Playback." + e.Action,
-					})
-				default:
-					adapter.LogUnsupportedEvent(genericEvent)
-				}
+	for {
+		select {
+		case <-ctx.Done():
+			return serverAndClientConnections.Wait()
+		case err := <-serverAndClientConnections.Done(): // subtask crash
+			return err
+		case genericEvent := <-adapter.Outbound:
+			switch e := genericEvent.(type) {
+			case *hapitypes.NotificationEvent:
+				send(e.Device, EgReq{
+					Event:   "OSD",
+					Payload: []string{e.Message},
+				})
+			case *hapitypes.PlaybackEvent:
+				send(e.Device, EgReq{
+					Event: "Playback." + e.Action,
+				})
+			default:
+				adapter.LogUnsupportedEvent(genericEvent)
 			}
 		}
-	}()
-
-	return nil
+	}
 }
 
-func runServer(adapter *hapitypes.Adapter, passwordToDeviceId map[string]string, workers *stopper.Manager) {
+func runServer(
+	ctx context.Context,
+	adapter *hapitypes.Adapter,
+	passwordToDeviceId map[string]string,
+) error {
 	passwords := []string{}
 	for password := range passwordToDeviceId {
 		passwords = append(passwords, password)
@@ -84,7 +94,7 @@ func runServer(adapter *hapitypes.Adapter, passwordToDeviceId map[string]string,
 
 	if len(passwords) == 0 {
 		adapter.Logl.Info.Println("no EventGhost devices configured - not starting server")
-		return
+		return nil
 	}
 
 	eventHandler := func(event string, payload []string, password string) {
@@ -99,16 +109,16 @@ func runServer(adapter *hapitypes.Adapter, passwordToDeviceId map[string]string,
 		adapter.Receive(hapitypes.NewPublishEvent("eventghost:" + deviceId + ":" + event + payloadSerialized))
 	}
 
-	err := eventghostnetwork.RunServer(
+	return eventghostnetwork.RunServer(
+		ctx,
 		passwords,
-		eventHandler,
-		workers.Stopper())
-	if err != nil {
-		adapter.Logl.Error.Println(err.Error())
-	}
+		eventHandler)
 }
 
-func startup(adapter *hapitypes.Adapter, workers *stopper.Manager) (map[string]string, map[string]*DeviceConn, error) {
+func readConfAndConnectToClients(
+	adapter *hapitypes.Adapter,
+	connect func(string, string, *DeviceConn),
+) (map[string]string, map[string]*DeviceConn, error) {
 	passwordToDeviceId := map[string]string{}
 	clientConns := map[string]*DeviceConn{}
 
@@ -131,12 +141,7 @@ func startup(adapter *hapitypes.Adapter, workers *stopper.Manager) (map[string]s
 				Requests: make(chan EgReq, 16),
 			}
 
-			go handleClientConnection(
-				device.EventghostAddr,
-				device.EventghostSecret,
-				clientConns[device.DeviceId],
-				logex.Prefix(device.EventghostAddr, adapter.Log),
-				workers.Stopper())
+			connect(device.EventghostAddr, device.EventghostSecret, clientConns[device.DeviceId])
 		}
 
 		passwordToDeviceId[device.EventghostSecret] = device.DeviceId
@@ -146,16 +151,15 @@ func startup(adapter *hapitypes.Adapter, workers *stopper.Manager) (map[string]s
 }
 
 func handleClientConnection(
+	ctx context.Context,
 	addr string,
 	password string,
 	reqs *DeviceConn,
 	logger *log.Logger,
-	stop *stopper.Stopper,
-) {
-	defer stop.Done()
-
+) error {
 	logl := logex.Levels(logger)
 
+	// internally manages reconnects
 	conn := eventghostnetwork.NewEventghostConnection(
 		addr,
 		password,
@@ -163,12 +167,12 @@ func handleClientConnection(
 
 	for {
 		select {
+		case <-ctx.Done():
+			return nil
 		case req := <-reqs.Requests:
 			if err := conn.Send(req.Event, req.Payload); err != nil {
 				logl.Error.Println(err.Error())
 			}
-		case <-stop.Signal:
-			return
 		}
 	}
 }

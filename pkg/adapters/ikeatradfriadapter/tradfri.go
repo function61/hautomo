@@ -1,34 +1,26 @@
 package ikeatradfriadapter
 
 import (
-	"github.com/function61/gokit/stopper"
+	"context"
+
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"github.com/function61/hautomo/pkg/ikeatradfri"
 )
 
-func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
+func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 	coapClient := ikeatradfri.NewCoapClient(
 		adapter.Conf.TradfriUrl,
 		adapter.Conf.TradfriUser,
 		adapter.Conf.TradfriPsk)
 
-	go func() {
-		defer stop.Done()
-
-		adapter.Logl.Info.Println("started")
-		defer adapter.Logl.Info.Println("stopped")
-
-		for {
-			select {
-			case <-stop.Signal:
-				return
-			case genericEvent := <-adapter.Outbound:
-				handleEvent(genericEvent, coapClient, adapter)
-			}
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case genericEvent := <-adapter.Outbound:
+			handleEvent(genericEvent, coapClient, adapter)
 		}
-	}()
-
-	return nil
+	}
 }
 
 func handleEvent(genericEvent hapitypes.OutboundEvent, coapClient *ikeatradfri.CoapClient, adapter *hapitypes.Adapter) {

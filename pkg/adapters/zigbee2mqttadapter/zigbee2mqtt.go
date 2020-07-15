@@ -1,11 +1,12 @@
 package zigbee2mqttadapter
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
 
-	"github.com/function61/gokit/stopper"
+	"github.com/function61/gokit/taskrunner"
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"github.com/yosssi/gmq/mqtt"
 	"github.com/yosssi/gmq/mqtt/client"
@@ -27,7 +28,7 @@ func deviceMsg(deviceId string, msg string) MqttPublish {
 	}
 }
 
-func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
+func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 	config := adapter.GetConfigFileDeprecated()
 
 	resolver := func(adaptersDeviceId string) *resolvedDevice {
@@ -64,8 +65,6 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	}
 
 	z2mPublish := make(chan MqttPublish, 16)
-
-	subStoppers := stopper.NewManager()
 
 	handleOneEvent := func(genericEvent hapitypes.OutboundEvent) {
 		switch e := genericEvent.(type) {
@@ -116,44 +115,39 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 		}
 	}
 
-	go func() {
-		defer stop.Done()
-
-		adapter.Logl.Info.Println("started")
-		defer adapter.Logl.Info.Println("stopped")
-
+	subTasks := taskrunner.New(ctx, nil)
+	subTasks.Start("reconnect-loop", func(ctx context.Context) error {
 		for {
+			err := mqttConnection(ctx, adapter.Conf.Zigbee2MqttAddr, m2qttDeviceObserver, z2mPublish)
+
 			select {
-			case <-stop.Signal:
-				subStoppers.StopAllWorkersAndWait()
-				return
-			case genericEvent := <-adapter.Outbound:
-				handleOneEvent(genericEvent)
-			}
-		}
-	}()
-
-	go func(stop *stopper.Stopper) {
-		defer stop.Done()
-		defer adapter.Logl.Info.Println("reconnect loop stopped")
-
-		for {
-			if err := mqttConnection(adapter.Conf.Zigbee2MqttAddr, m2qttDeviceObserver, z2mPublish, stop); err != nil {
+			case <-ctx.Done():
+				return nil
+			default:
 				adapter.Logl.Error.Printf("mqttConnection error; reconnecting soon: %v", err)
 				time.Sleep(1 * time.Second)
 			}
-
-			// no error => break
-			if stop.SignalReceived {
-				return
-			}
 		}
-	}(subStoppers.Stopper())
+	})
 
-	return nil
+	for {
+		select {
+		case <-ctx.Done():
+			return subTasks.Wait()
+		case err := <-subTasks.Done(): // subtask crash
+			return err
+		case genericEvent := <-adapter.Outbound:
+			handleOneEvent(genericEvent)
+		}
+	}
 }
 
-func mqttConnection(addr string, handler client.MessageHandler, mqttPublishes <-chan MqttPublish, stop *stopper.Stopper) error {
+func mqttConnection(
+	ctx context.Context,
+	addr string,
+	handler client.MessageHandler,
+	mqttPublishes <-chan MqttPublish,
+) error {
 	broken := make(chan interface{})
 	var brokenErr error
 	var brokenOnce sync.Once
@@ -215,7 +209,7 @@ func mqttConnection(addr string, handler client.MessageHandler, mqttPublishes <-
 	select {
 	case <-broken:
 		return brokenErr
-	case <-stop.Signal:
+	case <-ctx.Done():
 		return mqttClient.Disconnect()
 	}
 }

@@ -1,16 +1,12 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"html/template"
-	"log"
 	"net/http"
 	"sort"
 	"time"
 
-	"github.com/function61/gokit/logex"
-	"github.com/function61/gokit/stopper"
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -61,19 +57,8 @@ const tpl = `
 </html>
 `
 
-func handleHttp(app *Application, conf *hapitypes.ConfigFile, logger *log.Logger, stop *stopper.Stopper) {
-	logl := logex.Levels(logger)
-
-	defer stop.Done()
+func makeHttpServer(app *Application, conf *hapitypes.ConfigFile) *http.Server {
 	srv := &http.Server{Addr: ":8097"}
-
-	go func() {
-		<-stop.Signal
-
-		logl.Info.Println("stopping HTTP")
-
-		_ = srv.Shutdown(context.TODO())
-	}()
 
 	http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
 		enc := json.NewEncoder(w)
@@ -127,9 +112,5 @@ func handleHttp(app *Application, conf *hapitypes.ConfigFile, logger *log.Logger
 		}
 	})
 
-	logl.Info.Printf("Starting to listen at %s", srv.Addr)
-
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		logl.Error.Printf("ListenAndServe(): %s", err.Error())
-	}
+	return srv
 }

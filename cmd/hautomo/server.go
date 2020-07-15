@@ -1,15 +1,17 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
 	"time"
 
 	"github.com/function61/gokit/dynversion"
+	"github.com/function61/gokit/httputils"
 	"github.com/function61/gokit/jsonfile"
 	"github.com/function61/gokit/logex"
-	"github.com/function61/gokit/stopper"
+	"github.com/function61/gokit/taskrunner"
 	"github.com/function61/hautomo/pkg/constmetrics"
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"github.com/function61/hautomo/pkg/suntimes"
@@ -30,7 +32,7 @@ type Application struct {
 	policyEngine  *policyEngine
 }
 
-func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
+func NewApplication(logger *log.Logger) *Application {
 	app := &Application{
 		adapterById:   map[string]*hapitypes.Adapter{},
 		deviceById:    map[string]*hapitypes.Device{},
@@ -47,41 +49,39 @@ func NewApplication(logger *log.Logger, stop *stopper.Stopper) *Application {
 	_, _ = app.booleans.Set("anybodyHome", true)
 	app.updateEnvironmentLightStatus(false)
 
+	return app
+}
+
+func (a *Application) task(ctx context.Context) error {
+	a.logl.Info.Printf("Hautomo %s started", dynversion.Version)
+	defer a.logl.Info.Println("stopped")
+
 	everyMinute := time.NewTicker(1 * time.Minute)
 	every5s := time.NewTicker(5 * time.Second)
 
-	go func() {
-		defer stop.Done()
-
-		app.logl.Info.Printf("Hautomo %s started", dynversion.Version)
-		defer app.logl.Info.Println("stopped")
-
-		for {
-			select {
-			case <-stop.Signal:
-				if err := app.saveStateSnapshot(); err != nil {
-					app.logl.Error.Printf("failed saving state on shutting down: %v", err)
-				}
-				return
-			case <-every5s.C:
-				// TODO: generate a tick inbound event, and thus we'd be able to use
-				//       handleIncomingEvent() for this?
-				app.applyPowerDiffs()
-			case <-everyMinute.C:
-				app.updateEnvironmentLightStatus(true)
-
-				if err := app.saveStateSnapshot(); err != nil {
-					app.logl.Error.Printf("failed saving state: %v", err)
-				}
-			case event := <-app.inbound.Ch:
-				app.handleIncomingEvent(event)
-
-				app.applyPowerDiffs()
+	for {
+		select {
+		case <-ctx.Done():
+			if err := a.saveStateSnapshot(); err != nil {
+				a.logl.Error.Printf("failed saving state on shutting down: %v", err)
 			}
-		}
-	}()
+			return nil
+		case <-every5s.C:
+			// TODO: generate a tick inbound event, and thus we'd be able to use
+			//       handleIncomingEvent() for this?
+			a.applyPowerDiffs()
+		case <-everyMinute.C:
+			a.updateEnvironmentLightStatus(true)
 
-	return app
+			if err := a.saveStateSnapshot(); err != nil {
+				a.logl.Error.Printf("failed saving state: %v", err)
+			}
+		case event := <-a.inbound.Ch:
+			a.handleIncomingEvent(event)
+
+			a.applyPowerDiffs()
+		}
+	}
 }
 
 func (a *Application) applyPowerDiffs() {
@@ -393,7 +393,7 @@ func configureAppAndStartAdapters(
 	app *Application,
 	conf *hapitypes.ConfigFile,
 	logger *log.Logger,
-	stopManager *stopper.Manager,
+	tasks *taskrunner.Runner,
 ) error {
 	for _, devGroup := range conf.DeviceGroups {
 		generatedAdapterId := devGroup.DeviceId + "Group"
@@ -434,9 +434,9 @@ func configureAppAndStartAdapters(
 			app.inbound,
 			logex.Prefix(adapterConf.Id, logger))
 
-		if err := initFn(adapter, stopManager.Stopper()); err != nil {
-			return err
-		}
+		tasks.Start(adapter.Conf.Id, func(ctx context.Context) error {
+			return initFn(ctx, adapter)
+		})
 
 		app.adapterById[adapter.Conf.Id] = adapter
 	}
@@ -522,9 +522,7 @@ func configureAppAndStartAdapters(
 	return nil
 }
 
-func runServer(logger *log.Logger, stop *stopper.Stopper) error {
-	defer stop.Done()
-
+func runServer(ctx context.Context, logger *log.Logger) error {
 	logl := logex.Levels(logger)
 
 	conf, confErr := readConfigurationFile()
@@ -532,24 +530,28 @@ func runServer(logger *log.Logger, stop *stopper.Stopper) error {
 		return confErr
 	}
 
-	workers := stopper.NewManager()
-
 	defer logl.Info.Println("all components stopped")
 
 	// FIXME: main loop probably shouldn't start here, since there's a race condition
-	app := NewApplication(logex.Prefix("hub", logger), workers.Stopper())
+	app := NewApplication(logex.Prefix("hub", logger))
 
-	if err := configureAppAndStartAdapters(app, conf, logger, workers); err != nil {
+	tasks := taskrunner.New(ctx, logger)
+
+	tasks.Start("app", func(ctx context.Context) error { return app.task(ctx) })
+
+	if err := configureAppAndStartAdapters(app, conf, logger, tasks); err != nil {
 		return err
 	}
 
-	go handleHttp(app, conf, logex.Prefix("handleHttp", logger), workers.Stopper())
+	srv := makeHttpServer(app, conf)
 
-	<-stop.Signal
+	tasks.Start("listener "+srv.Addr, func(_ context.Context) error {
+		return httputils.RemoveGracefulServerClosedError(srv.ListenAndServe())
+	})
 
-	workers.StopAllWorkersAndWait()
+	tasks.Start("listenershutdowner", httputils.ServerShutdownTask(srv))
 
-	return nil
+	return tasks.Wait()
 }
 
 // needed for ugly isDeviceGroup()

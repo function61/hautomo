@@ -2,11 +2,12 @@ package lircadapter
 
 import (
 	"bufio"
+	"context"
+	"fmt"
 	"io"
 	"os/exec"
 	"regexp"
 
-	"github.com/function61/gokit/stopper"
 	"github.com/function61/hautomo/pkg/hapitypes"
 )
 
@@ -24,8 +25,8 @@ func irwOutputLineToIrEvent(line string) *hapitypes.RawInfraredEvent {
 }
 
 // reads LIRC's "$ irw" output
-func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
-	irw := exec.Command("irw")
+func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
+	irw := exec.CommandContext(ctx, "irw")
 
 	stdoutPipe, err := irw.StdoutPipe()
 	if err != nil {
@@ -61,28 +62,13 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 		}
 	}()
 
-	// TODO: do this via context cancel?
-	go func() {
-		defer stop.Done()
+	// should stop on context cancellation the latest
+	err = irw.Wait()
 
-		adapter.Logl.Info.Println("started")
-		defer adapter.Logl.Info.Println("stopped")
-
-		<-stop.Signal
-
-		adapter.Logl.Info.Println("stopping")
-
-		if err := irw.Process.Kill(); err != nil {
-			adapter.Logl.Error.Printf("irw kill: %v", err)
-		}
-	}()
-
-	go func() {
-		// wait to complete
-		err := irw.Wait()
-
-		adapter.Logl.Error.Printf("$ irw exited, error: %s", err.Error())
-	}()
-
-	return nil
+	select {
+	case <-ctx.Done():
+		return nil // stopping was expected
+	default:
+		return fmt.Errorf("irw exited: %w", err)
+	}
 }

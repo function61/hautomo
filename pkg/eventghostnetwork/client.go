@@ -9,8 +9,6 @@ import (
 	"net"
 	"strings"
 	"time"
-
-	"github.com/function61/gokit/tcpkeepalive"
 )
 
 var (
@@ -64,8 +62,7 @@ func NewEventghostConnection(addr string, secret string, logger *log.Logger) *Ev
 
 func (e *EventghostConnection) connectAuthAndServe() error {
 	dialer := net.Dialer{
-		Timeout:   3 * time.Second,
-		KeepAlive: tcpkeepalive.DefaultDuration,
+		Timeout: 3 * time.Second,
 	}
 	conn, err := dialer.Dial("tcp", e.addr)
 	if err != nil {

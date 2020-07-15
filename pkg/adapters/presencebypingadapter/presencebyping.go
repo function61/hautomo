@@ -1,12 +1,16 @@
+// Deduces a person's presence by her device (e.g. cell phone). Turns out this is not a
+// good idea because aggressive power saving means the devices will miss ping requests
 package presencebypingadapter
 
 import (
+	"context"
+	"fmt"
 	"net"
 	"sync"
 	"time"
 
 	"github.com/function61/gokit/logex"
-	"github.com/function61/gokit/stopper"
+	"github.com/function61/gokit/taskrunner"
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
@@ -28,57 +32,52 @@ type Presence struct {
 	Present bool
 }
 
-func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
-	workers := stopper.NewManager()
-
+func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 	// this is a privileged operation, you need to set:
 	// "$ sudo sysctl 'net.ipv4.ping_group_range=0   27'"
 	icmpSocket, err := icmp.ListenPacket("udp4", "0.0.0.0")
 	if err != nil {
-		stop.Done() // TODO: have this done robustly?
 		return err
 	}
+	defer icmpSocket.Close()
 
 	forStamping := make(chan ProbeRequest, 16)
 	pingRequests := make(chan ProbeRequest, 16)
 	pingResponses := make(chan ProbeResponse, 16)
 
-	go tickerLoop(adapter.Conf, adapter, forStamping, pingResponses, workers.Stopper())
+	tasks := taskrunner.New(ctx, nil)
 
-	go pingSender(icmpSocket, pingRequests, adapter.Logl, workers.Stopper())
+	tasks.Start("tickerLoop", func(ctx context.Context) error {
+		return tickerLoop(ctx, adapter.Conf, adapter, forStamping, pingResponses)
+	})
 
-	go pingReceiver(icmpSocket, pingResponses, adapter.Logl, workers.Stopper())
+	tasks.Start("pingSender", func(ctx context.Context) error {
+		return pingSender(ctx, icmpSocket, pingRequests, adapter.Logl)
+	})
 
-	go func(stop *stopper.Stopper) {
-		defer stop.Done()
+	tasks.Start("pingReceiver", func(ctx context.Context) error {
+		return pingReceiver(ctx, icmpSocket, pingResponses, adapter.Logl)
+	})
 
-		inFlight := map[int]ProbeRequest{}
+	inFlight := map[int]ProbeRequest{}
 
-		for {
-			select {
-			case <-stop.Signal:
-				return
-			case in := <-pingResponses:
-				if input, has := inFlight[in.ID]; has {
-					close(input.GotReply)
-					delete(inFlight, in.ID)
-				}
-			case out := <-forStamping:
-				inFlight[out.PingPacket.ID] = out
-
-				pingRequests <- out
+	for {
+		select {
+		case <-ctx.Done():
+			return tasks.Wait()
+		case err := <-tasks.Done(): // subtask crash
+			return err
+		case in := <-pingResponses:
+			if input, has := inFlight[in.ID]; has {
+				close(input.GotReply)
+				delete(inFlight, in.ID)
 			}
+		case out := <-forStamping:
+			inFlight[out.PingPacket.ID] = out
+
+			pingRequests <- out
 		}
-	}(workers.Stopper())
-
-	go func() {
-		defer icmpSocket.Close()
-		defer stop.Done()
-		<-stop.Signal
-		workers.StopAllWorkersAndWait()
-	}()
-
-	return nil
+	}
 }
 
 func probePresence(
@@ -120,14 +119,12 @@ func probePresence(
 }
 
 func tickerLoop(
+	ctx context.Context,
 	config hapitypes.AdapterConfig,
 	adapter *hapitypes.Adapter,
 	forStamping chan<- ProbeRequest,
 	pingResponses chan<- ProbeResponse,
-	stop *stopper.Stopper,
-) {
-	defer stop.Done()
-
+) error {
 	personIdPresentMap := map[string]bool{}
 
 	probeCount := len(config.PresenceByPingDevice)
@@ -138,8 +135,8 @@ func tickerLoop(
 
 	for {
 		select {
-		case <-stop.Signal:
-			return
+		case <-ctx.Done():
+			return nil
 		case <-ticker.C:
 			// launch these in parallel
 			for _, pbpd := range config.PresenceByPingDevice {
@@ -165,16 +162,13 @@ func tickerLoop(
 }
 
 func pingReceiver(
+	ctx context.Context,
 	icmpSocket *icmp.PacketConn,
 	pingResponses chan<- ProbeResponse,
 	logl *logex.Leveled,
-	stop *stopper.Stopper,
-) {
-	defer stop.Done()
-	defer logl.Info.Println("pingReceiver stopped")
-
+) error {
 	go func() {
-		<-stop.Signal
+		<-ctx.Done()
 		icmpSocket.Close() // only way to unblock below ReadFrom()
 	}()
 
@@ -183,9 +177,12 @@ func pingReceiver(
 
 		bytesRead, peer, err := icmpSocket.ReadFrom(readBuffer)
 		if err != nil {
-			logl.Error.Printf("pingReceiver: stopping due to %s", err.Error())
-			// probably cannot read from socket anymore
-			return
+			select {
+			case <-ctx.Done(): // expected error
+				return nil
+			default: // unexpected error, probably cannot read from socket anymore
+				return err
+			}
 		}
 
 		// golang.org/x/net/internal/iana
@@ -208,24 +205,22 @@ func pingReceiver(
 				Timeout: false,
 			}
 		default:
+			// TODO: what's with the plus v?
 			logl.Debug.Printf("pingReceiver: got %+v; want echo reply", icmpMsg)
 		}
 	}
 }
 
 func pingSender(
+	ctx context.Context,
 	icmpSocket *icmp.PacketConn,
 	requests <-chan ProbeRequest,
 	logl *logex.Leveled,
-	stop *stopper.Stopper,
-) {
-	defer stop.Done()
-	defer logl.Info.Println("pingSender stopped")
-
+) error {
 	for {
 		select {
-		case <-stop.Signal:
-			return
+		case <-ctx.Done():
+			return nil
 		case req := <-requests:
 			echoRequest := icmp.Message{
 				Type: ipv4.ICMPTypeEcho,
@@ -234,9 +229,8 @@ func pingSender(
 			}
 
 			echoRequestBytes, err := echoRequest.Marshal(nil)
-			if err != nil {
-				logl.Error.Printf("pingSender: %s", err.Error())
-				return
+			if err != nil { // should not happen
+				return fmt.Errorf("echoRequest.Marshal: %w", err)
 			}
 
 			logl.Debug.Printf("pingSender: %s", req.IP.String())
@@ -244,9 +238,8 @@ func pingSender(
 			if _, err := icmpSocket.WriteTo(echoRequestBytes, &net.UDPAddr{
 				IP: req.IP,
 			}); err != nil {
-				logl.Error.Printf("pingSender: stopping due to %s", err.Error())
-				// probably cannot write to socket anymore
-				return
+				// probably cannot write to socket anymore, so stop whole operation
+				return err
 			}
 		}
 	}

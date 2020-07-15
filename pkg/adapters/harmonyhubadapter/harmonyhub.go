@@ -1,17 +1,15 @@
 package harmonyhubadapter
 
 import (
+	"context"
+
 	"github.com/function61/gokit/logex"
-	"github.com/function61/gokit/stopper"
+	"github.com/function61/gokit/taskrunner"
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"github.com/function61/hautomo/pkg/harmonyhub"
 )
 
-func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
-	// we cannot make hierarchical stoppers, but we can have "stop manager" inside a
-	// stopper - it achieves the same thing
-	stopManager := stopper.NewManager()
-
+func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 	harmonyhubEnableLogs := false
 
 	harmonyhubLogger := logex.Prefix("lib", adapter.Log)
@@ -20,38 +18,34 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 	}
 
 	harmonyHubConnection := harmonyhub.NewHarmonyHubConnection(
+		ctx,
 		adapter.Conf.HarmonyAddr,
-		harmonyhubLogger,
-		stopManager.Stopper())
+		harmonyhubLogger)
 
-	go func() {
-		defer stop.Done()
+	connTask := taskrunner.New(ctx, nil)
+	connTask.Start("conn", func(ctx context.Context) error {
+		return harmonyHubConnection.Task(ctx)
+	})
 
-		adapter.Logl.Info.Println("started")
-		defer adapter.Logl.Info.Println("stopped")
-
-		for {
-			select {
-			case <-stop.Signal:
-				adapter.Logl.Info.Println("stopping")
-				stopManager.StopAllWorkersAndWait()
-				return
-			case genericEvent := <-adapter.Outbound:
-				switch e := genericEvent.(type) {
-				case *hapitypes.PowerMsg:
-					if err := harmonyHubConnection.HoldAndRelease(e.DeviceId, e.PowerCommand); err != nil {
-						adapter.Logl.Error.Printf("HoldAndRelease: %s", err.Error())
-					}
-				case *hapitypes.InfraredEvent:
-					if err := harmonyHubConnection.HoldAndRelease(e.Device, e.Command); err != nil {
-						adapter.Logl.Error.Printf("HoldAndRelease: %s", err.Error())
-					}
-				default:
-					adapter.LogUnsupportedEvent(genericEvent)
+	for {
+		select {
+		case <-ctx.Done():
+			return connTask.Wait()
+		case err := <-connTask.Done(): // subtask crash
+			return err
+		case genericEvent := <-adapter.Outbound:
+			switch e := genericEvent.(type) {
+			case *hapitypes.PowerMsg:
+				if err := harmonyHubConnection.HoldAndRelease(e.DeviceId, e.PowerCommand); err != nil {
+					adapter.Logl.Error.Printf("HoldAndRelease: %s", err.Error())
 				}
+			case *hapitypes.InfraredEvent:
+				if err := harmonyHubConnection.HoldAndRelease(e.Device, e.Command); err != nil {
+					adapter.Logl.Error.Printf("HoldAndRelease: %s", err.Error())
+				}
+			default:
+				adapter.LogUnsupportedEvent(genericEvent)
 			}
 		}
-	}()
-
-	return nil
+	}
 }

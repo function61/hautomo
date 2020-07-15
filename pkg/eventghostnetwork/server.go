@@ -2,30 +2,19 @@ package eventghostnetwork
 
 import (
 	"bufio"
+	"context"
 	"io"
 	"log"
 	"net"
 	"strings"
-
-	"github.com/function61/gokit/stopper"
-	"github.com/function61/gokit/tcpkeepalive"
 )
 
 // you can give multiple passwords to differentiate between multiple computers
-func RunServer(passwords []string, events eventListener, stop *stopper.Stopper) error {
+func RunServer(ctx context.Context, passwords []string, events eventListener) error {
 	tcpListener, err := net.Listen("tcp", ":3762")
 	if err != nil {
 		return err
 	}
-
-	go func() {
-		defer stop.Done()
-		<-stop.Signal
-
-		if err := tcpListener.Close(); err != nil {
-			log.Printf("error closing tcpListener: %v", err)
-		}
-	}()
 
 	handleOneClient := func(conn net.Conn) {
 		if err := serverHandleClient(passwords, events, conn); err != nil {
@@ -33,10 +22,23 @@ func RunServer(passwords []string, events eventListener, stop *stopper.Stopper) 
 		}
 	}
 
+	go func() {
+		<-ctx.Done()
+
+		if err := tcpListener.Close(); err != nil {
+			log.Printf("error closing tcpListener: %v", err)
+		}
+	}()
+
 	for {
 		conn, err := tcpListener.Accept()
 		if err != nil {
-			return err // probably cannot Accept() anymore
+			select {
+			case <-ctx.Done():
+				return nil // error was expected, since we got cancelled
+			default:
+				return err // probably cannot Accept() anymore
+			}
 		}
 
 		go handleOneClient(conn)
@@ -44,10 +46,6 @@ func RunServer(passwords []string, events eventListener, stop *stopper.Stopper) 
 }
 
 func serverHandleClient(passwords []string, listener eventListener, conn net.Conn) error {
-	if err := tcpkeepalive.Enable(conn.(*net.TCPConn), tcpkeepalive.DefaultDuration); err != nil {
-		return err
-	}
-
 	client := newLineScanner(conn)
 
 	state := newServerStateMachine(passwords, listener)

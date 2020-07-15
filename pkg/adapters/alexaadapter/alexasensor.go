@@ -1,6 +1,7 @@
 package alexaadapter
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/function61/gokit/stopper"
 	"github.com/function61/hautomo/pkg/adapters/alexaadapter/alexadevicesync"
 	"github.com/function61/hautomo/pkg/hapitypes"
 )
@@ -47,9 +47,7 @@ type ColorTemperatureRequest struct {
 	ColorTemperatureInKelvin uint   `json:"colorTemperatureInKelvin"`
 }
 
-func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
-	defer stop.Done()
-
+func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 	if err := alexadevicesync.Sync(adapter.Conf, adapter.GetConfigFileDeprecated()); err != nil {
 		return fmt.Errorf("alexadevicesync: %s", err.Error())
 	}
@@ -63,28 +61,19 @@ func Start(adapter *hapitypes.Adapter, stop *stopper.Stopper) error {
 			""),
 	})
 
-	go func() {
-		defer stop.Done()
-
-		adapter.Logl.Info.Println("started")
-		defer adapter.Logl.Info.Println("stopped")
-
-		for {
-			select {
-			case <-stop.Signal:
-				return
-			default:
-			}
-
-			runOnce(sqsClient, adapter)
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
 		}
-	}()
 
-	return nil
+		runOnce(ctx, sqsClient, adapter)
+	}
 }
 
-func runOnce(sqsClient *sqs.SQS, adapter *hapitypes.Adapter) {
-	result, receiveErr := sqsClient.ReceiveMessage(&sqs.ReceiveMessageInput{
+func runOnce(ctx context.Context, sqsClient *sqs.SQS, adapter *hapitypes.Adapter) {
+	result, receiveErr := sqsClient.ReceiveMessageWithContext(ctx, &sqs.ReceiveMessageInput{
 		MaxNumberOfMessages: aws.Int64(10),
 		QueueUrl:            &adapter.Conf.SqsQueueUrl,
 		WaitTimeSeconds:     aws.Int64(10),
@@ -173,7 +162,9 @@ func runOnce(sqsClient *sqs.SQS, adapter *hapitypes.Adapter) {
 	}
 
 	if len(ackList) > 0 {
-		_, err := sqsClient.DeleteMessageBatch(&sqs.DeleteMessageBatchInput{
+		// intentionally background context, so we won't cancel this important operation
+		// if we get a stop
+		_, err := sqsClient.DeleteMessageBatchWithContext(context.Background(), &sqs.DeleteMessageBatchInput{
 			Entries:  ackList,
 			QueueUrl: &adapter.Conf.SqsQueueUrl,
 		})

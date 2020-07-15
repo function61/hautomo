@@ -1,6 +1,7 @@
 package harmonyhub
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
@@ -9,7 +10,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/function61/gokit/stopper"
 	"golang.org/x/net/html/charset"
 )
 
@@ -169,58 +169,61 @@ func (h *HarmonyHubConnection) connectAndDoTheDance() error {
 	return nil
 }
 
-func NewHarmonyHubConnection(addr string, logger *log.Logger, stop *stopper.Stopper) *HarmonyHubConnection {
-	defer stop.Done()
-
+// it is the caller's responsibility to start Task() goroutine to service the connection
+func NewHarmonyHubConnection(
+	ctx context.Context,
+	addr string,
+	logger *log.Logger,
+) *HarmonyHubConnection {
 	harmonyHubConnection := &HarmonyHubConnection{
 		addr:      addr,
 		connected: false,
 		logger:    logger,
 	}
 
+	return harmonyHubConnection
+}
+
+func (h *HarmonyHubConnection) Task(ctx context.Context) error {
 	keepaliveTicker := time.NewTicker(20 * time.Second)
 
 	// hub disconnects us in 60s unless we send application level
 	// keepalives (line breaks). TCP level keepalives didn't seem to work.
-	go func() {
-		for {
-			select {
-			case <-stop.Signal:
-				harmonyHubConnection.logger.Println("stopping")
-				keepaliveTicker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			h.logger.Println("stopping")
+			keepaliveTicker.Stop()
 
-				if harmonyHubConnection.connected {
-					if err := harmonyHubConnection.EndStream(); err != nil {
-						harmonyHubConnection.logger.Printf("EndStream: %v", err)
-					}
-				}
-				return
-			case <-time.After(1 * time.Second):
-				if !harmonyHubConnection.connected {
-					harmonyHubConnection.logger.Println("connecting..")
-
-					if err := harmonyHubConnection.connectAndDoTheDance(); err != nil {
-						harmonyHubConnection.logger.Printf("connect failed: %s", err.Error())
-					} else {
-						harmonyHubConnection.connected = true
-					}
-				}
-			case <-keepaliveTicker.C:
-				if !harmonyHubConnection.connected {
-					continue
-				}
-
-				// not using Send() to suppress debug logging,
-				// and this is not application level stuff anyway
-				if _, err := harmonyHubConnection.conn.Write([]byte("\n")); err != nil {
-					harmonyHubConnection.logger.Printf("failed to send keepalive newline: %s", err.Error())
-					break
+			if h.connected {
+				if err := h.EndStream(); err != nil {
+					h.logger.Printf("EndStream: %v", err)
 				}
 			}
-		}
-	}()
+			return nil
+		case <-time.After(1 * time.Second):
+			if !h.connected {
+				h.logger.Println("connecting..")
 
-	return harmonyHubConnection
+				if err := h.connectAndDoTheDance(); err != nil {
+					h.logger.Printf("connect failed: %s", err.Error())
+				} else {
+					h.connected = true
+				}
+			}
+		case <-keepaliveTicker.C:
+			if !h.connected {
+				continue
+			}
+
+			// not using Send() to suppress debug logging,
+			// and this is not application level stuff anyway
+			if _, err := h.conn.Write([]byte("\n")); err != nil {
+				h.logger.Printf("failed to send keepalive newline: %s", err.Error())
+				break
+			}
+		}
+	}
 }
 
 func prettyXmlName(name xml.Name) string {
