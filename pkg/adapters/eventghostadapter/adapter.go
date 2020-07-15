@@ -22,7 +22,7 @@ type DeviceConn struct {
 }
 
 func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
-	serverAndClientConnections := taskrunner.New(ctx, nil)
+	serverAndClientConnections := taskrunner.New(ctx, adapter.Log)
 
 	// connect client to all computers we wish to send EventGhost commands to
 	passwordToDeviceId, clientConns, err := readConfAndConnectToClients(adapter, func(eventghostAddr string, eventghostSecret string, deviceConn *DeviceConn) {

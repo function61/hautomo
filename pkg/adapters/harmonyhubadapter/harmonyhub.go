@@ -22,7 +22,7 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 		adapter.Conf.HarmonyAddr,
 		harmonyhubLogger)
 
-	connTask := taskrunner.New(ctx, nil)
+	connTask := taskrunner.New(ctx, adapter.Log)
 	connTask.Start("conn", func(ctx context.Context) error {
 		return harmonyHubConnection.Task(ctx)
 	})

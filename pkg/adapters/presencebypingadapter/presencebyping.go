@@ -45,7 +45,7 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 	pingRequests := make(chan ProbeRequest, 16)
 	pingResponses := make(chan ProbeResponse, 16)
 
-	tasks := taskrunner.New(ctx, nil)
+	tasks := taskrunner.New(ctx, adapter.Log)
 
 	tasks.Start("tickerLoop", func(ctx context.Context) error {
 		return tickerLoop(ctx, adapter.Conf, adapter, forStamping, pingResponses)
