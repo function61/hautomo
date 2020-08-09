@@ -38,7 +38,7 @@ func NewApplication(logger *log.Logger) *Application {
 		deviceById:    map[string]*hapitypes.Device{},
 		subscriptions: map[string]*hapitypes.SubscribeConfig{},
 		powerManager:  NewPowerManager(),
-		inbound:       hapitypes.NewInboundFabric(),
+		inbound:       hapitypes.NewInboundFabric(logex.Levels(logger)),
 		booleans:      NewBooleanStorage("anybodyHome", "environmentHasLight"),
 		constMetrics:  constmetrics.NewCollector(),
 		logl:          logex.Levels(logger),

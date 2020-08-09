@@ -139,8 +139,18 @@ func (a *Adapter) GetConfigFileDeprecated() *ConfigFile {
 }
 
 func (a *Adapter) Send(e OutboundEvent) {
-	// TODO: log warning if queue full?
-	a.Outbound <- e
+	select {
+	case a.Outbound <- e:
+	default:
+		a.Logl.Error.Printf(
+			"Adapter.Send for %s blocks because buffer (%d) is full. Unless adapter drains soon, expect severe problems.",
+			a.Conf.Id,
+			cap(a.Outbound))
+
+		// don't drop messages, this will probably block for a while (or indefinitely, if
+		// adapter is stuck)
+		a.Outbound <- e
+	}
 }
 
 func (a *Adapter) Receive(e InboundEvent) {
