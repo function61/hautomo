@@ -425,7 +425,7 @@ func configureAppAndStartAdapters(
 	for _, adapterConf := range conf.Adapters {
 		initFn, ok := adapters[adapterConf.Type]
 		if !ok {
-			return errors.New("unkown adapter: " + adapterConf.Type)
+			return fmt.Errorf("unkown adapter: %s", adapterConf.Type)
 		}
 
 		adapter := hapitypes.NewAdapter(
@@ -540,7 +540,7 @@ func runServer(ctx context.Context, logger *log.Logger) error {
 	tasks.Start("app", func(ctx context.Context) error { return app.task(ctx) })
 
 	if err := configureAppAndStartAdapters(app, conf, logger, tasks); err != nil {
-		return err
+		return fmt.Errorf("configureAppAndStartAdapters: %w", err)
 	}
 
 	srv := makeHttpServer(app, conf)

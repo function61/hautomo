@@ -7,7 +7,12 @@ type TemperatureHumidityPressureEvent struct {
 	Pressure    float64
 }
 
-func NewTemperatureHumidityPressureEvent(deviceId string, temperature float64, humidity float64, pressure float64) *TemperatureHumidityPressureEvent {
+func NewTemperatureHumidityPressureEvent(
+	deviceId string,
+	temperature float64,
+	humidity float64,
+	pressure float64,
+) *TemperatureHumidityPressureEvent {
 	return &TemperatureHumidityPressureEvent{
 		Device:      deviceId,
 		Temperature: temperature,

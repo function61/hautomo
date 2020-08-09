@@ -6,7 +6,7 @@ type PresenceByPingDevice struct {
 }
 
 // always prefix your keys with <type> of your adapter.
-// <type> should be same as pkg/adapters/<name>adapter (without the "adapter" suffix).
+// <type> should be same as pkg/adapters/<name>adapter/ (without the "adapter" suffix).
 
 type AdapterConfig struct {
 	Id   string `json:"id"`

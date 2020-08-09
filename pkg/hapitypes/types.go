@@ -133,6 +133,7 @@ func NewAdapter(conf AdapterConfig, confFile *ConfigFile, inbound *InboundFabric
 }
 
 // FIXME: remove the need for this
+// some adapters need this when they need to reflect on their own / all devices
 func (a *Adapter) GetConfigFileDeprecated() *ConfigFile {
 	return a.confFile
 }
