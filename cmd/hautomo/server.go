@@ -451,6 +451,13 @@ func configureAppAndStartAdapters(
 			return fmt.Errorf("duplicate device id %s", deviceConf.DeviceId)
 		}
 
+		if _, found := app.adapterById[deviceConf.AdapterId]; !found {
+			return fmt.Errorf(
+				"device %s linked adapter '%s' not found",
+				deviceConf.DeviceId,
+				deviceConf.AdapterId)
+		}
+
 		snapshot, snapshotFound := statefile.Devices[deviceConf.DeviceId]
 		if !snapshotFound {
 			snapshot = hapitypes.DeviceStateSnapshot{
