@@ -192,6 +192,24 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 			device.Conf.AdaptersDeviceId,
 			e.Brightness,
 			device.LastColor))
+	case *hapitypes.SpeakEvent:
+		device := a.deviceById[e.Device]
+		adapter := a.adapterById[device.Conf.AdapterId]
+
+		url, err := a.textToSpeech(e.Message)
+		if err != nil {
+			a.logl.Error.Printf("textToSpeech: %v", err)
+			return
+		}
+
+		if somebodyMightBeSleeping() {
+			a.logl.Info.Println("suppressing speak due to somebodyMightBeSleeping")
+			return
+		}
+
+		adapter.Send(hapitypes.NewPlaySoundEvent(
+			device.Conf.AdaptersDeviceId,
+			url))
 	case *hapitypes.PlaybackEvent:
 		device := a.deviceById[e.Device]
 		adapter := a.adapterById[device.Conf.AdapterId]
@@ -354,6 +372,8 @@ func (a *Application) runAction(action hapitypes.ActionConfig) error {
 		a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindToggle, true))
 	case "blink":
 		a.inbound.Receive(hapitypes.NewBlinkEvent(action.Device))
+	case "speak":
+		a.inbound.Receive(hapitypes.NewSpeakEvent(action.Device, action.SpeakPhrase))
 	case "setBooleanTrue":
 		fallthrough
 	case "setBooleanFalse":
@@ -387,6 +407,10 @@ func (a *Application) runAction(action hapitypes.ActionConfig) error {
 	}
 
 	return nil
+}
+
+func (a *Application) textToSpeech(message string) (string, error) {
+	return "", errors.New("not implemented")
 }
 
 func configureAppAndStartAdapters(

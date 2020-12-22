@@ -166,3 +166,13 @@ func bptr(b bool) *bool {
 		return falsep
 	}
 }
+
+func somebodyMightBeSleeping() bool {
+	hour := time.Now().Local().Hour()
+
+	if hour >= 8 && hour <= 21 {
+		return false
+	} else {
+		return true
+	}
+}

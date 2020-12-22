@@ -63,12 +63,13 @@ type Person struct {
 
 type ActionConfig struct {
 	Device          string `json:"device"`
-	Verb            string `json:"verb"`             // powerOn/powerOff/powerToggle/blink/ir/setBooleanFalse/setBooleanTrue/sleep/playback/notify
+	Verb            string `json:"verb"`             // powerOn/powerOff/powerToggle/blink/ir/setBooleanFalse/setBooleanTrue/sleep/playback/notify/speak
 	IrCommand       string `json:"ir_command"`       // used by: ir
 	Boolean         string `json:"boolean"`          // used by: setBooleanTrue/setBooleanFalse
 	DurationSeconds int    `json:"duration_seconds"` // used by: sleep
 	PlaybackAction  string `json:"playback_action"`  // used by: playback
 	NotifyMessage   string `json:"notify_message"`   // used by: notify
+	SpeakPhrase     string `json:"speak_phrase"`     // used by: speak
 }
 
 type ConditionConfig struct {
