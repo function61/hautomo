@@ -25,6 +25,11 @@ func parseMsgPayload(topicName string, resolver deviceResolver, message string, 
 	// "zigbee2mqtt/0x00158d000227a73c" => "0x00158d000227a73c"
 	foreignId := topicName[len(z2mTopicPrefix):]
 
+	if foreignId == "bridge/log" { // bridge's log messages
+		// prevent log filling with "device bridge/log unrecognized" messages
+		return nil, nil
+	}
+
 	resolved := resolver(foreignId)
 	if resolved == nil {
 		return nil, fmt.Errorf("device %s unrecognized", foreignId)
