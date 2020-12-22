@@ -32,7 +32,20 @@ type AdapterConfig struct {
 
 	PresenceByPingDevice []PresenceByPingDevice `json:"presencebypingdevice"`
 
+	RssFeeds           []RssFeed           `json:"rssfeed"`
+	UrlChangeDetectors []UrlChangeDetector `json:"url_change_detector"`
+
 	DevicegroupDevices []string `json:"devicegroup_devs"`
+}
+
+type RssFeed struct {
+	Id  string `json:"id"`
+	Url string `json:"url"`
+}
+
+type UrlChangeDetector struct {
+	Id  string `json:"id"`
+	Url string `json:"url"`
 }
 
 type DeviceConfig struct {

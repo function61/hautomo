@@ -13,6 +13,7 @@ require (
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
 	github.com/lucasb-eyer/go-colorful v1.0.2
 	github.com/matttproud/golang_protobuf_extensions v1.0.1
+	github.com/mmcdole/gofeed v1.0.0
 	github.com/prometheus/client_golang v1.1.0
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.9.1

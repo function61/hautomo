@@ -8,6 +8,7 @@ import (
 	"github.com/function61/hautomo/pkg/adapters/dummyadapter"
 	"github.com/function61/hautomo/pkg/adapters/eventghostadapter"
 	"github.com/function61/hautomo/pkg/adapters/harmonyhubadapter"
+	"github.com/function61/hautomo/pkg/adapters/homeassistantadapter"
 	"github.com/function61/hautomo/pkg/adapters/ikeatradfriadapter"
 	"github.com/function61/hautomo/pkg/adapters/irsimulatoradapter"
 	"github.com/function61/hautomo/pkg/adapters/lircadapter"
@@ -28,6 +29,7 @@ var adapters = map[string]AdapterInitFn{
 	"eventghost":     eventghostadapter.Start,
 	"triones":        trionesadapter.Start,
 	"harmony":        harmonyhubadapter.Start,
+	"home-assistant": homeassistantadapter.Start,
 	"ikea_tradfri":   ikeatradfriadapter.Start,
 	"zigbee2mqtt":    zigbee2mqttadapter.Start,
 	"irsimulator":    irsimulatoradapter.Start,
