@@ -66,6 +66,17 @@ func makeHttpServer(app *Application, conf *hapitypes.ConfigFile) *http.Server {
 		_ = enc.Encode(conf)
 	})
 
+	// to easily trigger debug events ...
+	http.HandleFunc("/debug", func(w http.ResponseWriter, r *http.Request) {
+		// ... so you can test your actions by subscribing to debug event
+		arg := r.URL.Query().Get("arg")
+		if arg == "" {
+			app.publish("debug")
+		} else {
+			app.publish("debug:" + arg)
+		}
+	})
+
 	http.Handle("/metrics", promhttp.Handler())
 
 	http.HandleFunc("/ui", func(w http.ResponseWriter, r *http.Request) {
