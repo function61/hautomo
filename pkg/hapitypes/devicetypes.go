@@ -139,6 +139,10 @@ var deviceTypes = map[string]*DeviceType{
 			Playback: true,
 		},
 	},
+	"screen-server:screen": &DeviceType{
+		Name:         "Screen-server screen",
+		Manufacturer: "function61.com",
+	},
 }
 
 func ResolveDeviceType(t string) (*DeviceType, error) {

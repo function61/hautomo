@@ -13,6 +13,7 @@ import (
 	"github.com/function61/hautomo/pkg/adapters/lircadapter"
 	"github.com/function61/hautomo/pkg/adapters/particleadapter"
 	"github.com/function61/hautomo/pkg/adapters/presencebypingadapter"
+	"github.com/function61/hautomo/pkg/adapters/screenserveradapter"
 	"github.com/function61/hautomo/pkg/adapters/sonoffadapter"
 	"github.com/function61/hautomo/pkg/adapters/trionesadapter"
 	"github.com/function61/hautomo/pkg/adapters/zigbee2mqttadapter"
@@ -34,5 +35,6 @@ var adapters = map[string]AdapterInitFn{
 	"particle":       particleadapter.Start,
 	"presencebyping": presencebypingadapter.Start,
 	"sonoff":         sonoffadapter.Start,
+	"screen-server":  screenserveradapter.Start,
 	"sqs":            alexaadapter.Start,
 }
