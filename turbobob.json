@@ -14,16 +14,6 @@
 			}
 		},
 		{
-			"name": "alexaconnector",
-			"uses": "dockerfile://build-alexaconnector.Dockerfile",
-			"mount_source": "lambda-alexa-connector",
-			"mount_destination": "/app",
-			"commands": {
-				"dev": ["bash"]
-			},
-			"contextless_build": true
-		},
-		{
 			"name": "publisher",
 			"uses": "docker://fn61/buildkit-publisher:20190206_1058_d35b3939",
 			"mount_destination": "/workspace",
