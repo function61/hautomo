@@ -12,7 +12,7 @@ func TestCreateAlexaConnectorSpec(t *testing.T) {
 	conf := &hapitypes.ConfigFile{
 		Adapters: []hapitypes.AdapterConfig{
 			{
-				SqsQueueUrl:           "http://dummy.com/queue",
+				Url:                   "http://dummy.com/queue",
 				SqsAlexaUsertokenHash: "usertokenhash",
 			},
 		},

@@ -118,7 +118,7 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 	subTasks := taskrunner.New(ctx, adapter.Log)
 	subTasks.Start("reconnect-loop", func(ctx context.Context) error {
 		for {
-			err := mqttConnection(ctx, adapter.Conf.Zigbee2MqttAddr, m2qttDeviceObserver, z2mPublish)
+			err := mqttConnection(ctx, adapter.Conf.Url, m2qttDeviceObserver, z2mPublish)
 
 			select {
 			case <-ctx.Done():

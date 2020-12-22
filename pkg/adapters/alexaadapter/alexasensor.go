@@ -51,7 +51,7 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 func runOnce(ctx context.Context, sqsClient *sqs.SQS, adapter *hapitypes.Adapter) error {
 	result, receiveErr := sqsClient.ReceiveMessageWithContext(ctx, &sqs.ReceiveMessageInput{
 		MaxNumberOfMessages: aws.Int64(10),
-		QueueUrl:            &adapter.Conf.SqsQueueUrl,
+		QueueUrl:            &adapter.Conf.Url,
 		WaitTimeSeconds:     aws.Int64(10), // use long-polling
 	})
 
@@ -115,7 +115,7 @@ func runOnce(ctx context.Context, sqsClient *sqs.SQS, adapter *hapitypes.Adapter
 		// if we happen to get a stop
 		_, err := sqsClient.DeleteMessageBatchWithContext(context.Background(), &sqs.DeleteMessageBatchInput{
 			Entries:  ackList,
-			QueueUrl: &adapter.Conf.SqsQueueUrl,
+			QueueUrl: &adapter.Conf.Url,
 		})
 
 		if err != nil {

@@ -9,7 +9,7 @@ import (
 
 func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 	coapClient := ikeatradfri.NewCoapClient(
-		adapter.Conf.TradfriUrl,
+		adapter.Conf.Url,
 		adapter.Conf.TradfriUser,
 		adapter.Conf.TradfriPsk)
 

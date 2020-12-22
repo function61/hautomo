@@ -49,7 +49,7 @@ func Sync(sqsAdapter hapitypes.AdapterConfig, conf *hapitypes.ConfigFile) error 
 }
 
 func createAlexaConnectorSpec(sqsAdapter hapitypes.AdapterConfig, conf *hapitypes.ConfigFile) (*AlexaConnectorSpec, error) {
-	if sqsAdapter.SqsQueueUrl == "" || sqsAdapter.SqsAlexaUsertokenHash == "" {
+	if sqsAdapter.Url == "" || sqsAdapter.SqsAlexaUsertokenHash == "" {
 		return nil, errors.New("invalid configuration for SyncToAlexaConnector")
 	}
 
@@ -88,7 +88,7 @@ func createAlexaConnectorSpec(sqsAdapter hapitypes.AdapterConfig, conf *hapitype
 	}
 
 	return &AlexaConnectorSpec{
-		Queue:   sqsAdapter.SqsQueueUrl,
+		Queue:   sqsAdapter.Url,
 		Devices: devices,
 	}, nil
 }

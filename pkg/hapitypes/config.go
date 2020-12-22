@@ -12,23 +12,20 @@ type AdapterConfig struct {
 	Id   string `json:"id"`
 	Type string `json:"type"`
 
+	// generic attributes usable by many adapters
+	Url string `json:"url"` // (or base URL), used by: alexa | screenserver | homeassistant | tradfi | zigbee2mqtt | harmonyhub
+
 	ParticleId          string `json:"particle_id,omitempty"`
 	ParticleAccessToken string `json:"particle_access_token,omitempty"`
 
-	HarmonyAddr string `json:"harmony_addr,omitempty"`
-
-	SqsQueueUrl           string `json:"sqs_queue_url,omitempty"`
-	SqsKeyId              string `json:"sqs_key_id,omitempty"`
-	SqsKeySecret          string `json:"sqs_key_secret,omitempty"`
-	SqsAlexaUsertokenHash string `json:"sqs_alexa_usertoken_hash,omitempty"`
+	SqsKeyId                string `json:"sqs_key_id,omitempty"`
+	SqsKeySecret            string `json:"sqs_key_secret,omitempty"`
+	SqsAlexaUsertokenHash   string `json:"sqs_alexa_usertoken_hash,omitempty"`
 
 	IrSimulatorKey string `json:"irsimulator_button,omitempty"`
 
-	TradfriUrl  string `json:"tradfri_url"`
 	TradfriUser string `json:"tradfri_user"`
 	TradfriPsk  string `json:"tradfri_psk"`
-
-	Zigbee2MqttAddr string `json:"zigbee2mqtt_addr"`
 
 	PresenceByPingDevice []PresenceByPingDevice `json:"presencebypingdevice"`
 

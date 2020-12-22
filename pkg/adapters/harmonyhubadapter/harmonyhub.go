@@ -19,7 +19,7 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 
 	harmonyHubConnection := harmonyhub.NewHarmonyHubConnection(
 		ctx,
-		adapter.Conf.HarmonyAddr,
+		adapter.Conf.Url,
 		harmonyhubLogger)
 
 	connTask := taskrunner.New(ctx, adapter.Log)
