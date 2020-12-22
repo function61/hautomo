@@ -5,6 +5,8 @@ package alexaadapter
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -13,37 +15,97 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/function61/gokit/taskrunner"
 	"github.com/function61/hautomo/pkg/adapters/alexaadapter/aamessages"
 	"github.com/function61/hautomo/pkg/adapters/alexaadapter/alexadevicesync"
 	"github.com/function61/hautomo/pkg/hapitypes"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/amazon"
 )
 
 // Start the event receiver side. Take serialized commands from SQS and translate them
 // into explicit commands for Hautomo to handle
 func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
-	// at the start, sync our (Alexa-compatible) device registry into the connector running
-	// in Lambda, so we can receive commands for them
-	if err := alexadevicesync.Sync(adapter.Conf, adapter.GetConfigFileDeprecated()); err != nil {
-		return fmt.Errorf("alexadevicesync: %s", err.Error())
+	oauth2AppConfig := &oauth2.Config{
+		ClientID:     adapter.Conf.AlexaOauth2ClientId,
+		ClientSecret: adapter.Conf.AlexaOauth2ClientSecret,
+
+		Endpoint: amazon.Endpoint,
 	}
 
-	sqsClient := sqs.New(session.Must(session.NewSession()), &aws.Config{
-		Region: aws.String(endpoints.UsEast1RegionID),
-		Credentials: credentials.NewStaticCredentials(
-			adapter.Conf.SqsKeyId,
-			adapter.Conf.SqsKeySecret,
-			""),
+	if oauth2AppConfig.ClientID == "" || oauth2AppConfig.ClientSecret == "" {
+		return errors.New("AlexaOauth2ClientId or AlexaOauth2ClientSecret empty")
+	}
+
+	alexaUserToken, err := func() (*oauth2.Token, error) {
+		if adapter.Conf.AlexaOauth2UserToken == "" {
+			return nil, errors.New("empty AlexaOauth2UserToken")
+		}
+
+		tok := &oauth2.Token{}
+		return tok, json.Unmarshal([]byte(adapter.Conf.AlexaOauth2UserToken), tok)
+	}()
+	if err != nil {
+		return err
+	}
+
+	// at the start, sync our (Alexa-compatible) device registry into the connector running
+	// in Lambda, so we can receive commands for them
+	if adapter.Conf.SqsAlexaUsertokenHash != "" {
+		if err := alexadevicesync.Sync(adapter.Conf, adapter.GetConfigFileDeprecated()); err != nil {
+			return fmt.Errorf("alexadevicesync: %w", err)
+		}
+	}
+
+	subTasks := taskrunner.New(ctx, adapter.Log)
+	subTasks.Start("sqs-poller", func(ctx context.Context) error {
+		if adapter.Conf.Url == "" {
+			<-ctx.Done()
+			return nil
+		}
+
+		sqsClient := sqs.New(session.Must(session.NewSession()), &aws.Config{
+			Region: aws.String(endpoints.UsEast1RegionID),
+			Credentials: credentials.NewStaticCredentials(
+				adapter.Conf.SqsKeyId,
+				adapter.Conf.SqsKeySecret,
+				""),
+		})
+
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			default:
+				// only returns stop-worthy errors, and logs non-severe ones
+				if err := runOnce(ctx, sqsClient, adapter); err != nil {
+					return err // stop ("crash")
+				}
+			}
+		}
 	})
+
+	// we make an assumption that we only control one Alexa user's account
+	alexaUserClient := oauth2AppConfig.Client(context.TODO(), alexaUserToken)
 
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
-		default:
-		}
-
-		if err := runOnce(ctx, sqsClient, adapter); err != nil {
+			return subTasks.Wait()
+		case err := <-subTasks.Done(): // subtask crash
 			return err // stop ("crash")
+		case genericEvent := <-adapter.Outbound:
+			switch e := genericEvent.(type) {
+			case *hapitypes.NotificationEvent:
+				// convert into contact sensor event. this is an ugly hack, because contact
+				// and movement sensors are only event sources we can base routine triggers in
+				// ATM.
+				if err := sendContactSensorEvent(ctx, e.Device, false, alexaUserClient); err != nil {
+					adapter.Logl.Error.Printf("sendContactSensorEvent: %v", err)
+				}
+			default:
+				adapter.LogUnsupportedEvent(genericEvent)
+			}
 		}
 	}
 }

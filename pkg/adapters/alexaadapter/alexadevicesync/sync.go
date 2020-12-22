@@ -2,9 +2,11 @@ package alexadevicesync
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -29,10 +31,11 @@ type AlexaConnectorSpec struct {
 
 // https://developer.amazon.com/docs/device-apis/alexa-discovery.html#display-categories
 var supportedDisplayCategories = map[string]bool{
-	"LIGHT":     true,
-	"SPEAKER":   true,
-	"TV":        true,
-	"SMARTPLUG": true,
+	"LIGHT":          true,
+	"SPEAKER":        true,
+	"TV":             true,
+	"SMARTPLUG":      true,
+	"CONTACT_SENSOR": true,
 }
 
 func Sync(sqsAdapter hapitypes.AdapterConfig, conf *hapitypes.ConfigFile) error {
@@ -77,6 +80,10 @@ func createAlexaConnectorSpec(sqsAdapter hapitypes.AdapterConfig, conf *hapitype
 		maybePushCap(&alexaCapabilities, caps.Color, "ColorController")
 		maybePushCap(&alexaCapabilities, caps.ColorTemperature, "ColorTemperatureController")
 		maybePushCap(&alexaCapabilities, caps.Playback, "PlaybackController")
+		// custom trigger gets in Alexa:
+		// - outbound support via PowerController
+		// - inbound support via ContactSensor
+		maybePushCap(&alexaCapabilities, caps.VirtualSwitch, "Hautomo.VirtualDummyAlexaTrigger")
 
 		devices = append(devices, AlexaConnectorDevice{
 			Id:              device.DeviceId,
@@ -93,7 +100,12 @@ func createAlexaConnectorSpec(sqsAdapter hapitypes.AdapterConfig, conf *hapitype
 	}, nil
 }
 
-func uploadAlexaConnectorSpec(userTokenHash string, spec AlexaConnectorSpec, accessKeyId string, accessKeySecret string) error {
+func uploadAlexaConnectorSpec(
+	userId string,
+	spec AlexaConnectorSpec,
+	accessKeyId string,
+	accessKeySecret string,
+) error {
 	jsonBytes, errJson := json.MarshalIndent(&spec, "", "  ")
 	if errJson != nil {
 		return errJson
@@ -104,9 +116,9 @@ func uploadAlexaConnectorSpec(userTokenHash string, spec AlexaConnectorSpec, acc
 		Credentials: credentials.NewStaticCredentials(accessKeyId, accessKeySecret, ""),
 	})
 
-	_, err := svc.PutObject(&s3.PutObjectInput{
+	_, err := svc.PutObjectWithContext(context.TODO(), &s3.PutObjectInput{
 		Bucket:      aws.String("homeautomation.function61.com"),
-		Key:         aws.String("discovery/" + userTokenHash + ".json"),
+		Key:         aws.String(fmt.Sprintf("discovery/%s.json", userId)),
 		Body:        bytes.NewReader(jsonBytes),
 		ContentType: aws.String("application/json"),
 	})

@@ -3,9 +3,10 @@ module github.com/function61/hautomo
 go 1.14
 
 require (
+	github.com/aws/aws-lambda-go v1.13.2
 	github.com/aws/aws-sdk-go v1.25.19
 	github.com/beorn7/perks v1.0.1
-	github.com/function61/gokit v0.0.0-20200715070651-130cbb52f855
+	github.com/function61/gokit v0.0.0-20200715130529-d3e870268fc9
 	github.com/golang/protobuf v1.3.2
 	github.com/hashicorp/hcl v1.0.0
 	github.com/inconshreveable/mousetrap v1.0.0

@@ -21,6 +21,9 @@ type AdapterConfig struct {
 	SqsKeyId                string `json:"sqs_key_id,omitempty"`
 	SqsKeySecret            string `json:"sqs_key_secret,omitempty"`
 	SqsAlexaUsertokenHash   string `json:"sqs_alexa_usertoken_hash,omitempty"`
+	AlexaOauth2ClientId     string `json:"alexa_oauth2_client_id"`
+	AlexaOauth2ClientSecret string `json:"alexa_oauth2_client_secret"`
+	AlexaOauth2UserToken    string `json:"alexa_oauth2_user_token"`
 
 	IrSimulatorKey string `json:"irsimulator_button,omitempty"`
 

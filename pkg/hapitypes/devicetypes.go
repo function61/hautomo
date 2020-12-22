@@ -143,6 +143,14 @@ var deviceTypes = map[string]*DeviceType{
 		Name:         "Screen-server screen",
 		Manufacturer: "function61.com",
 	},
+	"virtual-switch": &DeviceType{
+		Name:         "Virtual switch",
+		Manufacturer: "function61.com",
+		Capabilities: Capabilities{
+			Power:         true,
+			VirtualSwitch: true,
+		},
+	},
 }
 
 func ResolveDeviceType(t string) (*DeviceType, error) {
@@ -171,4 +179,5 @@ type Capabilities struct {
 	ColorSeparateWhiteChannel bool `json:"color_separate_white_channel"`
 	Playback                  bool `json:"playback"`
 	ReportsTemperature        bool `json:"reports_temperature"`
+	VirtualSwitch             bool `json:"virtual_switch"` // can send fake contact sensor triggers to Alexa to trigger routines
 }
