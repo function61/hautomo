@@ -351,7 +351,7 @@ func (a *Application) runAction(action hapitypes.ActionConfig) error {
 	case "powerOff":
 		a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindOff, false))
 	case "powerToggle":
-		a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindToggle, false))
+		a.inbound.Receive(hapitypes.NewPowerEvent(action.Device, hapitypes.PowerKindToggle, true))
 	case "blink":
 		a.inbound.Receive(hapitypes.NewBlinkEvent(action.Device))
 	case "setBooleanTrue":
