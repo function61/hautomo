@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/function61/gokit/logex"
-	"github.com/function61/gokit/taskrunner"
+	"github.com/function61/gokit/log/logex"
+	"github.com/function61/gokit/sync/taskrunner"
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"

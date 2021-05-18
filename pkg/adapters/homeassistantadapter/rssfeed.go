@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/function61/gokit/ezhttp"
-	"github.com/function61/gokit/logex"
-	"github.com/function61/gokit/stringutils"
+	"github.com/function61/gokit/log/logex"
+	"github.com/function61/gokit/net/http/ezhttp"
+	"github.com/function61/gokit/strings/stringutils"
 	"github.com/function61/hautomo/pkg/homeassistant"
 	"github.com/mmcdole/gofeed"
 )

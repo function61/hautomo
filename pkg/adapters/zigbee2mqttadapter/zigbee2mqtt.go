@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/function61/gokit/taskrunner"
+	"github.com/function61/gokit/sync/taskrunner"
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"github.com/yosssi/gmq/mqtt"
 	"github.com/yosssi/gmq/mqtt/client"

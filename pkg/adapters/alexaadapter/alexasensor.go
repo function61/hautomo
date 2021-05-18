@@ -15,7 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/function61/gokit/taskrunner"
+	"github.com/function61/gokit/sync/taskrunner"
 	"github.com/function61/hautomo/pkg/adapters/alexaadapter/aamessages"
 	"github.com/function61/hautomo/pkg/adapters/alexaadapter/alexadevicesync"
 	"github.com/function61/hautomo/pkg/hapitypes"

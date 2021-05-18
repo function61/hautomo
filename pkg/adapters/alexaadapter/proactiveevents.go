@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/function61/gokit/cryptorandombytes"
-	"github.com/function61/gokit/ezhttp"
+	"github.com/function61/gokit/crypto/cryptoutil"
+	"github.com/function61/gokit/net/http/ezhttp"
 	"github.com/function61/hautomo/pkg/alexatypes"
 )
 
@@ -58,7 +58,7 @@ func sendContactSensorEvent(
 				Namespace:      "Alexa",
 				Name:           "ChangeReport",
 				PayloadVersion: "3",
-				MessageId:      cryptorandombytes.Hex(8),
+				MessageId:      cryptoutil.RandHex(8),
 			},
 			Endpoint: &alexatypes.Endpoint{
 				// docs say "scope" should be defined, but it works without it.. building

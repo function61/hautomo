@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/function61/gokit/ezhttp"
+	"github.com/function61/gokit/net/http/ezhttp"
 )
 
 type valueChangeDetector struct {

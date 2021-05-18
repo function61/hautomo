@@ -7,7 +7,7 @@ import (
 	"log"
 
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/function61/gokit/osutil"
+	"github.com/function61/gokit/os/osutil"
 	"github.com/function61/hautomo/pkg/adapters/alexaadapter/alexaconnector"
 )
 

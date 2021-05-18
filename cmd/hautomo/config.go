@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/function61/gokit/hcl2json"
-	"github.com/function61/gokit/jsonfile"
+	"github.com/function61/gokit/encoding/hcl2json"
+	"github.com/function61/gokit/encoding/jsonfile"
 	"github.com/function61/hautomo/pkg/hapitypes"
 )
 
@@ -28,7 +28,7 @@ func parseConfiguration(hclContent io.Reader) (*hapitypes.ConfigFile, error) {
 	}
 
 	conf := &hapitypes.ConfigFile{}
-	return conf, jsonfile.Unmarshal(hclAsJson, conf, true)
+	return conf, jsonfile.UnmarshalDisallowUnknownFields(hclAsJson, conf)
 }
 
 func readAllConfFilesMerged() (io.Reader, func(), error) {

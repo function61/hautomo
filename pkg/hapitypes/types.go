@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/function61/gokit/logex"
+	"github.com/function61/gokit/log/logex"
 	"github.com/function61/hautomo/pkg/constmetrics"
 )
 

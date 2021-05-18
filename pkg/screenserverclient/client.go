@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/function61/gokit/ezhttp"
+	"github.com/function61/gokit/net/http/ezhttp"
 )
 
 // TODO: extract as a client to screen-server repo

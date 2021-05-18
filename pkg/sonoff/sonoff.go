@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/function61/gokit/ezhttp"
+	"github.com/function61/gokit/net/http/ezhttp"
 )
 
 func TurnOn(ctx context.Context, deviceAddr string) error {

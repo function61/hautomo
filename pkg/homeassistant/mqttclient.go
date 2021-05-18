@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/function61/gokit/logex"
+	"github.com/function61/gokit/log/logex"
 	"github.com/yosssi/gmq/mqtt"
 	"github.com/yosssi/gmq/mqtt/client"
 )

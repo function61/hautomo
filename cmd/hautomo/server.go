@@ -7,11 +7,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/function61/gokit/dynversion"
-	"github.com/function61/gokit/httputils"
-	"github.com/function61/gokit/jsonfile"
-	"github.com/function61/gokit/logex"
-	"github.com/function61/gokit/taskrunner"
+	"github.com/function61/gokit/app/dynversion"
+	"github.com/function61/gokit/encoding/jsonfile"
+	"github.com/function61/gokit/log/logex"
+	"github.com/function61/gokit/net/http/httputils"
+	"github.com/function61/gokit/sync/taskrunner"
 	"github.com/function61/hautomo/pkg/constmetrics"
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"github.com/function61/hautomo/pkg/suntimes"
@@ -466,7 +466,7 @@ func configureAppAndStartAdapters(
 	}
 
 	statefile := hapitypes.NewStatefile()
-	if err := jsonfile.Read(statefilePath, &statefile, true); err != nil {
+	if err := jsonfile.ReadDisallowUnknownFields(statefilePath, &statefile); err != nil {
 		return err
 	}
 
@@ -575,11 +575,9 @@ func runServer(ctx context.Context, logger *log.Logger) error {
 
 	srv := makeHttpServer(app, conf)
 
-	tasks.Start("listener "+srv.Addr, func(_ context.Context) error {
-		return httputils.RemoveGracefulServerClosedError(srv.ListenAndServe())
+	tasks.Start("http "+srv.Addr, func(_ context.Context) error {
+		return httputils.CancelableServer(ctx, srv, func() error { return srv.ListenAndServe() })
 	})
-
-	tasks.Start("listenershutdowner", httputils.ServerShutdownTask(srv))
 
 	return tasks.Wait()
 }

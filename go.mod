@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-lambda-go v1.13.2
 	github.com/aws/aws-sdk-go v1.25.19
 	github.com/beorn7/perks v1.0.1
-	github.com/function61/gokit v0.0.0-20200715130529-d3e870268fc9
+	github.com/function61/gokit v0.0.0-20210402130425-341c2c9ecfd0
 	github.com/golang/protobuf v1.3.2
 	github.com/hashicorp/hcl v1.0.0
 	github.com/inconshreveable/mousetrap v1.0.0
@@ -14,6 +14,7 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.0.2
 	github.com/matttproud/golang_protobuf_extensions v1.0.1
 	github.com/mmcdole/gofeed v1.0.0
+	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/prometheus/client_golang v1.1.0
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.9.1

@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/function61/gokit/ezhttp"
+	"github.com/function61/gokit/net/http/ezhttp"
 )
 
 func Invoke(device string, command string, arg string, accessToken string) error {

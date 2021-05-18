@@ -9,8 +9,8 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/function61/gokit/logex"
-	"github.com/function61/gokit/retry"
+	"github.com/function61/gokit/app/retry"
+	"github.com/function61/gokit/log/logex"
 )
 
 func Send(ctx context.Context, req Request, logger *log.Logger) error {

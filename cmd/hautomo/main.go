@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/function61/gokit/dynversion"
-	"github.com/function61/gokit/logex"
-	"github.com/function61/gokit/osutil"
-	"github.com/function61/gokit/systemdinstaller"
+	"github.com/function61/gokit/app/dynversion"
+	"github.com/function61/gokit/log/logex"
+	"github.com/function61/gokit/os/osutil"
+	"github.com/function61/gokit/os/systemdinstaller"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +32,7 @@ func serverEntry() *cobra.Command {
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			if install {
-				service := systemdinstaller.SystemdServiceFile(
+				service := systemdinstaller.Service(
 					"hautomo",
 					"Home Automation",
 					systemdinstaller.Args("server"),
@@ -40,7 +40,7 @@ func serverEntry() *cobra.Command {
 
 				osutil.ExitIfError(systemdinstaller.Install(service))
 
-				fmt.Println(systemdinstaller.GetHints(service))
+				fmt.Println(systemdinstaller.EnableAndStartCommandHints(service))
 
 				return
 			}

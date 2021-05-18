@@ -9,8 +9,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/function61/gokit/cryptorandombytes"
-	"github.com/function61/gokit/jsonfile"
+	"github.com/function61/gokit/crypto/cryptoutil"
+	"github.com/function61/gokit/encoding/jsonfile"
 	"github.com/function61/hautomo/pkg/adapters/alexaadapter/aamessages"
 	"github.com/function61/hautomo/pkg/adapters/alexaadapter/alexadevicesync"
 	"github.com/function61/hautomo/pkg/alexatypes"
@@ -36,7 +36,7 @@ type Handlers struct {
 func New(extSystems ExternalSystems, msgIdGenerator messageIdGenerator, now timeGetter) *Handlers {
 	if msgIdGenerator == nil {
 		msgIdGenerator = func() string {
-			return cryptorandombytes.Hex(8)
+			return cryptoutil.RandHex(8)
 		}
 	}
 

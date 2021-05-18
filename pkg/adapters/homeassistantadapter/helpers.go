@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/function61/gokit/cryptorandombytes"
+	"github.com/function61/gokit/crypto/cryptoutil"
 )
 
 func launch(ctx context.Context, fn func(ctx context.Context) error) <-chan error {
@@ -44,5 +44,5 @@ func launchAndWaitMany(
 }
 
 func cacheBust(url string) string {
-	return fmt.Sprintf("%s?cachebust=%s", url, cryptorandombytes.Base64Url(4))
+	return fmt.Sprintf("%s?cachebust=%s", url, cryptoutil.RandBase64Url(4))
 }

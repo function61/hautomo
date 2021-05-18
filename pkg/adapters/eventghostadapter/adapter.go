@@ -6,8 +6,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/function61/gokit/logex"
-	"github.com/function61/gokit/taskrunner"
+	"github.com/function61/gokit/log/logex"
+	"github.com/function61/gokit/sync/taskrunner"
 	"github.com/function61/hautomo/pkg/eventghostnetwork"
 	"github.com/function61/hautomo/pkg/hapitypes"
 )
