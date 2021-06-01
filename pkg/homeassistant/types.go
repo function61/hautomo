@@ -5,10 +5,60 @@ import (
 	"fmt"
 )
 
+// NOTE: device classes are platform-specific, i.e. "door" device class is only recognized by
+//       binary_sensor platform
 const (
-	DeviceClassDefault = ""
-	DeviceClassMotion  = "motion"
+	DeviceClassDefault     = ""
+	DeviceClassMotion      = "motion"      // component=binary_sensor
+	DeviceClassOccupancy   = "occupancy"   // component=binary_sensor
+	DeviceClassDoor        = "door"        // component=binary_sensor
+	DeviceClassTemperature = "temperature" // component=sensor
+	DeviceClassHumidity    = "humidity"    // component=sensor
+	DeviceClassPressure    = "pressure"    // component=sensor
+	DeviceClassBattery     = "battery"     // component=sensor
+	DeviceClassIlluminance = "illuminance" // component=sensor
+	DeviceClassShade       = "shade"       // component=cover
 )
+
+// keys: https://www.home-assistant.io/docs/mqtt/discovery/#configuration-variables
+// many of the "omitempty" attributes are strictly required
+type DiscoveryOptions struct {
+	Name                string      `json:"name"`
+	DeviceClass         string      `json:"device_class,omitempty"` // https://www.home-assistant.io/integrations/binary_sensor/ | https://www.home-assistant.io/integrations/sensor/
+	StateTopic          string      `json:"state_topic,omitempty"`
+	CommandTopic        string      `json:"command_topic,omitempty"`
+	JsonAttributesTopic string      `json:"json_attributes_topic,omitempty"`
+	ValueTemplate       string      `json:"value_template,omitempty"`
+	PayloadOn           interface{} `json:"payload_on,omitempty"`  // can be a string describing MQTT message or a boolean indicating property value resolved by *ValueTemplate*
+	PayloadOff          interface{} `json:"payload_off,omitempty"` // same as for *on*
+	UniqueId            string      `json:"unique_id,omitempty"`
+	Icon                string      `json:"icon,omitempty"` // e.g. "mdi:gesture-double-tap"
+	UnitOfMeasurement   string      `json:"unit_of_measurement,omitempty"`
+
+	Schema string `json:"schema,omitempty"` // use 'json' to receive commands in JSON. only applicable for controllable things, like lights (at least not applicable for sensors)
+
+	Device DiscoveryOptionsDevice `json:"device"`
+
+	Optimistic bool `json:"optimistic,omitempty"` // whether Home Assistant just assumes that the command it sent succeeded
+
+	PositionOpen   *int `json:"position_open,omitempty"`
+	PositionClosed *int `json:"position_closed,omitempty"`
+
+	// capabilities, when using these you probably need schema=json
+
+	Brightness bool `json:"brightness,omitempty"` // can control brightness
+	ColorTemp  bool `json:"color_temp,omitempty"` // can control color temperature
+	XY         bool `json:"xy,omitempty"`         // can control color
+}
+
+type DiscoveryOptionsDevice struct {
+	Name            string   `json:"name,omitempty"`
+	Manufacturer    string   `json:"manufacturer,omitempty"`
+	Model           string   `json:"model,omitempty"`
+	SoftwareVersion string   `json:"sw_version,omitempty"`
+	AreaSuggested   string   `json:"suggested_area,omitempty"`
+	Identifiers     []string `json:"identifiers,omitempty"`
+}
 
 type State struct {
 	State      string            `json:"state"`
@@ -16,86 +66,114 @@ type State struct {
 }
 
 type Entity struct {
-	component          string
-	deviceClass        string // https://www.home-assistant.io/integrations/binary_sensor/ | https://www.home-assistant.io/integrations/sensor/
-	Id                 string
-	name               string
-	hasAttributesTopic bool
-	hasCommandTopic    bool
+	Id        string
+	name      string
+	component string
+
+	discoveryOpts DiscoveryOptions
 }
 
 func NewBinarySensor(id string, name string, deviceClass string) *Entity {
+	component := "binary_sensor"
+
 	return &Entity{
-		Id:          id,
-		name:        name,
-		component:   "binary_sensor",
-		deviceClass: deviceClass,
+		Id:        id,
+		name:      name,
+		component: component,
+
+		discoveryOpts: DiscoveryOptions{
+			Name:        id,
+			DeviceClass: deviceClass,
+			StateTopic:  fmt.Sprintf("homeassistant/%s/hautomo/%s/state", component, id),
+		},
 	}
 }
 
 func NewSwitch(id string, name string) *Entity {
-	return &Entity{
-		Id:              id,
-		name:            name,
-		component:       "switch",
-		hasCommandTopic: true,
-	}
+	component := "switch"
+
+	return NewEntityWithDiscoveryOpts(
+		id,
+		component,
+		name,
+		DiscoveryOptions{
+			DeviceClass:  DeviceClassDefault, // switches don't need this?
+			StateTopic:   fmt.Sprintf("homeassistant/%s/hautomo/%s/state", component, id),
+			CommandTopic: fmt.Sprintf("homeassistant/%s/hautomo/%s/set", component, id),
+		})
 }
 
 func NewSensor(id string, name string, deviceClass string, hasAttributesTopic bool) *Entity {
+	component := "sensor"
+
 	return &Entity{
-		Id:                 id,
-		name:               name,
-		component:          "sensor",
-		deviceClass:        deviceClass,
-		hasAttributesTopic: hasAttributesTopic,
+		Id:        id,
+		name:      name,
+		component: component,
+
+		discoveryOpts: DiscoveryOptions{
+			Name:                id,
+			DeviceClass:         deviceClass,
+			StateTopic:          fmt.Sprintf("homeassistant/%s/hautomo/%s/state", component, id),
+			JsonAttributesTopic: fmt.Sprintf("homeassistant/%s/hautomo/%s/attributes", component, id),
+		},
 	}
 }
 
-func (h *Entity) mqttStateTopic() []byte {
-	return []byte(fmt.Sprintf("homeassistant/%s/hautomo/%s/state", h.component, h.Id))
+// https://www.home-assistant.io/integrations/switch.mqtt/
+func NewSwitchEntity(id string, name string, opts DiscoveryOptions) *Entity {
+	return NewEntityWithDiscoveryOpts(id, "switch", name, opts)
 }
 
-func (h *Entity) mqttAttributesTopic() []byte {
-	if !h.hasAttributesTopic {
-		return nil
-	}
-
-	return []byte(fmt.Sprintf("homeassistant/%s/hautomo/%s/attributes", h.component, h.Id))
+// https://www.home-assistant.io/integrations/light.mqtt/
+func NewLightEntity(id string, name string, opts DiscoveryOptions) *Entity {
+	return NewEntityWithDiscoveryOpts(id, "light", name, opts)
 }
 
-func (h *Entity) mqttCommandTopic() []byte {
-	if !h.hasCommandTopic {
-		return nil
+// https://www.home-assistant.io/integrations/sensor.mqtt/
+func NewSensorEntity(id string, name string, opts DiscoveryOptions) *Entity {
+	return NewEntityWithDiscoveryOpts(id, "sensor", name, opts)
+}
+
+// https://www.home-assistant.io/integrations/binary_sensor.mqtt
+func NewBinarySensorEntity(id string, name string, opts DiscoveryOptions) *Entity {
+	return NewEntityWithDiscoveryOpts(id, "binary_sensor", name, opts)
+}
+
+// https://www.home-assistant.io/integrations/cover.mqtt
+func NewCoverEntity(id string, name string, opts DiscoveryOptions) *Entity {
+	return NewEntityWithDiscoveryOpts(id, "cover", name, opts)
+}
+
+func NewEntityWithDiscoveryOpts(
+	id string,
+	component string,
+	name string,
+	opts DiscoveryOptions) *Entity {
+	// TODO: this is dirty
+	if opts.Name == "" {
+		opts.Name = name
 	}
 
-	return []byte(fmt.Sprintf("homeassistant/%s/hautomo/%s/set", h.component, h.Id))
+	return &Entity{
+		Id:        id,
+		name:      name,
+		component: component,
+
+		discoveryOpts: opts,
+	}
 }
 
 func (h *Entity) mqttDiscoveryTopic() []byte {
+	// to debug existing autodiscovery configs made by other programs, like zigbee2mqtt, run:
+	//   $ docker exec -it mosquitto mosquitto_sub -t homeassistant/#
+
 	// <discovery_prefix>/<component>/[<node_id>/]<object_id>/config
 	return []byte(fmt.Sprintf("homeassistant/%s/hautomo/%s/config", h.component, h.Id))
 }
 
 func (h *Entity) mqttDiscoveryMsg() []byte {
-	// keys: https://www.home-assistant.io/docs/mqtt/discovery/#configuration-variables
-	// many of the "omitempty" attributes are strictly required
-	msg, err := json.Marshal(struct {
-		Name                string `json:"name"`
-		DeviceClass         string `json:"device_class,omitempty"`
-		StateTopic          string `json:"state_topic,omitempty"`
-		CommandTopic        string `json:"command_topic,omitempty"`
-		JsonAttributesTopic string `json:"json_attributes_topic,omitempty"`
-		ValueTemplate       string `json:"value_template,omitempty"`
-		// UniqueId            string `json:"unique_id,omitempty"`
-	}{
-		Name:                h.Id,
-		DeviceClass:         h.deviceClass,
-		StateTopic:          string(h.mqttStateTopic()),
-		CommandTopic:        string(h.mqttCommandTopic()),
-		JsonAttributesTopic: string(h.mqttAttributesTopic()),
-		// UniqueId:            h.Id, // same as entity ID?
-	})
+	msg, err := json.Marshal(h.discoveryOpts)
 	if err != nil {
 		panic(err)
 	}

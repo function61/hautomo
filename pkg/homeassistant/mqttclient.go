@@ -87,7 +87,7 @@ func (h *MqttClient) PublishState(sensor *Entity, state string) error {
 	if err := h.mqtt.Publish(&client.PublishOptions{
 		QoS:       mqtt.QoS0,
 		Retain:    false,
-		TopicName: []byte(sensor.mqttStateTopic()),
+		TopicName: []byte(sensor.discoveryOpts.StateTopic),
 		Message:   []byte(state),
 	}); err != nil {
 		return fmt.Errorf("PublishState: %w", err)
@@ -97,7 +97,7 @@ func (h *MqttClient) PublishState(sensor *Entity, state string) error {
 }
 
 func (h *MqttClient) PublishAttributes(entity *Entity, attributes map[string]string) error {
-	if len(entity.mqttAttributesTopic()) == 0 {
+	if len(entity.discoveryOpts.JsonAttributesTopic) == 0 {
 		return fmt.Errorf("PublishAttributes: no attribute topic for %s", entity.Id)
 	}
 
@@ -109,7 +109,7 @@ func (h *MqttClient) PublishAttributes(entity *Entity, attributes map[string]str
 	if err := h.mqtt.Publish(&client.PublishOptions{
 		QoS:       mqtt.QoS0,
 		Retain:    false,
-		TopicName: entity.mqttAttributesTopic(),
+		TopicName: []byte(entity.discoveryOpts.JsonAttributesTopic),
 		Message:   attributesJson,
 	}); err != nil {
 		return fmt.Errorf("PublishAttributes: %w", err)
@@ -123,7 +123,7 @@ func (h *MqttClient) AutodiscoverEntities(entities ...*Entity) error {
 	for _, entity := range entities {
 		if err := h.mqtt.Publish(&client.PublishOptions{
 			QoS:       mqtt.QoS0,
-			Retain:    false,
+			Retain:    true, // so entities are not lost when Home Assistant is restarted
 			TopicName: entity.mqttDiscoveryTopic(),
 			Message:   entity.mqttDiscoveryMsg(),
 		}); err != nil {
