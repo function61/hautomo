@@ -11,6 +11,7 @@ import (
 	"github.com/function61/gokit/encoding/jsonfile"
 	"github.com/function61/gokit/log/logex"
 	"github.com/function61/gokit/net/http/httputils"
+	"github.com/function61/gokit/os/osutil"
 	"github.com/function61/gokit/sync/taskrunner"
 	"github.com/function61/hautomo/pkg/constmetrics"
 	"github.com/function61/hautomo/pkg/hapitypes"
@@ -466,7 +467,11 @@ func configureAppAndStartAdapters(
 	}
 
 	statefile := hapitypes.NewStatefile()
-	if err := jsonfile.ReadDisallowUnknownFields(statefilePath, &statefile); err != nil {
+	if exists, err := osutil.Exists(statefilePath); exists {
+		if err := jsonfile.ReadDisallowUnknownFields(statefilePath, &statefile); err != nil {
+			return err
+		}
+	} else if err != nil {
 		return err
 	}
 
