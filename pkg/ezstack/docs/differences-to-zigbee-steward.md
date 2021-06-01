@@ -14,7 +14,7 @@ Differences to zigbee-steward
 - Added comments to where I didn't understand something
 - Reduced unnecessary complexity from many places. Extreme example: these do the exact same thing:
 	* [zigbee-steward](https://github.com/dyrkin/zigbee-steward/blob/a1dc32edfb8560969ea4aedb6f85d05d8279cd7a/coordinator/coordinator.go#L219)
-	* ezstack: TODO: link
+	* [ezstack](https://github.com/function61/hautomo/blob/4600f1717f205bdcc9c755c9da2af323866199a4/pkg/ezstack/coordinator/coordinator.go#L232)
 	* zigbee-steward also has a race condition (albeit theoretical due to expected network latency) where
 	  response yielded by `call()` can be sent to non-buffered `receiver` channel so the broadcast mechanism
 	  [drops the message](https://github.com/tv42/topic/blob/aa72cbe81b4823f349da47a4d749cdda61677c09/topic.go#L48)

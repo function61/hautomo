@@ -64,6 +64,18 @@ to standardize things like attribute IDs and values for temperature readings and
 Unfortunately ZCL fails to be a very good standard, and there are lots of manufacturer-specific quirks
 and therefore we need abstractions to hide the warts from the user.
 
+A good example of these stupid differences:
+
+- Xiaomi button sends single-click as generic power on/off, but double/triple/etc. click as
+  manufacturer-specific attribute (specific examples of this in code walkthrough!).
+- Xiaomi (same vendor) double-button sends single/double/triple/etc. clicks as `genMultistateInput`.
+- Window/Door contact sensors sends generic power on/off, water leak detector acts as an alarm..
+- IKEA remote doesn't send button clicks, but sends direct specific commands to control brightness
+  and change scenes. So some remotes are intended to control specific device, and if you want to use
+  them as generic remotes (to control something else), you've to translate "brightness+" to "up button".
+  Even the IKEA remote scene change uses a
+  [mystery command that isn't specified in ZCL](https://github.com/function61/hautomo/blob/5d677aad13cdd4ccbc8982722586e02a2651c745/pkg/ezstack/ezhub/deviceadapters/ikearemoteE1524.go#L42).
+
 Logical component interaction:
 
 ```
@@ -80,13 +92,16 @@ ZCL = [Zigbee Cluster Library](https://zigbeealliance.org/wp-content/uploads/201
 Coordinator = [Handles network node management](https://www.zigbee2mqtt.io/information/zigbee_network.html#coordinator) (device asks to join the network), passes app-level messages to consumer (usually ezstack)
 ezstack = Starts all components, receives app-level messages and provides vendor-specific parsers (sometimes ZCL is not enough, so vendors invent their own formats...) to cleaner abstractions so your app can receive "new temperature measurement from sensor XYZ"
 
-There also exists `ezhub` ("Easy Zigbee hub") component which is a higher-level component meant to not
-just interact with Zigbee messaging, but to offer abstractions for sensor devices, light bulbs etc.
+There also exists `ezhub` ("Easy Zigbee hub", [separate README](ezhub/README.md)) component which is
+a higher-level component meant to not just interact with Zigbee messaging, but to offer abstractions
+for sensor devices, light bulbs etc.
 and integrate with Home Assistant. High-level logical view looks like this:
 
 
 ezhub
 -----
+
+Logical component interaction:
 
 ```
 ezhub
@@ -102,13 +117,22 @@ ezhub
 Code walkthrough
 ----------------
 
-Majors pieces of functionality:
+Major pieces of functionality:
 
-- Zigbee message comes in
-- MQTT client (like Home Assistant) wants to send a message to Zigbee network
-- ezhub advertises its device registry to Home Assistant
-- Adapter definition for a device that needs abstractions on top of non-standard 
-- Incoming Zigbee message and its MQTT transformation "end-to-end" tested (for same adapter as above)
+- [Zigbee message comes in](https://github.com/function61/hautomo/blob/5d677aad13cdd4ccbc8982722586e02a2651c745/pkg/ezstack/ezhub/entrypoint.go#L112)
+- [MQTT client (like Home Assistant) wants to send a message to Zigbee network](https://github.com/function61/hautomo/blob/5d677aad13cdd4ccbc8982722586e02a2651c745/pkg/ezstack/ezhub/entrypoint.go#L150)
+- [ezhub advertises its device registry to Home Assistant](https://github.com/function61/hautomo/blob/5d677aad13cdd4ccbc8982722586e02a2651c745/pkg/ezstack/ezhub/homeassistantmqtt/autodiscovery.go#L12)
+- [Adapter definition for a button that needs abstractions to paper over its non-standard use of ZCL](https://github.com/function61/hautomo/blob/5d677aad13cdd4ccbc8982722586e02a2651c745/pkg/ezstack/ezhub/deviceadapters/xiaomibutton.go#L10)
+	* The button sends single-click as off -> on events
+	* The button sends >= 2 clicks as manufacturer-specific attribute
+	* The same manufacturer's 2-button sensor sends single/double/triple/etc. clicks as
+	  [genMultistateInput](https://github.com/function61/hautomo/blob/5d677aad13cdd4ccbc8982722586e02a2651c745/pkg/ezstack/ezhub/deviceadapters/xiaomidoublebutton.go#L35)
+	  cluster (each button represented with different Zigbee endpoints), so whatever the right way to send button
+	  clicks is, at least one of them is wrong as there isn't consensus even with same manufacturer's same type of sensor.
+	* I can't blame the manufacturer much, since honestly ZCL spec is not very good and I don't even know
+	  which cluster would be the most semantic one to generically represent single/double/triple/etc.
+	  clicks, let alone over sensor that has multiple buttons.
+- [Incoming Zigbee message and its MQTT transformation "end-to-end" tested (for same adapter as above)](https://github.com/function61/hautomo/blob/5d677aad13cdd4ccbc8982722586e02a2651c745/pkg/ezstack/ezhub/deviceadapters/xiaomibutton_test.go#L16)
 
 
 Acknowledgements
@@ -122,6 +146,8 @@ See [differences to zigbee-steward](docs/differences-to-zigbee-steward.md) for r
 
 For things unclear from zigbee-steward I also learned a lot from
 [Shimmering Bee's zstack](https://github.com/shimmeringbee/zstack) implementation.
+
+[Michael Stapelberg](https://michael.stapelberg.ch/) sent me his own Zigbee code to get inspiration from.
 
 
 Roadmap
