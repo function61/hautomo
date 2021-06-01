@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/function61/gokit/assert"
+	"github.com/function61/gokit/testing/assert"
 	"github.com/function61/hautomo/pkg/adapters/alexaadapter/aamessages"
 )
 

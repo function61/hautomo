@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/function61/gokit/assert"
+	"github.com/function61/gokit/testing/assert"
 )
 
 var noEvents = func(event string, payload []string, password string) { panic("should not receive any event") }

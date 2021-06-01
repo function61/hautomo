@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/function61/gokit/assert"
+	"github.com/function61/gokit/testing/assert"
 	"github.com/function61/hautomo/pkg/hapitypes"
 )
 

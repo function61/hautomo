@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/function61/gokit/aws/s3facade"
+	"github.com/function61/gokit/app/aws/s3facade"
 	"github.com/function61/gokit/net/http/ezhttp"
 	"github.com/function61/hautomo/pkg/adapters/alexaadapter/aamessages"
 )

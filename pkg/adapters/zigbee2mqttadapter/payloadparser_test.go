@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/function61/gokit/assert"
+	"github.com/function61/gokit/testing/assert"
 )
 
 func TestParseMsgPayload(t *testing.T) {

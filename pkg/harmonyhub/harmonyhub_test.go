@@ -4,7 +4,7 @@ import (
 	"encoding/xml"
 	"testing"
 
-	"github.com/function61/gokit/assert"
+	"github.com/function61/gokit/testing/assert"
 )
 
 func TestSaslAuth(t *testing.T) {

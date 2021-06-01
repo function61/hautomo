@@ -3,7 +3,7 @@ package hapitypes
 import (
 	"testing"
 
-	"github.com/function61/gokit/assert"
+	"github.com/function61/gokit/testing/assert"
 )
 
 func TestRGBIsGrayscale(t *testing.T) {
