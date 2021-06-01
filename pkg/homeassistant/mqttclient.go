@@ -1,7 +1,6 @@
 package homeassistant
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -24,7 +23,6 @@ type MqttClient struct {
 
 func NewMqttClient(
 	mqttAddr string,
-	start func(task func(context.Context) error),
 	logl *logex.Leveled,
 ) (*MqttClient, error) {
 	mqttClient := client.New(&client.Options{
@@ -45,15 +43,6 @@ func NewMqttClient(
 		mqtt: mqttClient,
 		logl: logl,
 	}
-
-	// worker (doesn't do anything yet)
-	start(nil)
-	/*
-		start(func(ctx context.Context) error {
-			<-ctx.Done()
-			return nil
-		})
-	*/
 
 	return ha, nil
 }

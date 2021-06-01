@@ -13,12 +13,7 @@ import (
 )
 
 func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
-	ha, err := homeassistant.NewMqttClient(adapter.Conf.Url, func(task func(context.Context) error) {
-		if task != nil {
-			panic("not implemented")
-		}
-		// do nothing
-	}, adapter.Logl)
+	ha, err := homeassistant.NewMqttClient(adapter.Conf.Url, adapter.Logl)
 	if err != nil {
 		return fmt.Errorf("NewMqttClient: %w", err)
 	}
