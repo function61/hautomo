@@ -102,7 +102,7 @@ func ezhubEntrypoint() *cobra.Command {
 				return
 			}
 
-			osutil.ExitIfError(ezhub.Start(
+			osutil.ExitIfError(ezhub.Run(
 				osutil.CancelOnInterruptOrTerminate(rootLogger),
 				joinEnable,
 				packetCapture,

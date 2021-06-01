@@ -24,8 +24,8 @@ import (
 	"github.com/function61/hautomo/pkg/homeassistant"
 )
 
-// starts ezhub
-func Start(
+// runs ezhub. returns when asked to stop or earlier if encountered a fatal error
+func Run(
 	ctx context.Context,
 	joinEnable bool,
 	packetCaptureFile string,
