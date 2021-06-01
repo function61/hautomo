@@ -34,7 +34,7 @@ Download Hautomo into that directory. It contains `ezhub`.
 Install as a service:
 
 ```console
-./hautomo ezhub --install
+$ ./hautomo ezhub --install
 ```
 
 Generate new configuration file:
