@@ -90,7 +90,7 @@ LinkQualityEvent {"Device":"dummyId","LinkQuality":34}`,
 		test := test // pin
 
 		t.Run(test.output, func(t *testing.T) {
-			events, err := parseMsgPayload(topic, func(_ string) *resolvedDevice {
+			events, err := parseMsgPayload(topic, "zigbee2mqtt", func(_ string) *resolvedDevice {
 				return &resolvedDevice{"dummyId", test.kind}
 			}, test.input, now)
 

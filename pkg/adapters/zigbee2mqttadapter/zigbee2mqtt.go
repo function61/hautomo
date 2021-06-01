@@ -12,24 +12,25 @@ import (
 	"github.com/yosssi/gmq/mqtt/client"
 )
 
-const (
-	z2mTopicPrefix = "zigbee2mqtt/"
-)
-
 type MqttPublish struct {
 	Topic   string
 	Message string
 }
 
-func deviceMsg(deviceId string, msg string) MqttPublish {
-	return MqttPublish{
-		Topic:   "zigbee2mqtt/" + deviceId + "/set",
-		Message: msg,
-	}
-}
-
 func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 	config := adapter.GetConfigFileDeprecated()
+
+	topicPrefix := adapter.Conf.MqttTopicPrefix
+	if topicPrefix == "" {
+		topicPrefix = "zigbee2mqtt" // default
+	}
+
+	deviceMsg := func(deviceId string, msg string) MqttPublish {
+		return MqttPublish{
+			Topic:   topicPrefix + "/" + deviceId + "/set",
+			Message: msg,
+		}
+	}
 
 	resolver := func(adaptersDeviceId string) *resolvedDevice {
 		for _, devConfig := range config.Devices {
@@ -53,7 +54,7 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 	}
 
 	m2qttDeviceObserver := func(topicName, message []byte) {
-		events, err := parseMsgPayload(string(topicName), resolver, string(message), time.Now())
+		events, err := parseMsgPayload(string(topicName), topicPrefix, resolver, string(message), time.Now())
 		if err != nil {
 			adapter.Logl.Error.Println(err.Error())
 			return
@@ -118,7 +119,7 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 	subTasks := taskrunner.New(ctx, adapter.Log)
 	subTasks.Start("reconnect-loop", func(ctx context.Context) error {
 		for {
-			err := mqttConnection(ctx, adapter.Conf.Url, m2qttDeviceObserver, z2mPublish)
+			err := mqttConnection(ctx, adapter.Conf.Url, topicPrefix, m2qttDeviceObserver, z2mPublish)
 
 			select {
 			case <-ctx.Done():
@@ -145,6 +146,7 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 func mqttConnection(
 	ctx context.Context,
 	addr string,
+	topicPrefix string,
 	handler client.MessageHandler,
 	mqttPublishes <-chan MqttPublish,
 ) error {
@@ -170,7 +172,7 @@ func mqttConnection(
 	if err := mqttClient.Connect(&client.ConnectOptions{
 		Network:  "tcp",
 		Address:  addr,
-		ClientID: []byte("Hautomo"),
+		ClientID: []byte(fmt.Sprintf("Hautomo-%s", topicPrefix)), // need to mix in topic prefix to support multiple instances
 	}); err != nil {
 		return err
 	}
@@ -178,7 +180,7 @@ func mqttConnection(
 	if err := mqttClient.Subscribe(&client.SubscribeOptions{
 		SubReqs: []*client.SubReq{
 			{
-				TopicFilter: []byte(z2mTopicPrefix + "#"), // # means catch-all
+				TopicFilter: []byte(topicPrefix + "/#"), // # means catch-all
 				QoS:         mqtt.QoS0,
 				Handler:     handler,
 			},

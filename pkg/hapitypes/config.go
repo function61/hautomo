@@ -27,6 +27,8 @@ type AdapterConfig struct {
 
 	IrSimulatorKey string `json:"irsimulator_button,omitempty"`
 
+	MqttTopicPrefix string `json:"mqtt_topic_prefix,omitempty"`
+
 	TradfriUser string `json:"tradfri_user"`
 	TradfriPsk  string `json:"tradfri_psk"`
 

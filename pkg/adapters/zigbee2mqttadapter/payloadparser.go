@@ -16,14 +16,20 @@ type resolvedDevice struct {
 
 type deviceResolver func(deviceId string) *resolvedDevice
 
-func parseMsgPayload(topicName string, resolver deviceResolver, message string, now time.Time) ([]hapitypes.InboundEvent, error) {
+func parseMsgPayload(
+	topicName string,
+	topicPrefix string,
+	resolver deviceResolver,
+	message string,
+	now time.Time,
+) ([]hapitypes.InboundEvent, error) {
 	// block "zigbee2mqtt/0x00158d000227a73c/set", which is probably publishes made by us
 	if strings.HasSuffix(topicName, "/set") {
 		return nil, nil
 	}
 
 	// "zigbee2mqtt/0x00158d000227a73c" => "0x00158d000227a73c"
-	foreignId := topicName[len(z2mTopicPrefix):]
+	foreignId := topicName[len(topicPrefix)+1:]
 
 	if foreignId == "bridge/log" { // bridge's log messages
 		// prevent log filling with "device bridge/log unrecognized" messages
