@@ -12,21 +12,32 @@ Features
 - Powering devices on/off. Alexa: `tv on`, `amplifier off`
 - Color of lights. Alexa: `set kitchen lights to yellow`
 - Dimming lights. Alexa: `dim kitchen lights to 50 percent`
+- Controlling playback. Alexa: `pause computer` (context dependent, f.ex. pauses/resumes Spotify, YouTube or Netflix)
+- Routines (via Alexa), for example every weekday morning turn bedroom lights on, read news and weather.
 - Infrared remapping (receive via LIRC, transmit via Logitech Harmony Hub).
   Dedicate any remote to use with your home automation. When remote button pressed,
   send IR signal to a device not originally controlled by that remote.
+
+
+Supported integrations
+----------------------
+
+- Voice control for all of this (via Alexa)
+- [IKEA Trådfri](https://www.ikea.com/us/en/catalog/categories/departments/lighting/smart_lighting/)
+  lights and Trådfri wall sockets
+- Infrared devices (via [HarmonyHub](https://www.logitech.com/en-us/product/harmony-hub))
+- Custom 433 MHz power sockets (via custom hardware attached to [Particle](https://www.particle.io/))
+- Computer (via [EventGhost](http://www.eventghost.net/))
+- Happylights
+- MCEUSB (via LIRC)
+- Logitech Harmony Hub
+- Wall power sockets (via custom hardware)
 
 
 Adapters / sensors architecture
 -------------------------------
 
 ![](docs/graph.png)
-
-
-Links
------
-
-- [Competitors](docs/competitors.md)
 
 
 Configuring
