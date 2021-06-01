@@ -19,14 +19,14 @@ func TestParseMsgPayload(t *testing.T) {
 		output string
 	}{
 		{
-			input: `{"battery":100,"voltage":3055,"linkquality":47,"click":"single"}`,
+			input: `{"battery":100,"voltage":3055,"linkquality":47,"action":"single"}`,
 			kind:  deviceKindWXKG11LM,
 			output: `PushButtonEvent {"Device":"dummyId","Specifier":"single"}
 LinkQualityEvent {"Device":"dummyId","LinkQuality":47}
 BatteryStatusEvent {"Device":"dummyId","BatteryPct":100,"Voltage":3055}`,
 		},
 		{
-			input: `{"battery":100,"voltage":3055,"linkquality":47,"click":"double"}`,
+			input: `{"battery":100,"voltage":3055,"linkquality":47,"action":"double"}`,
 			kind:  deviceKindWXKG11LM,
 			output: `PushButtonEvent {"Device":"dummyId","Specifier":"double"}
 LinkQualityEvent {"Device":"dummyId","LinkQuality":47}
@@ -66,7 +66,7 @@ BatteryStatusEvent {"Device":"dummyId","BatteryPct":100,"Voltage":3115}`,
 LinkQualityEvent {"Device":"dummyId","LinkQuality":68}`,
 		},
 		{
-			input: `{"click":"right_double","linkquality":97}`,
+			input: `{"action":"right_double","linkquality":97}`,
 			kind:  deviceKindWXKG02LM,
 			output: `PushButtonEvent {"Device":"dummyId","Specifier":"right_double"}
 LinkQualityEvent {"Device":"dummyId","LinkQuality":97}`,

@@ -69,8 +69,8 @@ func parseMsgPayload(topicName string, resolver deviceResolver, message string, 
 			return nil, err
 		}
 
-		if payload.Click != nil {
-			push(hapitypes.NewPushButtonEvent(ourId, *payload.Click))
+		if payload.Action != nil {
+			push(hapitypes.NewPushButtonEvent(ourId, *payload.Action))
 		}
 
 		push(hapitypes.NewLinkQualityEvent(ourId, payload.LinkQuality))
@@ -81,8 +81,8 @@ func parseMsgPayload(topicName string, resolver deviceResolver, message string, 
 			return nil, err
 		}
 
-		if payload.Click != nil {
-			push(hapitypes.NewPushButtonEvent(ourId, *payload.Click))
+		if payload.Action != nil {
+			push(hapitypes.NewPushButtonEvent(ourId, *payload.Action))
 		}
 
 		push(hapitypes.NewLinkQualityEvent(ourId, payload.LinkQuality))

@@ -28,7 +28,7 @@ var deviceTypeToZ2mType = map[string]deviceKind{
 
 // {"battery":100,"voltage":3055,"linkquality":47,"click":"double"}
 type WXKG11LM struct {
-	Click       *string `json:"click"` // single/double/... (unset if heartbeat)
+	Action      *string `json:"action"` // single/double/... (unset if heartbeat)
 	Battery     uint    `json:"battery"`
 	Voltage     uint    `json:"voltage"`
 	LinkQuality uint    `json:"linkquality"`
@@ -69,7 +69,7 @@ type WSDCGQ11LM struct {
 
 // {"click":"left","linkquality":97}
 type WXKG02LM struct {
-	Click       *string `json:"click"` // (probably unset if heartbeat) left|left_long|right|right_long|left_double|right_double|both|both_double
+	Action      *string `json:"action"` // (probably unset if heartbeat) left|left_long|right|right_long|left_double|right_double|both|both_double
 	LinkQuality uint    `json:"linkquality"`
 }
 
