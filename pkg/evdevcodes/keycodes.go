@@ -1,7 +1,11 @@
+// Linux evdev event codes (keys and buttons)
 package evdevcodes
 
 // key/button code
 type KeyOrButton uint16
+
+// all taken from https://github.com/torvalds/linux/blob/master/include/uapi/linux/input-event-codes.h
+// (defines with "KEY_" or "BTN_" prefix)
 
 const (
 	KeyRESERVED                 KeyOrButton = 0
@@ -501,8 +505,8 @@ const (
 )
 
 // the below are in evdev definitions with buttons prefix.
-// we merge them here under the same concept (= prefix and type *Key*) because:
-// - we can: they have distinct number namespaces anyway)
+// we merge them here under the the same type *KeyOrButton* because:
+// - we can: they have distinct number namespaces anyway
 // - I don't see a clear reason for separating "key" and "button" namespaces..
 //   they're all switches with some kind of label?
 
