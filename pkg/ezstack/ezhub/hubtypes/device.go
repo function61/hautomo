@@ -14,7 +14,7 @@ type Device struct {
 	FriendlyName string          `json:"friendly_name"`
 	Area         string          `json:"area"`          // added to Home Assistant only if this is set
 	ZigbeeDevice *ezstack.Device `json:"zigbee_device"` // zigbee-level details
-	State           *DeviceState                      `json:"state"`
+	State        *DeviceState    `json:"state"`
 }
 
 type DeviceState struct {
@@ -54,14 +54,14 @@ type Attributes struct {
 	Color            *AttrColorXY `json:"color,omitempty"`      // color in (X,Y)
 	ColorTemperature *AttrInt     `json:"color_temp,omitempty"` // mireds
 	On               *AttrBool    `json:"on,omitempty"`         // on/off state
-	Press          *AttrPress `json:"press,omitempty"`   // generalized version of push
-	Contact        *AttrBool  `json:"contact,omitempty"` // true=> door/window closed
-	WaterDetected  *AttrBool  `json:"water_detected,omitempty"`
-	Vibration      *AttrEvent `json:"vibration,omitempty"`
-	Tilt           *AttrEvent `json:"tilt,omitempty"`
-	AlertSelect    *AttrEvent `json:"alert_select,omitempty"` // light blinks
-	Drop           *AttrEvent `json:"drop,omitempty"`
-	BatteryVoltage *AttrFloat `json:"battery_voltage,omitempty"` // [V]
+	Press            *AttrPress   `json:"press,omitempty"`      // generalized version of push
+	Contact          *AttrBool    `json:"contact,omitempty"`    // true=> door/window closed
+	WaterDetected    *AttrBool    `json:"water_detected,omitempty"`
+	Vibration        *AttrEvent   `json:"vibration,omitempty"`
+	Tilt             *AttrEvent   `json:"tilt,omitempty"`
+	AlertSelect      *AttrEvent   `json:"alert_select,omitempty"` // light blinks
+	Drop             *AttrEvent   `json:"drop,omitempty"`
+	BatteryVoltage   *AttrFloat   `json:"battery_voltage,omitempty"` // [V]
 	// BatteryLevel   *AttrFloat       `json:"battery_level,omitempty"` // [0-100 %]. only set if reported by device. calculated % levels to Home Assistant are usually calculated on-the-fly
 	Temperature      *AttrFloat       `json:"temperature,omitempty"`  // [°C]
 	HumidityRelative *AttrFloat       `json:"humidity_rel,omitempty"` // [0-100 %]

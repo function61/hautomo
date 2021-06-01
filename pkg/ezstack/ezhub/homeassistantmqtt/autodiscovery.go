@@ -206,9 +206,6 @@ func AutodiscoveryEntities(dev *hubtypes.Device, mqttPrefix string) []*homeassis
 				Device: devSpec,
 			}))
 	case "lumi.sensor_motion.aq2":
-		/*
-			{"payload_on":true,"payload_off":false,"value_template":"{{ value_json.occupancy }}","device_class":"motion","state_topic":"zigbee2mqtt/0x00158d00025846bd","json_attributes_topic":"zigbee2mqtt/0x00158d00025846bd","name":"0x00158d00025846bd_occupancy","unique_id":"0x00158d00025846bd_occupancy_zigbee2mqtt","device":{"identifiers":["zigbee2mqtt_0x00158d00025846bd"],"name":"0x00158d00025846bd","sw_version":"Zigbee2mqtt 1.9.0","model":"Aqara human body movement and illuminance sensor (RTCGQ11LM)","manufacturer":"Xiaomi"},"availability_topic":"zigbee2mqtt/bridge/state"}
-		*/
 		addEntity(homeassistant.NewBinarySensorEntity(
 			id+"_occupancy",
 			dev.FriendlyName,

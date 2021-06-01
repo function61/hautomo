@@ -179,26 +179,6 @@ func (c *Coordinator) Run(ctx context.Context, joinEnable bool, networkProcessor
 
 	c.network.Address = deviceInfo.ShortAddr // this seems to be 0x0000
 
-	// zstack does:
-	// https://github.com/shimmeringbee/zstack/blob/8670a55f83e6f032050116e042a917c1f09d5389/adapter_initialise.go#L131
-
-	/*
-		   ZCDNVPreCfgKeysEnableID
-		   ZCDNVPreCfgKeysEnable
-		fmt.Printf("enableKeys=%v\n", enableKeys)
-		fmt.Printf("logicalType=%s\n", logicalType.LogicalType)
-	*/
-
-	/*
-		resp2,err:=c.networkProcessor.SysOsalNvWrite(ZCDNVPreCfgKeysEnableID,0,[]byte{0x01})
-		if err!=nil{
-			return err
-		}
-		if err:=resp2.Status.Error();err!=nil{
-			return fmt.Errorf("SysOsalNvWrite: %w",err)
-		}
-	*/
-
 	if err := setLed(c.config.Led, c.networkProcessor); err != nil {
 		return fmt.Errorf("setLed: %w", err)
 	}
