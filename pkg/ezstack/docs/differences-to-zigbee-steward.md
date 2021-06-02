@@ -23,7 +23,7 @@ Differences to zigbee-steward
 - Fixed serious issue where [ZNP accidentally drops received frames](https://github.com/dyrkin/znp-go/issues/1)
 - Most of the launched goroutines didn't have clear semantics for when they are stopped. Those were
   replaced with Go-idiomatic `context.Context` and we usually track if goroutine stops unexpectedly
-  and if that's fatal for the whole, we stop the component tree.
+  and if that's fatal for the whole, then we stop the component tree.
 - Binary struct decoder didn't have error return, i.e. it "always succeeds", although that couldn't
   be futher from the truth for untrusted data coming in from the network.
 - Added support for setting ext pan ID
@@ -35,4 +35,6 @@ Differences to zigbee-steward
 The above list can sound like complaints, but nothing's perfect and I'm really thankful for dyrkin's
 absolutely massive amount of work (he even had to build a binary serialization library for Zigbee
 structures), and this fork wouldn't absolutely have been possible unless I had something that
-already worked to build on!! tl;dr: dyrkin's work has been absolutely instrumental.
+already worked to build on!!
+
+tl;dr: dyrkin's work has been absolutely instrumental. 👍👍

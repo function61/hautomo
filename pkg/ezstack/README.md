@@ -40,14 +40,14 @@ but instead to support the things I need as cleanly as possible.
 I'll expect to keep refactoring without having to care if I break things for someone else.
 
 This code is public to reciprocate for the help I've received. In the rare case that you're brave
-enough to run this code I'll gladly accept contributions, but will not work very hard to add
+enough to run this code I'll gladly accept contributions, but I will not work very hard to add
 features/devices you'll need unless it benefits me as well.
 
 
 Architecture
 ------------
 
-Somewhat similar to [Shimmering Bee](https://shimmeringbee.io/docs/introduction/) architecture.
+![](docs/the-big-picture.png)
 
 Basically: the CC2531 USB sticks runs as a standalone, autonomous coordinator - it is **not just a
 radio** API with RX/TX frames.
@@ -56,25 +56,8 @@ things / get data from it.
 
 We want to get data from sensors and send commands to light bulbs etc. Therefore our ezstack does its
 thing by using the coordinator package, which in turn uses ZNP protocol to talk to the USB stick. The
-ZNP protocol builds on top of UNP.
-
-Application-level things like sensor data and end device commands are communicated using ZCL which
-is a standardized framing structure/data format that Zigbee devices communicate with. ZCL **tries**
-to standardize things like attribute IDs and values for temperature readings and for controlling lights.
-Unfortunately ZCL fails to be a very good standard, and there are lots of manufacturer-specific quirks
-and therefore we need abstractions to hide the warts from the user.
-
-A good example of these stupid differences:
-
-- Xiaomi button sends single-click as generic power on/off, but double/triple/etc. click as
-  manufacturer-specific attribute (specific examples of this in code walkthrough!).
-- Xiaomi (same vendor) double-button sends single/double/triple/etc. clicks as `genMultistateInput`.
-- Window/Door contact sensors sends generic power on/off, water leak detector acts as an alarm..
-- IKEA remote doesn't send button clicks, but sends direct specific commands to control brightness
-  and change scenes. So some remotes are intended to control specific device, and if you want to use
-  them as generic remotes (to control something else), you've to translate "brightness+" to "up button".
-  Even the IKEA remote scene change uses a
-  [mystery command that isn't specified in ZCL](https://github.com/function61/hautomo/blob/5d677aad13cdd4ccbc8982722586e02a2651c745/pkg/ezstack/ezhub/deviceadapters/ikearemoteE1524.go#L42).
+ZNP protocol builds on top of UNP framing. We use ZNP to ask the Texas Instruments' radio to usually
+send ZCL to the network.
 
 Logical component interaction:
 
@@ -87,21 +70,22 @@ ezstack
 ```
 
 UNP = [Unified Network Processor (Interface)](https://dev.ti.com/tirex/explore/content/simplelink_cc13x2_26x2_sdk_3_10_00_53/docs/ble5stack/ble_user_guide/html/ble-stack-common/npi-index.html): Texas Instruments' protocol for communicating with their Zigbee/Bluetooth/etc radios
+
 ZNP = [Zigbee Network Processor](http://software-dl.ti.com/simplelink/esd/plugins/simplelink_zigbee_sdk_plugin/1.60.01.09/exports/docs/zigbee_user_guide/html/zigbee/developing_zigbee_applications/znp_interface/znp_interface.html): low-level Zigbee commands used to talk UNP to Texas Instruments' Zigbee radio
+
 ZCL = [Zigbee Cluster Library](https://zigbeealliance.org/wp-content/uploads/2019/12/07-5123-06-zigbee-cluster-library-specification.pdf): standardized message formats for features ("clusters") to turn on/off power, control lamp brightness etc.
+
 Coordinator = [Handles network node management](https://www.zigbee2mqtt.io/information/zigbee_network.html#coordinator) (device asks to join the network), passes app-level messages to consumer (usually ezstack)
-ezstack = Starts all components, receives app-level messages and provides vendor-specific parsers (sometimes ZCL is not enough, so vendors invent their own formats...) to cleaner abstractions so your app can receive "new temperature measurement from sensor XYZ"
 
-There also exists `ezhub` ("Easy Zigbee hub", [separate README](ezhub/README.md)) component which is
-a higher-level component meant to not just interact with Zigbee messaging, but to offer abstractions
-for sensor devices, light bulbs etc.
-and integrate with Home Assistant. High-level logical view looks like this:
+ezstack = Opens connection to the radio, Zigbee-level messaging, handles node registration, keeps a
+database of nodes and forwards app-level messages to consumer (usually ezhub).
 
+ezhub = ("Easy Zigbee hub", [separate README](ezhub/README.md)) is a higher-level component meant
+to offer abstractions for sensor devices, light bulbs etc. Receives Zigbee app-level messages and
+provides vendor-specific parsers to cleaner abstractions so your app can receive "new temperature
+measurement from sensor XYZ". It also implements Home Assistant integration.
 
-ezhub
------
-
-Logical component interaction:
+ezhub logical component interaction:
 
 ```
 ezhub
@@ -112,6 +96,31 @@ ezhub
 ```
 
 `ezstack` works without `ezhub`, but `ezhub` needs `ezstack`.
+
+
+A word on ZCL
+-------------
+
+Application-level things like sensor data and end device commands are communicated using ZCL which
+is a standardized framing structure/data format that Zigbee devices communicate with. ZCL **tries**
+to standardize things like attribute IDs and values for temperature readings and for controlling lights.
+Unfortunately ZCL fails to be a very good standard, and there are lots of manufacturer-specific quirks
+and therefore we need abstractions to hide the warts from the user.
+
+A good example of these stupid differences:
+
+- Xiaomi button sends:
+	* single-click as generic power on/off but
+	* double/triple/etc. click as manufacturer-specific attribute (specific examples of this in code walkthrough!).
+- Xiaomi (same vendor) double-button sends single/double/triple/etc. clicks as `genMultistateInput`.
+- Window/Door contact sensors sends generic power on/off, water leak detector acts as an alarm..
+- IKEA remote doesn't send button clicks, but sends direct specific commands to control brightness
+  and change scenes. So some remotes are intended to control specific device, and if you want to use
+  them as generic remotes (to control something else), you've to translate "brightness+" to "up button".
+  Even the IKEA remote's "scene change" uses a
+  [mystery command that isn't specified in ZCL](https://github.com/function61/hautomo/blob/5d677aad13cdd4ccbc8982722586e02a2651c745/pkg/ezstack/ezhub/deviceadapters/ikearemoteE1524.go#L42).
+
+If you want, you can read the [ZCL spec](https://zigbeealliance.org/wp-content/uploads/2019/12/07-5123-06-zigbee-cluster-library-specification.pdf).
 
 
 Code walkthrough
@@ -163,11 +172,16 @@ Roadmap
 Really long-term goals:
 
 - Instead of using CC2531 to be an autonomous coordinator, I would like to use it as RX/TX radio for
-  Zigbee raw packets so the radio firmware would be really simpler and we'd get much more low-level
-  control. There are
-  [really silly node count limitations](https://www.zigbee2mqtt.io/information/FAQ.html#i-read-that-zigbee2mqtt-has-a-limit-of-20-devices-when-using-a-cc2531-is-this-true)
-  that I think is the result of the CC2531 having to keep too much state and to too much work.
-  If we'd treat it as a radio, I don't think there would be any more of these silly limitations.
+  Zigbee raw packets:
+	* The radio firmware would be much simpler.
+	* We wouldn't have to change CC2531 firmware
+	  [to use different Zigbee protocol versions](https://github.com/Koenkk/Z-Stack-firmware/tree/master/coordinator#im-using-a-cc2530-or-cc2531-which-firmware-should-i-use).
+	* We'd get much more low-level control.
+	* There are
+	  [really silly node count limitations](https://www.zigbee2mqtt.io/information/FAQ.html#i-read-that-zigbee2mqtt-has-a-limit-of-20-devices-when-using-a-cc2531-is-this-true)
+	  that I think are the result of the CC2531 having to keep too much state and do too much work.
+	* It'd be much cleaner having the whole Zigbee stack in Go, instead of separate codebases
+	  in different languages running in different devices trying to accomplish one thing as a whole.
 
 
 Alternative software

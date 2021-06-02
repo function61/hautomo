@@ -219,10 +219,10 @@ const (
 	PressKindHold PressKind = 2
 )
 
-// Models a key or button press. Examples:
+// Models a key/button press. Supports key combinations and double/triple/etc. clicks. Examples:
 //
 // {Key: KeyPOWER} for a power toggle
-// {Key: Btn0, KeysAdditional=[Btn1], Kind=Hold} for two buttons held in a switch that has two buttons horizontally
+// {Key: Btn0, KeysAdditional=[Btn1], Kind=Hold} for two buttons held in a switch that has two buttons
 // {Key: Btn0, Times=2} for a double click in a single-button switch
 type AttrPress struct {
 	// key press, identified by Linux evdev code. examples (below Key{VOLUMEUP} means evdevcodes.KeyVOLUMEUP):
@@ -243,7 +243,7 @@ type AttrPress struct {
 	Key            evdevcodes.KeyOrButton   `json:"key"`                       // primary (or first) key. for convenience because usually we get only single-key presses
 	KeysAdditional []evdevcodes.KeyOrButton `json:"keys_additional,omitempty"` // in rare occasion there are multiple keys pressed at once. additional keys to primary are here. see AllKeys()
 	Kind           PressKind                `json:"kind,omitempty"`            // usually PressKindUp, but can be down/hold if we have hold detection or get separate keyup, keydown events
-	CountRaw       *int                     `json:"count,omitempty"`           // double, triple etc. clicks. only specify if >= 2. see Times()
+	CountRaw       *int                     `json:"count,omitempty"`           // double, triple etc. clicks. only specify if >= 2. see Count()
 
 	LastReport time.Time `json:"reported"`
 }

@@ -1,7 +1,7 @@
 Issues with Zigbee2MQTT
 =======================
 
-None of these issues is a show-stopper, but in aggregate I couldn't continue with Zigbee2MQTT anymore:
+None of these issues alone is a show-stopper, but in aggregate I couldn't continue with Zigbee2MQTT anymore:
 
 - I trust a statically typed language more for critical software than JavaScript
 - I found it hard to debug Zigbee-level issues with Zigbee2MQTT. E.g. to this day I don't know if
@@ -9,7 +9,8 @@ None of these issues is a show-stopper, but in aggregate I couldn't continue wit
   [It looks like you need different firmware and tooling for that](https://www.zigbee2mqtt.io/how_tos/how_to_sniff_zigbee_traffic.html).
 - Zigbee2MQTT security focus is not great:
 	* It ships insecure configuration by default with a
-	  shared-with-everyone Zigbee network encryption key unless you specify your own one. If you realize
+	  [shared-with-everyone Zigbee network encryption key](https://github.com/Koenkk/zigbee2mqtt.io/blame/10178f159dc44ee529e7edb4d30c145520daefd9/docs/information/configuration.md#L117)
+    unless you specify your own one. If you realize
 	  this later and want to secure your network, changing the key requires you to re-pair all your devices!
 	  Ask me how I know...
 	* `permit_join` is a configurable value so it's too easy to set `permit_join: true` and forget to
