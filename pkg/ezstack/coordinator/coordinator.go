@@ -555,7 +555,7 @@ func setPermitJoiningStatus(permitJoin bool, coordinator *Coordinator) error {
 		if permitJoin {
 			// return 0xFF // forever?
 			go func() {
-				<-time.After(12 * time.Second)
+				<-time.After(120 * time.Second)
 				log.Info.Println("join period passed")
 			}()
 
