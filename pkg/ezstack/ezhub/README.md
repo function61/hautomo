@@ -44,6 +44,5 @@ Generate new configuration file:
 $ ./hautomo ezhub new-config > ezhub-config.json
 ```
 
-All the values are randomized
-(except [channel](https://home-assistant-guide.com/2020/10/29/choose-your-zigbee-channel-wisely/)) -
-you might want to change it.
+All the values are randomized (except channel) -
+[you might want to change it]((https://home-assistant-guide.com/2020/10/29/choose-your-zigbee-channel-wisely/)).

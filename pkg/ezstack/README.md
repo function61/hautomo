@@ -32,7 +32,8 @@ Supported devices: tested most Xiaomi Aqara sensors & IKEA Trådfri lights.
 Works for my 30+ -node Zigbee network. I actually have two Zigbee networks to overcome the
 ~[20-nodes-per-CC2531 limit]((https://www.zigbee2mqtt.io/information/FAQ.html#i-read-that-zigbee2mqtt-has-a-limit-of-20-devices-when-using-a-cc2531-is-this-true))
 & other issues.
-So multi-Zigbee radio support can be considered to have first-class support.
+So multi-radio Zigbee support (it's mainly just MQTT topic partitioning and some evdev rules for
+robustness, though) can be considered to have first-class support.
 
 I don't expect this project to be mature enough for stable use to other people very soon, because my
 goal is not support as many devices as Zigbee2MQTT (it supports absolutely massive amount of devices),
@@ -71,7 +72,7 @@ ezstack
 
 UNP = [Unified Network Processor (Interface)](https://dev.ti.com/tirex/explore/content/simplelink_cc13x2_26x2_sdk_3_10_00_53/docs/ble5stack/ble_user_guide/html/ble-stack-common/npi-index.html): Texas Instruments' protocol for communicating with their Zigbee/Bluetooth/etc radios
 
-ZNP = [Zigbee Network Processor](http://software-dl.ti.com/simplelink/esd/plugins/simplelink_zigbee_sdk_plugin/1.60.01.09/exports/docs/zigbee_user_guide/html/zigbee/developing_zigbee_applications/znp_interface/znp_interface.html): low-level Zigbee commands used to talk UNP to Texas Instruments' Zigbee radio
+ZNP = [Zigbee Network Processor](http://software-dl.ti.com/simplelink/esd/plugins/simplelink_zigbee_sdk_plugin/1.60.01.09/exports/docs/zigbee_user_guide/html/zigbee/developing_zigbee_applications/znp_interface/znp_interface.html): low-level commands on top of UNP to send system or Zigbee commands to the Texas Instruments' Zigbee radio
 
 ZCL = [Zigbee Cluster Library](https://zigbeealliance.org/wp-content/uploads/2019/12/07-5123-06-zigbee-cluster-library-specification.pdf): standardized message formats for features ("clusters") to turn on/off power, control lamp brightness etc.
 
@@ -101,9 +102,10 @@ ezhub
 A word on ZCL
 -------------
 
-Application-level things like sensor data and end device commands are communicated using ZCL which
-is a standardized framing structure/data format that Zigbee devices communicate with. ZCL **tries**
-to standardize things like attribute IDs and values for temperature readings and for controlling lights.
+Application-level things like sensor data and other end device commands (e.g. "set light bulb brighness")
+are communicated using ZCL which is a standardized framing structure/data format that Zigbee devices
+communicate with. ZCL *tries* to standardize things like attribute IDs and values for temperature
+readings and for controlling lights.
 Unfortunately ZCL fails to be a very good standard, and there are lots of manufacturer-specific quirks
 and therefore we need abstractions to hide the warts from the user.
 
