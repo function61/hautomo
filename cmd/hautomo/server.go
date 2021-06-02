@@ -111,7 +111,7 @@ func (a *Application) applyPowerDiffs() {
 		adapter := a.adapterById[device.Conf.AdapterId]
 		adapter.Send(msg)
 
-		a.powerManager.ApplyDiff(diff)
+		a.powerManager.CommitDiff(diff)
 	}
 }
 

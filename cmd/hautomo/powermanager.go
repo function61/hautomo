@@ -64,7 +64,8 @@ func (p *PowerManager) getDesired(deviceId string, power hapitypes.PowerKind) bo
 	}
 }
 
-func (p *PowerManager) ApplyDiff(pd PowerDiff) {
+// marks diff as "committed" so it won't show up as diff the next time
+func (p *PowerManager) CommitDiff(pd PowerDiff) {
 	p.actual[pd.Device] = pd.On
 }
 

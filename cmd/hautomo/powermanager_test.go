@@ -23,7 +23,7 @@ func TestPowerManager(t *testing.T) {
 	assert.Assert(t, len(diff) == 1)
 	assert.EqualString(t, serialize(diff), "foo => on")
 
-	pm.ApplyDiff(diff[0])
+	pm.CommitDiff(diff[0])
 	assert.Assert(t, pm.GetActual("foo") == true)
 
 	assert.Assert(t, len(pm.Diff()) == 0)
@@ -45,7 +45,7 @@ func TestPowerManagerWithExplicit(t *testing.T) {
 	pm.SetExplicit("dev", hapitypes.PowerKindOn)
 	pd := pm.Diff()
 	assert.EqualString(t, serialize(pd), "dev => on")
-	pm.ApplyDiff(pd[0])
+	pm.CommitDiff(pd[0])
 	assert.Assert(t, len(pm.Diff()) == 0)
 
 	pm.Set("dev", hapitypes.PowerKindOn)
