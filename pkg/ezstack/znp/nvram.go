@@ -56,6 +56,7 @@ func (n *ZCDNVLogicalType) ItemID() NVRAMItemId {
 	return 0x0087
 }
 
+// probably related: https://www.digi.com/resources/documentation/Digidocs/90001942-13/concepts/c_zb_security_model.htm?TocPath=Security+and+encryption%7CZigBee+security+model%7C_____0
 type ZCDNVSecurityMode struct {
 	Enabled uint8
 }

@@ -32,8 +32,8 @@ Supported devices: tested most Xiaomi Aqara sensors & IKEA Trådfri lights.
 Works for my 30+ -node Zigbee network. I actually have two Zigbee networks to overcome the
 ~[20-nodes-per-CC2531 limit]((https://www.zigbee2mqtt.io/information/FAQ.html#i-read-that-zigbee2mqtt-has-a-limit-of-20-devices-when-using-a-cc2531-is-this-true))
 & other issues.
-So multi-radio Zigbee support (it's mainly just MQTT topic partitioning and some evdev rules for
-robustness, though) can be considered to have first-class support.
+So multi-radio Zigbee support (it's mainly just MQTT topic partitioning and some udev rules for
+COM port naming robustness, though) can be considered to have first-class support.
 
 I don't expect this project to be mature enough for stable use to other people very soon, because my
 goal is not support as many devices as Zigbee2MQTT (it supports absolutely massive amount of devices),
