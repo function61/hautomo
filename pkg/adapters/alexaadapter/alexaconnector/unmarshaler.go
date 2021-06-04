@@ -24,6 +24,7 @@ var namespaceAndNameAllocators = map[string]func() interface{}{
 	"Alexa.PlaybackController#Next":                        func() interface{} { return &alexatypes.AlexaPlaybackControllerNext{} },
 	"Alexa.PlaybackController#Rewind":                      func() interface{} { return &alexatypes.AlexaPlaybackControllerRewind{} },
 	"Alexa.PlaybackController#FastForward":                 func() interface{} { return &alexatypes.AlexaPlaybackControllerFastForward{} },
+	"Alexa.PercentageController#SetPercentage":             func() interface{} { return &alexatypes.AlexaPercentageControllerSetPercentage{} },
 }
 
 func unmarshalDirective(inputJson []byte) (*alexatypes.DirectiveInput, interface{}, error) {

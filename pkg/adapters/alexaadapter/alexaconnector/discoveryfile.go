@@ -75,6 +75,8 @@ func makeCaps(capCode string) ([]alexatypes.EndpointSpecCapability, error) {
 		return one(capNonRetrievableNonProactivelyReported("Alexa.ColorController", "color")), nil
 	case "ColorTemperatureController":
 		return one(capNonRetrievableNonProactivelyReported("Alexa.ColorTemperatureController", "colorTemperatureInKelvin")), nil
+	case "PercentageController":
+		return one(capNonRetrievableNonProactivelyReported("Alexa.PercentageController", "percentage")), nil
 	case "PlaybackController":
 		return one(alexatypes.EndpointSpecCapability{
 			Type:                "AlexaInterface",

@@ -608,6 +608,72 @@ func TestPlayback(t *testing.T) {
 {"DeviceId":"workPC","Attrs":{"playback_control":{"control":"Pause","reported":"2020-07-14T14:09:00Z"}}}`)
 }
 
+func TestPercentage(t *testing.T) {
+	input := `{
+    "directive": {
+        "header": {
+            "namespace": "Alexa.PercentageController",
+            "name": "SetPercentage",
+            "payloadVersion": "3",
+            "messageId": "730badbd-2eb1-40e9-9f1c-892758e24ac2",
+            "correlationToken": "corr8"
+        },
+        "endpoint": {
+            "scope": {
+                "type": "BearerToken",
+                "token": "Atza|dummyAccessToken"
+            },
+            "endpointId": "bedroomWindowShade",
+            "cookie": {
+                "queue": "https://sqs.us-east-1.amazonaws.com/123456789011/JoonasHomeAutomation"
+            }
+        },
+        "payload": {
+            "percentage": 74
+        }
+    }
+}`
+
+	genericAssert(t, input, `
+# Output
+{
+  "context": {
+    "properties": [
+      {
+        "namespace": "Alexa.PercentageController",
+        "name": "percentage",
+        "value": 74,
+        "timeOfSample": "2020-07-14T14:09:00Z",
+        "uncertaintyInMilliseconds": 0
+      }
+    ]
+  },
+  "event": {
+    "header": {
+      "namespace": "Alexa",
+      "name": "Response",
+      "payloadVersion": "3",
+      "messageId": "mockId",
+      "correlationToken": "corr8"
+    },
+    "endpoint": {
+      "scope": {
+        "type": "BearerToken",
+        "token": "Atza|dummyAccessToken"
+      },
+      "endpointId": "bedroomWindowShade",
+      "cookie": {
+        "queue": "https://sqs.us-east-1.amazonaws.com/123456789011/JoonasHomeAutomation"
+      }
+    },
+    "payload": {}
+  }
+}
+
+# Queue msg
+{"DeviceId":"bedroomWindowShade","Attrs":{"shade_position":{"value":74,"reported":"2020-07-14T14:09:00Z"}}}`)
+}
+
 func genericAssert(t *testing.T, input string, outMsg string) {
 	t.Helper()
 

@@ -72,6 +72,10 @@ func createAlexaConnectorSpec(sqsAdapter hapitypes.AdapterConfig, conf *hapitype
 		maybePushCap(&alexaCapabilities, caps.ColorTemperature, "ColorTemperatureController")
 		maybePushCap(&alexaCapabilities, caps.Playback, "PlaybackController")
 
+		// Alexa doesn't have shade/cover controls, so let's use PercentageController
+		maybePushCap(&alexaCapabilities, caps.CoverPosition, "PowerController")
+		maybePushCap(&alexaCapabilities, caps.CoverPosition, "PercentageController")
+
 		devices = append(devices, AlexaConnectorDevice{
 			Id:              device.DeviceId,
 			FriendlyName:    device.Name,

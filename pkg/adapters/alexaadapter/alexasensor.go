@@ -140,6 +140,15 @@ func runOnce(ctx context.Context, sqsClient *sqs.SQS, adapter *hapitypes.Adapter
 		attrs := msg.Attrs // shorthand
 
 		if attrs.On != nil {
+			if isCurtainDevice(msg.DeviceId) {
+				adapter.Receive(hapitypes.NewCoverPositionEvent(msg.DeviceId, func() uint {
+					if attrs.On.Value {
+						return 100
+					} else {
+						return 0
+					}
+				}()))
+			} else {
 				adapter.Receive(hapitypes.NewPowerEvent(
 					msg.DeviceId,
 					func() hapitypes.PowerKind {
@@ -150,6 +159,7 @@ func runOnce(ctx context.Context, sqsClient *sqs.SQS, adapter *hapitypes.Adapter
 						}
 					}(),
 					true))
+			}
 		}
 
 		if attrs.Color != nil {
@@ -177,6 +187,12 @@ func runOnce(ctx context.Context, sqsClient *sqs.SQS, adapter *hapitypes.Adapter
 				msg.DeviceId,
 				attrs.PlaybackControl.Control))
 		}
+
+		if attrs.ShadePosition != nil {
+			adapter.Receive(hapitypes.NewCoverPositionEvent(
+				msg.DeviceId,
+				uint(attrs.ShadePosition.Value)))
+		}
 	}
 
 	if len(ackList) > 0 {
@@ -193,4 +209,10 @@ func runOnce(ctx context.Context, sqsClient *sqs.SQS, adapter *hapitypes.Adapter
 	}
 
 	return nil
+}
+
+// FIXME: this is an ugly hack because we can't semantically represent curtain in Alexa, so we've to
+//        on-the-fly transform semantics in this layer
+func isCurtainDevice(deviceId string) bool {
+	return deviceId == "bedroomWindowShade"
 }

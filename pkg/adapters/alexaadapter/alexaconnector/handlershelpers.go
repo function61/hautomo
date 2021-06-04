@@ -48,6 +48,8 @@ func (h *Handlers) Handle(ctx context.Context, input []byte) (*alexatypes.AlexaR
 		return h.AlexaPlaybackControllerRewind(ctx, directiveMsg, payload)
 	case *alexatypes.AlexaPlaybackControllerFastForward:
 		return h.AlexaPlaybackControllerFastForward(ctx, directiveMsg, payload)
+	case *alexatypes.AlexaPercentageControllerSetPercentage:
+		return h.AlexaPercentageControllerSetPercentage(ctx, directiveMsg, payload)
 	default:
 		return nil, fmt.Errorf(
 			"unknown payload type: %s/%s",

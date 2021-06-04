@@ -183,6 +183,26 @@ func (h *Handlers) AlexaBrightnessControllerSetBrightness(
 	return h.propertyResponse("Response", directiveMsg, propResponse), nil
 }
 
+func (h *Handlers) AlexaPercentageControllerSetPercentage(
+	ctx context.Context,
+	directiveMsg *alexatypes.DirectiveInput,
+	payload *alexatypes.AlexaPercentageControllerSetPercentage,
+) (*alexatypes.AlexaResponse, error) {
+	// TODO: assuming PercentageController is for cover control. that may not be the case in the future.
+	if err := h.sendCommand(ctx, directiveMsg, aamessages.Message{
+		DeviceId: directiveMsg.Directive.Endpoint.EndpointId,
+		Attrs: hubtypes.Attributes{
+			ShadePosition: h.bld().Int(int64(payload.Percentage)),
+		},
+	}); err != nil {
+		return nil, err
+	}
+
+	propResponse := h.mkProperty(directiveMsg.Directive.Header.Namespace, "percentage", payload.Percentage)
+
+	return h.propertyResponse("Response", directiveMsg, propResponse), nil
+}
+
 func (h *Handlers) AlexaColorTemperatureControllerSetColorTemperature(
 	ctx context.Context,
 	directiveMsg *alexatypes.DirectiveInput,
