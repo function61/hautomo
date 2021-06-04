@@ -38,6 +38,16 @@ var deviceTypes = map[string]*DeviceType{
 			Power: true,
 		},
 	},
+	"ikea-fyrtur": &DeviceType{
+		Name:         "Fyrtur roller blind",
+		Manufacturer: "IKEA",
+		Model:        "Fyrtur",
+		BatteryType:  "Custom battery pack",
+		Class:        DeviceClassRollerBlind,
+		Capabilities: Capabilities{
+			CoverPosition: true,
+		},
+	},
 	"ikea-trådfri-remote": &DeviceType{
 		Name:         "Trådfri remote",
 		Manufacturer: "IKEA",
@@ -200,4 +210,5 @@ type Capabilities struct {
 	Playback                  bool `json:"playback"`
 	ReportsTemperature        bool `json:"reports_temperature"`
 	VirtualSwitch             bool `json:"virtual_switch"` // can send fake contact sensor triggers to Alexa to trigger routines
+	CoverPosition             bool `json:"cover_position"`
 }
