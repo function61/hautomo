@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"time"
 
 	"github.com/function61/gokit/crypto/cryptoutil"
@@ -14,6 +15,7 @@ import (
 	"github.com/function61/hautomo/pkg/adapters/alexaadapter/aamessages"
 	"github.com/function61/hautomo/pkg/adapters/alexaadapter/alexadevicesync"
 	"github.com/function61/hautomo/pkg/alexatypes"
+	"github.com/function61/hautomo/pkg/ezstack/ezhub/hubtypes"
 	"github.com/lucasb-eyer/go-colorful"
 )
 
@@ -93,7 +95,7 @@ func (h *Handlers) AlexaDiscoveryDiscoverInput(
 	// 3)
 
 	spec := alexadevicesync.AlexaConnectorSpec{}
-	if err := jsonfile.Unmarshal(discoveryFile, &spec, true); err != nil {
+	if err := jsonfile.UnmarshalDisallowUnknownFields(discoveryFile, &spec); err != nil {
 		return nil, err
 	}
 
@@ -129,15 +131,18 @@ func (h *Handlers) AlexaPowerControllerTurnOn(
 	directiveMsg *alexatypes.DirectiveInput,
 	payload *alexatypes.AlexaPowerControllerTurnOn,
 ) (*alexatypes.AlexaResponse, error) {
-	powerOn := h.mkProperty(directiveMsg.Directive.Header.Namespace, "powerState", "ON")
-
-	if err := h.sendCommand(ctx, directiveMsg, &aamessages.TurnOnRequest{
-		DeviceIdOrDeviceGroupId: directiveMsg.Directive.Endpoint.EndpointId,
+	if err := h.sendCommand(ctx, directiveMsg, aamessages.Message{
+		DeviceId: directiveMsg.Directive.Endpoint.EndpointId,
+		Attrs: hubtypes.Attributes{
+			On: h.bld().Bool(true),
+		},
 	}); err != nil {
 		return nil, err
 	}
 
-	return h.propertyResponse("Response", directiveMsg, powerOn), nil
+	propResponse := h.mkProperty(directiveMsg.Directive.Header.Namespace, "powerState", "ON")
+
+	return h.propertyResponse("Response", directiveMsg, propResponse), nil
 }
 
 func (h *Handlers) AlexaPowerControllerTurnOff(
@@ -145,15 +150,18 @@ func (h *Handlers) AlexaPowerControllerTurnOff(
 	directiveMsg *alexatypes.DirectiveInput,
 	payload *alexatypes.AlexaPowerControllerTurnOff,
 ) (*alexatypes.AlexaResponse, error) {
-	powerOff := h.mkProperty(directiveMsg.Directive.Header.Namespace, "powerState", "OFF")
-
-	if err := h.sendCommand(ctx, directiveMsg, &aamessages.TurnOffRequest{
-		DeviceIdOrDeviceGroupId: directiveMsg.Directive.Endpoint.EndpointId,
+	if err := h.sendCommand(ctx, directiveMsg, aamessages.Message{
+		DeviceId: directiveMsg.Directive.Endpoint.EndpointId,
+		Attrs: hubtypes.Attributes{
+			On: h.bld().Bool(false),
+		},
 	}); err != nil {
 		return nil, err
 	}
 
-	return h.propertyResponse("Response", directiveMsg, powerOff), nil
+	propResponse := h.mkProperty(directiveMsg.Directive.Header.Namespace, "powerState", "OFF")
+
+	return h.propertyResponse("Response", directiveMsg, propResponse), nil
 }
 
 func (h *Handlers) AlexaBrightnessControllerSetBrightness(
@@ -161,16 +169,18 @@ func (h *Handlers) AlexaBrightnessControllerSetBrightness(
 	directiveMsg *alexatypes.DirectiveInput,
 	payload *alexatypes.AlexaBrightnessControllerSetBrightness,
 ) (*alexatypes.AlexaResponse, error) {
-	brightness := h.mkProperty(directiveMsg.Directive.Header.Namespace, "brightness", payload.Brightness)
-
-	if err := h.sendCommand(ctx, directiveMsg, &aamessages.BrightnessRequest{
-		DeviceIdOrDeviceGroupId: directiveMsg.Directive.Endpoint.EndpointId,
-		Brightness:              uint(payload.Brightness),
+	if err := h.sendCommand(ctx, directiveMsg, aamessages.Message{
+		DeviceId: directiveMsg.Directive.Endpoint.EndpointId,
+		Attrs: hubtypes.Attributes{
+			Brightness: h.bld().Int(int64(payload.Brightness)),
+		},
 	}); err != nil {
 		return nil, err
 	}
 
-	return h.propertyResponse("Response", directiveMsg, brightness), nil
+	propResponse := h.mkProperty(directiveMsg.Directive.Header.Namespace, "brightness", payload.Brightness)
+
+	return h.propertyResponse("Response", directiveMsg, propResponse), nil
 }
 
 func (h *Handlers) AlexaColorTemperatureControllerSetColorTemperature(
@@ -178,19 +188,24 @@ func (h *Handlers) AlexaColorTemperatureControllerSetColorTemperature(
 	directiveMsg *alexatypes.DirectiveInput,
 	payload *alexatypes.AlexaColorTemperatureControllerSetColorTemperature,
 ) (*alexatypes.AlexaResponse, error) {
-	colorTemperatureInKelvin := h.mkProperty(
-		directiveMsg.Directive.Header.Namespace,
-		"colorTemperatureInKelvin",
-		payload.ColorTemperatureInKelvin)
+	// https://visualsproducer.wordpress.com/2020/11/29/mireds-versus-degrees-kelvin-for-colour-temperature/
+	mireds := math.Round(1_000_000 / float64(payload.ColorTemperatureInKelvin))
 
-	if err := h.sendCommand(ctx, directiveMsg, &aamessages.ColorTemperatureRequest{
-		DeviceIdOrDeviceGroupId:  directiveMsg.Directive.Endpoint.EndpointId,
-		ColorTemperatureInKelvin: uint(payload.ColorTemperatureInKelvin),
+	if err := h.sendCommand(ctx, directiveMsg, aamessages.Message{
+		DeviceId: directiveMsg.Directive.Endpoint.EndpointId,
+		Attrs: hubtypes.Attributes{
+			ColorTemperature: h.bld().Int(int64(mireds)),
+		},
 	}); err != nil {
 		return nil, err
 	}
 
-	return h.propertyResponse("Response", directiveMsg, colorTemperatureInKelvin), nil
+	propResponse := h.mkProperty(
+		directiveMsg.Directive.Header.Namespace,
+		"colorTemperatureInKelvin",
+		payload.ColorTemperatureInKelvin)
+
+	return h.propertyResponse("Response", directiveMsg, propResponse), nil
 }
 
 func (h *Handlers) AlexaPlaybackControllerPlay(
@@ -198,7 +213,7 @@ func (h *Handlers) AlexaPlaybackControllerPlay(
 	directiveMsg *alexatypes.DirectiveInput,
 	payload *alexatypes.AlexaPlaybackControllerPlay,
 ) (*alexatypes.AlexaResponse, error) {
-	return h.playbackCommon(ctx, "Play", directiveMsg)
+	return h.playbackCommon(ctx, hubtypes.PlaybackControlPlay, directiveMsg)
 }
 
 func (h *Handlers) AlexaPlaybackControllerPause(
@@ -206,7 +221,7 @@ func (h *Handlers) AlexaPlaybackControllerPause(
 	directiveMsg *alexatypes.DirectiveInput,
 	payload *alexatypes.AlexaPlaybackControllerPause,
 ) (*alexatypes.AlexaResponse, error) {
-	return h.playbackCommon(ctx, "Pause", directiveMsg)
+	return h.playbackCommon(ctx, hubtypes.PlaybackControlPause, directiveMsg)
 }
 
 func (h *Handlers) AlexaPlaybackControllerStop(
@@ -214,7 +229,7 @@ func (h *Handlers) AlexaPlaybackControllerStop(
 	directiveMsg *alexatypes.DirectiveInput,
 	payload *alexatypes.AlexaPlaybackControllerStop,
 ) (*alexatypes.AlexaResponse, error) {
-	return h.playbackCommon(ctx, "Stop", directiveMsg)
+	return h.playbackCommon(ctx, hubtypes.PlaybackControlStop, directiveMsg)
 }
 
 func (h *Handlers) AlexaPlaybackControllerStartOver(
@@ -222,7 +237,7 @@ func (h *Handlers) AlexaPlaybackControllerStartOver(
 	directiveMsg *alexatypes.DirectiveInput,
 	payload *alexatypes.AlexaPlaybackControllerStartOver,
 ) (*alexatypes.AlexaResponse, error) {
-	return h.playbackCommon(ctx, "StartOver", directiveMsg)
+	return h.playbackCommon(ctx, hubtypes.PlaybackControlStartOver, directiveMsg)
 }
 
 func (h *Handlers) AlexaPlaybackControllerPrevious(
@@ -230,7 +245,7 @@ func (h *Handlers) AlexaPlaybackControllerPrevious(
 	directiveMsg *alexatypes.DirectiveInput,
 	payload *alexatypes.AlexaPlaybackControllerPrevious,
 ) (*alexatypes.AlexaResponse, error) {
-	return h.playbackCommon(ctx, "Previous", directiveMsg)
+	return h.playbackCommon(ctx, hubtypes.PlaybackControlPrevious, directiveMsg)
 }
 
 func (h *Handlers) AlexaPlaybackControllerNext(
@@ -238,7 +253,7 @@ func (h *Handlers) AlexaPlaybackControllerNext(
 	directiveMsg *alexatypes.DirectiveInput,
 	payload *alexatypes.AlexaPlaybackControllerNext,
 ) (*alexatypes.AlexaResponse, error) {
-	return h.playbackCommon(ctx, "Next", directiveMsg)
+	return h.playbackCommon(ctx, hubtypes.PlaybackControlNext, directiveMsg)
 }
 
 func (h *Handlers) AlexaPlaybackControllerRewind(
@@ -246,7 +261,7 @@ func (h *Handlers) AlexaPlaybackControllerRewind(
 	directiveMsg *alexatypes.DirectiveInput,
 	payload *alexatypes.AlexaPlaybackControllerRewind,
 ) (*alexatypes.AlexaResponse, error) {
-	return h.playbackCommon(ctx, "Rewind", directiveMsg)
+	return h.playbackCommon(ctx, hubtypes.PlaybackControlRewind, directiveMsg)
 }
 
 func (h *Handlers) AlexaPlaybackControllerFastForward(
@@ -254,17 +269,19 @@ func (h *Handlers) AlexaPlaybackControllerFastForward(
 	directiveMsg *alexatypes.DirectiveInput,
 	payload *alexatypes.AlexaPlaybackControllerFastForward,
 ) (*alexatypes.AlexaResponse, error) {
-	return h.playbackCommon(ctx, "FastForward", directiveMsg)
+	return h.playbackCommon(ctx, hubtypes.PlaybackControlFastForward, directiveMsg)
 }
 
 func (h *Handlers) playbackCommon(
 	ctx context.Context,
-	action string,
+	control hubtypes.PlaybackControl,
 	directiveMsg *alexatypes.DirectiveInput,
 ) (*alexatypes.AlexaResponse, error) {
-	if err := h.sendCommand(ctx, directiveMsg, &aamessages.PlaybackRequest{
-		DeviceIdOrDeviceGroupId: directiveMsg.Directive.Endpoint.EndpointId,
-		Action:                  action,
+	if err := h.sendCommand(ctx, directiveMsg, aamessages.Message{
+		DeviceId: directiveMsg.Directive.Endpoint.EndpointId,
+		Attrs: hubtypes.Attributes{
+			PlaybackControl: h.bld().PlaybackControl(control),
+		},
 	}); err != nil {
 		return nil, err
 	}
@@ -282,11 +299,15 @@ func (h *Handlers) AlexaColorControllerSetColor(
 		payload.Color.Saturation,
 		payload.Color.Brightness)
 
-	if err := h.sendCommand(ctx, directiveMsg, &aamessages.ColorRequest{
-		DeviceIdOrDeviceGroupId: directiveMsg.Directive.Endpoint.EndpointId,
-		Red:                     uint8(color.R * 255.0),
-		Green:                   uint8(color.G * 255.0),
-		Blue:                    uint8(color.B * 255.0),
+	to255 := func(input float64) uint8 { // [0...1.0] -> [0...255]
+		return uint8(input * 255.0)
+	}
+
+	if err := h.sendCommand(ctx, directiveMsg, aamessages.Message{
+		DeviceId: directiveMsg.Directive.Endpoint.EndpointId,
+		Attrs: hubtypes.Attributes{
+			Color: h.bld().Color(to255(color.R), to255(color.G), to255(color.B)),
+		},
 	}); err != nil {
 		return nil, err
 	}
@@ -295,4 +316,8 @@ func (h *Handlers) AlexaColorControllerSetColor(
 		directiveMsg.Directive.Header.Namespace,
 		"color",
 		payload.Color)), nil
+}
+
+func (h *Handlers) bld() hubtypes.AttrBuilder { // helper
+	return hubtypes.NewAttrBuilder(h.now().UTC())
 }

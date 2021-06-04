@@ -42,7 +42,7 @@ func TestDiscovery(t *testing.T) {
       "messageId": "mockId"
     },
     "payload": {
-      "endpoint": [
+      "endpoints": [
         {
           "endpointId": "bedroomCeilingFan",
           "manufacturerName": "function61.com",
@@ -168,8 +168,7 @@ func TestReportState(t *testing.T) {
         "type": "BearerToken",
         "token": "Atza|dummyAccessToken"
       },
-      "endpointId": "038c2459-cc64-4226-8413-03c13f316797",
-      "cookie": {}
+      "endpointId": "038c2459-cc64-4226-8413-03c13f316797"
     },
     "payload": {}
   }
@@ -280,7 +279,7 @@ func TestPowerControllerTurnOn(t *testing.T) {
 }
 
 # Queue msg
-turn_on {"id":"cornerLight"}`)
+{"DeviceId":"cornerLight","Attrs":{"on":{"value":true,"reported":"2020-07-14T14:09:00Z"}}}`)
 }
 
 func TestPowerControllerTurnOff(t *testing.T) {
@@ -344,7 +343,7 @@ func TestPowerControllerTurnOff(t *testing.T) {
 }
 
 # Queue msg
-turn_off {"id":"cornerLight"}`)
+{"DeviceId":"cornerLight","Attrs":{"on":{"value":false,"reported":"2020-07-14T14:09:00Z"}}}`)
 }
 
 func TestSetBrightness(t *testing.T) {
@@ -410,7 +409,7 @@ func TestSetBrightness(t *testing.T) {
 }
 
 # Queue msg
-brightness {"id":"sofaLight","brightness":100}`)
+{"DeviceId":"sofaLight","Attrs":{"brightness":{"value":100,"reported":"2020-07-14T14:09:00Z"}}}`)
 }
 
 func TestSetColorTemp(t *testing.T) {
@@ -476,7 +475,7 @@ func TestSetColorTemp(t *testing.T) {
 }
 
 # Queue msg
-colorTemperature {"id":"officeLight","colorTemperatureInKelvin":2200}`)
+{"DeviceId":"officeLight","Attrs":{"color_temp":{"value":455,"reported":"2020-07-14T14:09:00Z"}}}`)
 }
 
 func TestSetColor(t *testing.T) {
@@ -550,7 +549,7 @@ func TestSetColor(t *testing.T) {
 }
 
 # Queue msg
-color {"id":"sofaLight","red":255,"green":255,"blue":0}`)
+{"DeviceId":"sofaLight","Attrs":{"color":{"r":255,"g":255,"b":0,"reported":"2020-07-14T14:09:00Z"}}}`)
 }
 
 func TestPlayback(t *testing.T) {
@@ -606,7 +605,7 @@ func TestPlayback(t *testing.T) {
 }
 
 # Queue msg
-playback {"id":"workPC","action":"Pause"}`)
+{"DeviceId":"workPC","Attrs":{"playback_control":{"control":"Pause","reported":"2020-07-14T14:09:00Z"}}}`)
 }
 
 func genericAssert(t *testing.T, input string, outMsg string) {

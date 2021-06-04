@@ -137,38 +137,45 @@ func runOnce(ctx context.Context, sqsClient *sqs.SQS, adapter *hapitypes.Adapter
 			continue
 		}
 
-		// TODO: investigate generic serialization format for hapitypes.PowerEvent,
-		//       hapitypes.BrightnessEvent so we wouldn't need additional "aamessages" pkg?
+		attrs := msg.Attrs // shorthand
 
-		switch req := msg.(type) {
-		case *aamessages.TurnOnRequest:
-			adapter.Receive(hapitypes.NewPowerEvent(
-				req.DeviceIdOrDeviceGroupId,
-				hapitypes.PowerKindOn,
-				true))
-		case *aamessages.TurnOffRequest:
-			adapter.Receive(hapitypes.NewPowerEvent(
-				req.DeviceIdOrDeviceGroupId,
-				hapitypes.PowerKindOff,
-				true))
-		case *aamessages.ColorRequest:
+		if attrs.On != nil {
+				adapter.Receive(hapitypes.NewPowerEvent(
+					msg.DeviceId,
+					func() hapitypes.PowerKind {
+						if attrs.On.Value {
+							return hapitypes.PowerKindOn
+						} else {
+							return hapitypes.PowerKindOff
+						}
+					}(),
+					true))
+		}
+
+		if attrs.Color != nil {
+			color := attrs.Color // shorthand
+
 			adapter.Receive(hapitypes.NewColorMsg(
-				req.DeviceIdOrDeviceGroupId,
-				hapitypes.NewRGB(req.Red, req.Green, req.Blue)))
-		case *aamessages.BrightnessRequest:
+				msg.DeviceId,
+				hapitypes.NewRGB(color.Red, color.Green, color.Blue)))
+		}
+
+		if attrs.Brightness != nil {
 			adapter.Receive(hapitypes.NewBrightnessEvent(
-				req.DeviceIdOrDeviceGroupId,
-				req.Brightness))
-		case *aamessages.PlaybackRequest:
-			adapter.Receive(hapitypes.NewPlaybackEvent(
-				req.DeviceIdOrDeviceGroupId,
-				req.Action))
-		case *aamessages.ColorTemperatureRequest:
+				msg.DeviceId,
+				uint(attrs.Brightness.Value)))
+		}
+
+		if attrs.ColorTemperature != nil {
 			adapter.Receive(hapitypes.NewColorTemperatureEvent(
-				req.DeviceIdOrDeviceGroupId,
-				req.ColorTemperatureInKelvin))
-		default:
-			adapter.Logl.Error.Printf("unknown msg kind: %s", msg.Kind())
+				msg.DeviceId,
+				uint(attrs.ColorTemperature.Value)))
+		}
+
+		if attrs.PlaybackControl != nil {
+			adapter.Receive(hapitypes.NewPlaybackEvent(
+				msg.DeviceId,
+				attrs.PlaybackControl.Control))
 		}
 	}
 
