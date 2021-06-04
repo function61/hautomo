@@ -1,11 +1,10 @@
-package main
+package hapitypes
 
 import (
 	"strings"
 	"testing"
 
 	"github.com/function61/gokit/testing/assert"
-	"github.com/function61/hautomo/pkg/hapitypes"
 )
 
 func TestPowerManager(t *testing.T) {
@@ -16,7 +15,7 @@ func TestPowerManager(t *testing.T) {
 	assert.Assert(t, pm.GetActual("foo") == false)
 	assert.Assert(t, len(pm.Diff()) == 0)
 
-	pm.Set("foo", hapitypes.PowerKindOn)
+	pm.Set("foo", PowerKindOn)
 	assert.Assert(t, pm.GetActual("foo") == false)
 
 	diff := pm.Diff()
@@ -28,10 +27,10 @@ func TestPowerManager(t *testing.T) {
 
 	assert.Assert(t, len(pm.Diff()) == 0)
 
-	pm.Set("foo", hapitypes.PowerKindOn)
+	pm.Set("foo", PowerKindOn)
 	assert.Assert(t, len(pm.Diff()) == 0)
 
-	pm.Set("foo", hapitypes.PowerKindToggle)
+	pm.Set("foo", PowerKindToggle)
 	assert.EqualString(t, serialize(pm.Diff()), "foo => off")
 }
 
@@ -39,19 +38,19 @@ func TestPowerManagerWithExplicit(t *testing.T) {
 	pm := NewPowerManager()
 	pm.Register("dev", true)
 
-	pm.Set("dev", hapitypes.PowerKindOn) // should not do anything
+	pm.Set("dev", PowerKindOn) // should not do anything
 	assert.Assert(t, len(pm.Diff()) == 0)
 
-	pm.SetExplicit("dev", hapitypes.PowerKindOn)
+	pm.SetExplicit("dev", PowerKindOn)
 	pd := pm.Diff()
 	assert.EqualString(t, serialize(pd), "dev => on")
 	pm.CommitDiff(pd[0])
 	assert.Assert(t, len(pm.Diff()) == 0)
 
-	pm.Set("dev", hapitypes.PowerKindOn)
+	pm.Set("dev", PowerKindOn)
 	assert.Assert(t, len(pm.Diff()) == 0)
 
-	pm.SetExplicit("dev", hapitypes.PowerKindOn)
+	pm.SetExplicit("dev", PowerKindOn)
 	assert.EqualString(t, serialize(pm.Diff()), "dev => on")
 }
 
@@ -62,7 +61,7 @@ func TestPowerManagerSetBypassingDiffs(t *testing.T) {
 	assert.Assert(t, len(pm.Diff()) == 0)
 
 	// Set(off) would normally cause diff
-	pm.SetBypassingDiffs("dev", hapitypes.PowerKindOff)
+	pm.SetBypassingDiffs("dev", PowerKindOff)
 
 	assert.Assert(t, len(pm.Diff()) == 0)
 }

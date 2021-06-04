@@ -1,8 +1,4 @@
-package main
-
-import (
-	"github.com/function61/hautomo/pkg/hapitypes"
-)
+package hapitypes
 
 type PowerDiff struct {
 	Device string
@@ -31,33 +27,33 @@ func (p *PowerManager) Register(deviceId string, isOn bool) {
 	p.actual[deviceId] = isOn
 }
 
-func (p *PowerManager) SetExplicit(deviceId string, power hapitypes.PowerKind) {
+func (p *PowerManager) SetExplicit(deviceId string, power PowerKind) {
 	p.Set(deviceId, power)
 
 	// for explicit sets, we want to always force a diff. this hack does it
 	p.actual[deviceId] = !p.desired[deviceId]
 }
 
-func (p *PowerManager) Set(deviceId string, power hapitypes.PowerKind) {
+func (p *PowerManager) Set(deviceId string, power PowerKind) {
 	p.desired[deviceId] = p.getDesired(deviceId, power)
 }
 
 // just set actual state to something without triggering a diff that would send a message.
 // one case for wanting this is sending brightness msg which will implicitly turn the bulb
 // on even though we didn't send an explicit power message
-func (p *PowerManager) SetBypassingDiffs(deviceId string, power hapitypes.PowerKind) {
+func (p *PowerManager) SetBypassingDiffs(deviceId string, power PowerKind) {
 	p.Set(deviceId, power)
 
 	p.actual[deviceId] = p.desired[deviceId]
 }
 
-func (p *PowerManager) getDesired(deviceId string, power hapitypes.PowerKind) bool {
+func (p *PowerManager) getDesired(deviceId string, power PowerKind) bool {
 	switch power {
-	case hapitypes.PowerKindOn:
+	case PowerKindOn:
 		return true
-	case hapitypes.PowerKindOff:
+	case PowerKindOff:
 		return false
-	case hapitypes.PowerKindToggle:
+	case PowerKindToggle:
 		return !p.actual[deviceId]
 	default:
 		panic("unknown PowerKind")

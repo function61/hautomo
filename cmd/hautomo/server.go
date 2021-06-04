@@ -25,7 +25,7 @@ type Application struct {
 	adapterById   map[string]*hapitypes.Adapter
 	deviceById    map[string]*hapitypes.Device
 	subscriptions map[string]*hapitypes.SubscribeConfig
-	powerManager  *PowerManager
+	powerManager  *hapitypes.PowerManager
 	inbound       *hapitypes.InboundFabric
 	booleans      *booleanStorage
 	constMetrics  *constmetrics.Collector
@@ -34,11 +34,13 @@ type Application struct {
 }
 
 func NewApplication(logger *log.Logger) *Application {
+	powerManager := hapitypes.NewPowerManager()
+
 	app := &Application{
 		adapterById:   map[string]*hapitypes.Adapter{},
 		deviceById:    map[string]*hapitypes.Device{},
 		subscriptions: map[string]*hapitypes.SubscribeConfig{},
-		powerManager:  NewPowerManager(),
+		powerManager:  powerManager,
 		inbound:       hapitypes.NewInboundFabric(logex.Levels(logger)),
 		booleans:      NewBooleanStorage("anybodyHome", "environmentHasLight"),
 		constMetrics:  constmetrics.NewCollector(),
