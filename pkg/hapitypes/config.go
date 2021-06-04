@@ -53,10 +53,34 @@ type DeviceConfig struct {
 	Description      string `json:"description"`
 	PowerOnCmd       string `json:"power_on_cmd,omitempty"`
 	PowerOffCmd      string `json:"power_off_cmd,omitempty"`
-	AlexaCategory    string `json:"alexa_category,omitempty"`
+
+	// there are rare times when you have to hint which type of device you have. for example we cannot
+	// infer which type a smart plug controls if all we know is "we communicate with Sonoff Basic"
+	DeviceClassId string `json:"device_class,omitempty"`
 
 	EventghostAddr   string `json:"eventghost_addr,omitempty"` // if specified, we connect to the PC direction for sending events
 	EventghostSecret string `json:"eventghost_secret,omitempty"`
+}
+
+// gets device's explicitly set device class or if not found, device class from device type
+func (d *DeviceConfig) Class() (*DeviceClass, error) {
+	// prefer explicitly defined first
+	if d.DeviceClassId != "" {
+		if class, found := DeviceClassById[d.DeviceClassId]; found {
+			return class, nil
+		} else {
+			return nil, fmt.Errorf(
+				"explicitly defined device_class not found: %s",
+				d.DeviceClassId)
+		}
+	} else {
+		typ, err := ResolveDeviceType(d.Type)
+		if err != nil {
+			return nil, err
+		}
+
+		return typ.Class, nil
+	}
 }
 
 // these are transparently generated to adapter + device combo

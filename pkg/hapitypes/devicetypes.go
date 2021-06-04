@@ -10,6 +10,7 @@ var deviceTypes = map[string]*DeviceType{
 		Name:         "Trådfri non-colored E14",
 		Manufacturer: "IKEA",
 		Model:        "LED1536G5",
+		Class:        DeviceClassLight,
 		Capabilities: Capabilities{
 			Power:            true,
 			Brightness:       true,
@@ -20,6 +21,7 @@ var deviceTypes = map[string]*DeviceType{
 		Name:         "Trådfri RGB E27",
 		Manufacturer: "IKEA",
 		Model:        "LED1624G9",
+		Class:        DeviceClassLight,
 		Capabilities: Capabilities{
 			Power:            true,
 			Brightness:       true,
@@ -31,6 +33,7 @@ var deviceTypes = map[string]*DeviceType{
 		Name:         "Trådfri smartplug",
 		Manufacturer: "IKEA",
 		Model:        "E1603",
+		Class:        DeviceClassSmartPlug, // user is expected to override this with more specific one in device conf
 		Capabilities: Capabilities{
 			Power: true,
 		},
@@ -39,12 +42,14 @@ var deviceTypes = map[string]*DeviceType{
 		Name:         "Trådfri remote",
 		Manufacturer: "IKEA",
 		Model:        "E1524",
+		Class:        DeviceClassRemote,
 		BatteryType:  "CR2032",
 	},
 	"ledstrip-rgb": &DeviceType{
 		Name:         "LED strip RGB",
 		Manufacturer: "Generic",
 		Model:        "Generic",
+		Class:        DeviceClassLight,
 		Capabilities: Capabilities{
 			Power:      true,
 			Brightness: true,
@@ -55,6 +60,7 @@ var deviceTypes = map[string]*DeviceType{
 		Name:         "LED strip RGB(W)",
 		Manufacturer: "Generic",
 		Model:        "Generic",
+		Class:        DeviceClassLight,
 		Capabilities: Capabilities{
 			Power:                     true,
 			Brightness:                true,
@@ -66,6 +72,7 @@ var deviceTypes = map[string]*DeviceType{
 		Name:         "Onkyo TX-NR515",
 		Manufacturer: "Onkyo",
 		Model:        "TX-NR515",
+		Class:        DeviceClassAmplifier,
 		Capabilities: Capabilities{
 			Power: true,
 		},
@@ -74,6 +81,7 @@ var deviceTypes = map[string]*DeviceType{
 		Name:         "Sonoff Basic",
 		Manufacturer: "Sonoff",
 		Model:        "Sonoff Basic",
+		Class:        DeviceClassSmartPlug, // user is expected to override this with more specific one in device conf
 		Capabilities: Capabilities{
 			Power: true,
 		},
@@ -82,6 +90,7 @@ var deviceTypes = map[string]*DeviceType{
 		Name:         "Philips 55PUS7909",
 		Manufacturer: "Philips",
 		Model:        "55PUS7909",
+		Class:        DeviceClassTV,
 		Capabilities: Capabilities{
 			Power: true,
 		},
@@ -91,6 +100,7 @@ var deviceTypes = map[string]*DeviceType{
 		Manufacturer: "Xiaomi",
 		Model:        "WSDCGQ11LM",
 		BatteryType:  "CR2032",
+		Class:        DeviceClassClimateSensor,
 		Capabilities: Capabilities{
 			ReportsTemperature: true,
 		},
@@ -100,41 +110,48 @@ var deviceTypes = map[string]*DeviceType{
 		Manufacturer: "Xiaomi",
 		Model:        "SJCGQ11LM",
 		BatteryType:  "CR2032",
+		Class:        DeviceClassSensor,
 	},
 	"aqara-motion-sensor": &DeviceType{
 		Name:         "Aqara motion sensor",
 		Manufacturer: "Xiaomi",
 		Model:        "RTCGQ11LM",
 		BatteryType:  "CR2450",
+		Class:        DeviceClassPresenceSensor,
 	},
 	"aqara-doorwindow": &DeviceType{
 		Name:         "Aqara door & window contact sensor",
 		Manufacturer: "Xiaomi",
 		Model:        "MCCGQ11LM",
 		BatteryType:  "CR1632",
+		Class:        DeviceClassDoor, // might also be window sensor, but defaulting to this more common use case
 	},
 	"aqara-vibration-sensor": &DeviceType{
 		Name:         "Aqara vibration sensor",
 		Manufacturer: "Xiaomi",
 		Model:        "DJT11LM",
 		BatteryType:  "CR2032",
+		Class:        DeviceClassSensor, // user is expected to specify exact type of sensor
 	},
 	"aqara-button": &DeviceType{
 		Name:         "Aqara wireless button",
 		Manufacturer: "Xiaomi",
 		Model:        "WXKG11LM",
 		BatteryType:  "CR2032",
+		Class:        DeviceClassRemote,
 	},
 	"aqara-doublekeyswitch": &DeviceType{
 		Name:         "Aqara wireless double key switch",
 		Manufacturer: "Xiaomi",
 		Model:        "WXKG02LM",
 		BatteryType:  "CR2032",
+		Class:        DeviceClassRemote,
 	},
 	"eventghostClient": &DeviceType{
 		Name:         "EventGhost client",
 		Manufacturer: "EventGhost",
 		Model:        "EventGhost",
+		Class:        DeviceClassComputer,
 		Capabilities: Capabilities{
 			Playback: true,
 		},
@@ -142,10 +159,12 @@ var deviceTypes = map[string]*DeviceType{
 	"screen-server:screen": &DeviceType{
 		Name:         "Screen-server screen",
 		Manufacturer: "function61.com",
+		Class:        DeviceClassDisplay,
 	},
 	"virtual-switch": &DeviceType{
 		Name:         "Virtual switch",
 		Manufacturer: "function61.com",
+		Class:        DeviceClassGeneric, // user is expected to override this in device conf
 		Capabilities: Capabilities{
 			Power:         true,
 			VirtualSwitch: true,
@@ -168,6 +187,7 @@ type DeviceType struct {
 	Model        string
 	BatteryType  string
 	LinkToManual string
+	Class        *DeviceClass // broad categorization of the device - its "icon"
 	Capabilities Capabilities
 }
 
