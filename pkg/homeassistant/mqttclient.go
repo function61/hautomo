@@ -10,11 +10,6 @@ import (
 	"github.com/yosssi/gmq/mqtt/client"
 )
 
-const (
-	ClientIdA = "Hautomo-Home-Assistant1"
-	ClientIdB = "Hautomo-EZHub"
-)
-
 type InboundCommand struct {
 	EntityId string
 	Payload  string

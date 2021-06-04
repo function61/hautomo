@@ -12,13 +12,18 @@ import (
 	"github.com/function61/hautomo/pkg/homeassistant"
 )
 
+var (
+	topicPrefix = homeassistant.NewTopicPrefix("hautomo")
+)
+
 func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 	ha, err := homeassistant.NewMqttClient(adapter.Conf.Url, adapter.Logl)
+	ha, err := homeassistant.NewMqttClient(adapter.Conf.Url, "Hautomo-Home-Assistant", adapter.Logl)
 	if err != nil {
 		return fmt.Errorf("NewMqttClient: %w", err)
 	}
 
-	homeAssistantInboundCommand, err := ha.SubscribeForStateChanges()
+	homeAssistantInboundCommand, err := ha.SubscribeForCommands(topicPrefix)
 	if err != nil {
 		return err
 	}

@@ -92,8 +92,8 @@ func NewSensor(id string, name string, deviceClass string, prefix TopicPrefix, h
 		discoveryOpts: DiscoveryOptions{
 			Name:                id,
 			DeviceClass:         deviceClass,
-			StateTopic:          fmt.Sprintf("homeassistant/%s/hautomo/%s/state", component, id),
-			JsonAttributesTopic: fmt.Sprintf("homeassistant/%s/hautomo/%s/attributes", component, id),
+			StateTopic:          prefix.StateTopic(id),
+			JsonAttributesTopic: prefix.AttributesTopic(id),
 		},
 	}
 }

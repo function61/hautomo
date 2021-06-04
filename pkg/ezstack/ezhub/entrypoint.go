@@ -363,7 +363,7 @@ func homeAssistantAutoDiscovery(
 	}
 
 	return retry.Retry(ctx, func(ctx context.Context) error {
-		homeAssistant, err := homeassistant.NewMqttClient(mqttAddr, logl)
+		homeAssistant, err := homeassistant.NewMqttClient(mqttAddr, mqttPrefix, logl)
 		if err != nil {
 			return err
 		}
