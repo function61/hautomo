@@ -7,18 +7,6 @@ import (
 	"github.com/function61/gokit/net/http/ezhttp"
 )
 
-type valueChangeDetector struct {
-	previousValue string
-}
-
-func (v *valueChangeDetector) Changed(value string) bool {
-	different := v.previousValue != value
-
-	v.previousValue = value
-
-	return different
-}
-
 type urlChangeDetector struct {
 	url      string
 	lastEtag string

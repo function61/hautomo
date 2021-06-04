@@ -43,13 +43,6 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 
 	pollingTasks := []func(context.Context) error{}
 
-	for _, feed := range adapter.Conf.RssFeeds {
-		feedSensor, feedPollerTask := makeRssFeedSensor(feed.Id, feed.Url, ha, adapter.Logl)
-
-		allEntities = append(allEntities, feedSensor)
-		pollingTasks = append(pollingTasks, feedPollerTask)
-	}
-
 	for _, urlChangeDetector := range adapter.Conf.UrlChangeDetectors {
 		sensor, task := makeUrlCheckerSensor(
 			urlChangeDetector.Id,
@@ -104,36 +97,5 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 		case <-pollInterval.C:
 			runPollingTasks()
 		}
-	}
-}
-
-func makeUrlCheckerSensor(
-	entityId string,
-	url string,
-	ha *homeassistant.MqttClient,
-	logl *logex.Leveled,
-) (*homeassistant.Entity, func(ctx context.Context) error) {
-	sensor := homeassistant.NewSensor(
-		entityId,
-		url,
-		homeassistant.DeviceClassDefault,
-		false)
-
-	changeDetector := newUrlChangeDetector(url)
-
-	return sensor, func(ctx context.Context) error {
-		// does HEAD request with caching headers to check if the resource has changed
-		changed, err := changeDetector.Detect(ctx)
-		if err != nil {
-			return err
-		}
-
-		if !changed {
-			return nil
-		}
-
-		logl.Info.Printf("%s changed", entityId)
-
-		return ha.PublishState(sensor, cacheBust(url))
 	}
 }
