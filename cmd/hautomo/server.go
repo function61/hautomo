@@ -195,6 +195,23 @@ func (a *Application) handleIncomingEvent(inboundEvent hapitypes.InboundEvent) {
 			device.Conf.AdaptersDeviceId,
 			e.Brightness,
 			device.LastColor))
+	case *hapitypes.CoverPositionEvent:
+		device := a.deviceById[e.DeviceId]
+		adapter := a.adapterById[device.Conf.AdapterId]
+
+		// cover position changing will "turn it on" (or off) as a byproduct.
+		// bypass diffs (i.e. do not send additional on/off messages on top of position control)
+		a.powerManager.SetBypassingDiffs(e.DeviceId, func() hapitypes.PowerKind {
+			if e.Position > 0 {
+				return hapitypes.PowerKindOn
+			} else {
+				return hapitypes.PowerKindOff
+			}
+		}())
+
+		adapter.Send(hapitypes.NewCoverPositionEvent(
+			device.Conf.AdaptersDeviceId,
+			e.Position))
 	case *hapitypes.SpeakEvent:
 		device := a.deviceById[e.Device]
 		adapter := a.adapterById[device.Conf.AdapterId]
@@ -364,6 +381,9 @@ func (a *Application) publish(event string) {
 }
 
 func (a *Application) runAction(action hapitypes.ActionConfig) error {
+	// state changes by these actions go via the inbound channel, i.e. act like they came from adapters
+	// just like all other state changes
+
 	switch action.Verb {
 	case "sleep":
 		time.Sleep(time.Duration(action.DurationSeconds) * time.Second)
@@ -405,6 +425,14 @@ func (a *Application) runAction(action hapitypes.ActionConfig) error {
 		a.inbound.Receive(hapitypes.NewNotificationEvent(
 			action.Device,
 			action.NotifyMessage))
+	case "cover_up":
+		a.inbound.Receive(hapitypes.NewCoverPositionEvent(
+			action.Device,
+			0))
+	case "cover_down":
+		a.inbound.Receive(hapitypes.NewCoverPositionEvent(
+			action.Device,
+			100))
 	default:
 		return fmt.Errorf("unknown verb: %s", action.Verb)
 	}

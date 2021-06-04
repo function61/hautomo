@@ -111,6 +111,10 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 					`{"color_temp": %d, "transition": 1}`,
 					kelvinToMired(e.TemperatureInKelvin)))
 			}
+		case *hapitypes.CoverPositionEvent:
+			z2mPublish <- deviceMsg(e.DeviceId, fmt.Sprintf(
+				`{"cover_position": %d}`,
+				e.Position))
 		default:
 			adapter.LogUnsupportedEvent(genericEvent)
 		}
