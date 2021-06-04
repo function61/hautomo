@@ -5,6 +5,16 @@ import (
 	"fmt"
 )
 
+type Component string
+
+const (
+	ComponentSwitch       Component = "switch"
+	ComponentLight        Component = "light"
+	ComponentSensor       Component = "sensor"
+	ComponentCover        Component = "cover"
+	ComponentBinarySensor Component = "binary_sensor"
+)
+
 // NOTE: device classes are platform-specific, i.e. "door" device class is only recognized by
 //       binary_sensor platform
 const (
@@ -24,9 +34,9 @@ const (
 // many of the "omitempty" attributes are strictly required
 type DiscoveryOptions struct {
 	Name                string      `json:"name"`
-	DeviceClass         string      `json:"device_class,omitempty"` // https://www.home-assistant.io/integrations/binary_sensor/ | https://www.home-assistant.io/integrations/sensor/
-	StateTopic          string      `json:"state_topic,omitempty"`
-	CommandTopic        string      `json:"command_topic,omitempty"`
+	DeviceClass         string      `json:"device_class,omitempty"`  // https://www.home-assistant.io/integrations/binary_sensor/ | https://www.home-assistant.io/integrations/sensor/
+	StateTopic          string      `json:"state_topic,omitempty"`   // required
+	CommandTopic        string      `json:"command_topic,omitempty"` // optional (unset if isn't commandable)
 	JsonAttributesTopic string      `json:"json_attributes_topic,omitempty"`
 	ValueTemplate       string      `json:"value_template,omitempty"`
 	PayloadOn           interface{} `json:"payload_on,omitempty"`  // can be a string describing MQTT message or a boolean indicating property value resolved by *ValueTemplate*
@@ -68,48 +78,16 @@ type State struct {
 type Entity struct {
 	Id        string
 	name      string
-	component string
+	component Component
 
 	discoveryOpts DiscoveryOptions
 }
 
-func NewBinarySensor(id string, name string, deviceClass string) *Entity {
-	component := "binary_sensor"
-
+func NewSensor(id string, name string, deviceClass string, prefix TopicPrefix, hasAttributesTopic bool) *Entity {
 	return &Entity{
 		Id:        id,
 		name:      name,
-		component: component,
-
-		discoveryOpts: DiscoveryOptions{
-			Name:        id,
-			DeviceClass: deviceClass,
-			StateTopic:  fmt.Sprintf("homeassistant/%s/hautomo/%s/state", component, id),
-		},
-	}
-}
-
-func NewSwitch(id string, name string) *Entity {
-	component := "switch"
-
-	return NewEntityWithDiscoveryOpts(
-		id,
-		component,
-		name,
-		DiscoveryOptions{
-			DeviceClass:  DeviceClassDefault, // switches don't need this?
-			StateTopic:   fmt.Sprintf("homeassistant/%s/hautomo/%s/state", component, id),
-			CommandTopic: fmt.Sprintf("homeassistant/%s/hautomo/%s/set", component, id),
-		})
-}
-
-func NewSensor(id string, name string, deviceClass string, hasAttributesTopic bool) *Entity {
-	component := "sensor"
-
-	return &Entity{
-		Id:        id,
-		name:      name,
-		component: component,
+		component: ComponentSensor,
 
 		discoveryOpts: DiscoveryOptions{
 			Name:                id,
@@ -122,32 +100,32 @@ func NewSensor(id string, name string, deviceClass string, hasAttributesTopic bo
 
 // https://www.home-assistant.io/integrations/switch.mqtt/
 func NewSwitchEntity(id string, name string, opts DiscoveryOptions) *Entity {
-	return NewEntityWithDiscoveryOpts(id, "switch", name, opts)
+	return NewEntityWithDiscoveryOpts(id, ComponentSwitch, name, opts)
 }
 
 // https://www.home-assistant.io/integrations/light.mqtt/
 func NewLightEntity(id string, name string, opts DiscoveryOptions) *Entity {
-	return NewEntityWithDiscoveryOpts(id, "light", name, opts)
+	return NewEntityWithDiscoveryOpts(id, ComponentLight, name, opts)
 }
 
 // https://www.home-assistant.io/integrations/sensor.mqtt/
 func NewSensorEntity(id string, name string, opts DiscoveryOptions) *Entity {
-	return NewEntityWithDiscoveryOpts(id, "sensor", name, opts)
+	return NewEntityWithDiscoveryOpts(id, ComponentSensor, name, opts)
 }
 
 // https://www.home-assistant.io/integrations/binary_sensor.mqtt
 func NewBinarySensorEntity(id string, name string, opts DiscoveryOptions) *Entity {
-	return NewEntityWithDiscoveryOpts(id, "binary_sensor", name, opts)
+	return NewEntityWithDiscoveryOpts(id, ComponentBinarySensor, name, opts)
 }
 
 // https://www.home-assistant.io/integrations/cover.mqtt
 func NewCoverEntity(id string, name string, opts DiscoveryOptions) *Entity {
-	return NewEntityWithDiscoveryOpts(id, "cover", name, opts)
+	return NewEntityWithDiscoveryOpts(id, ComponentCover, name, opts)
 }
 
 func NewEntityWithDiscoveryOpts(
 	id string,
-	component string,
+	component Component,
 	name string,
 	opts DiscoveryOptions) *Entity {
 	// TODO: this is dirty
