@@ -73,7 +73,7 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 				})
 			case *hapitypes.PlaybackEvent:
 				send(e.Device, EgReq{
-					Event: "Playback." + e.Action,
+					Event: "Playback." + string(e.Action),
 				})
 			default:
 				adapter.LogUnsupportedEvent(genericEvent)
