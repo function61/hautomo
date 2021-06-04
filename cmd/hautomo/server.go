@@ -477,23 +477,9 @@ func configureAppAndStartAdapters(
 		conf.Devices = append(conf.Devices, deviceConf)
 	}
 
+	definedAdapterIds := map[string]bool{} // for validating devices' adapter connections
 	for _, adapterConf := range conf.Adapters {
-		initFn, ok := adapters[adapterConf.Type]
-		if !ok {
-			return fmt.Errorf("unkown adapter: %s", adapterConf.Type)
-		}
-
-		adapter := hapitypes.NewAdapter(
-			adapterConf,
-			conf,
-			app.inbound,
-			logex.Prefix(adapterConf.Id, logger))
-
-		tasks.Start(adapter.Conf.Id, func(ctx context.Context) error {
-			return initFn(ctx, adapter)
-		})
-
-		app.adapterById[adapter.Conf.Id] = adapter
+		definedAdapterIds[adapterConf.Id] = true
 	}
 
 	statefile := hapitypes.NewStatefile()
@@ -510,7 +496,7 @@ func configureAppAndStartAdapters(
 			return fmt.Errorf("duplicate device id %s", deviceConf.DeviceId)
 		}
 
-		if _, found := app.adapterById[deviceConf.AdapterId]; !found {
+		if _, found := definedAdapterIds[deviceConf.AdapterId]; !found {
 			return fmt.Errorf(
 				"device %s linked adapter '%s' not found",
 				deviceConf.DeviceId,
@@ -578,10 +564,31 @@ func configureAppAndStartAdapters(
 		app.subscriptions[subscription.Event] = &subscription
 	}
 
+	// we've to do this after device initialization because some adapters startup may need to access
+	// device state (via PowerManager)
+	for _, adapterConf := range conf.Adapters {
+		initFn, ok := adapters[adapterConf.Type]
+		if !ok {
+			return fmt.Errorf("unkown adapter: %s", adapterConf.Type)
+		}
+
+		adapter := hapitypes.NewAdapter(
+			adapterConf,
+			conf,
+			app.inbound,
+			logex.Prefix(adapterConf.Id, logger))
+
+		tasks.Start(adapter.Conf.Id, func(ctx context.Context) error {
+			return initFn(ctx, adapter)
+		})
+
+		app.adapterById[adapter.Conf.Id] = adapter
+	}
+
 	app.policyEngine = newPolicyEngine(
 		app.booleans,
-		func(key string) *hapitypes.Device {
-			return app.deviceById[key]
+		func(id string) *hapitypes.Device {
+			return app.deviceById[id]
 		})
 
 	return nil
