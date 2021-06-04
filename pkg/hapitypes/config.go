@@ -58,6 +58,8 @@ type DeviceConfig struct {
 	// infer which type a smart plug controls if all we know is "we communicate with Sonoff Basic"
 	DeviceClassId string `json:"device_class,omitempty"`
 
+	VoiceAssistant bool `json:"voice_assistant,omitempty"`
+
 	EventghostAddr   string `json:"eventghost_addr,omitempty"` // if specified, we connect to the PC direction for sending events
 	EventghostSecret string `json:"eventghost_secret,omitempty"`
 }
@@ -88,6 +90,7 @@ type DeviceGroupConfig struct {
 	DeviceId string   `json:"device_id"`
 	Name     string   `json:"name"`
 	Devices  []string `json:"devices"`
+	// TODO: opt-in to voice assistants
 }
 
 type Person struct {

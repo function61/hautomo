@@ -28,15 +28,6 @@ type AlexaConnectorSpec struct {
 	Devices []AlexaConnectorDevice `json:"devices"`
 }
 
-// https://developer.amazon.com/docs/device-apis/alexa-discovery.html#display-categories
-var supportedDisplayCategories = map[string]bool{
-	"LIGHT":          true,
-	"SPEAKER":        true,
-	"TV":             true,
-	"SMARTPLUG":      true,
-	"CONTACT_SENSOR": true,
-}
-
 func Sync(sqsAdapter hapitypes.AdapterConfig, conf *hapitypes.ConfigFile) error {
 	spec, err := createAlexaConnectorSpec(sqsAdapter, conf)
 	if err != nil {
@@ -58,17 +49,18 @@ func createAlexaConnectorSpec(sqsAdapter hapitypes.AdapterConfig, conf *hapitype
 	devices := []AlexaConnectorDevice{}
 
 	for _, device := range conf.Devices {
-		if device.AlexaCategory == "" { // = hide from Alexa
+		if !device.VoiceAssistant { // require opt-in to not expose everything by default to Alexa
 			continue
-		}
-
-		if _, ok := supportedDisplayCategories[device.AlexaCategory]; !ok {
-			return nil, fmt.Errorf("unsupported AlexaCategory: %s", device.AlexaCategory)
 		}
 
 		deviceType, err := hapitypes.ResolveDeviceType(device.Type)
 		if err != nil {
 			return nil, err
+		}
+
+		deviceClass := *deviceType.Class // should always be set
+		if device.DeviceClassId != "" {
+			deviceClass = *hapitypes.DeviceClassById[device.DeviceClassId]
 		}
 
 		caps := deviceType.Capabilities
@@ -79,6 +71,7 @@ func createAlexaConnectorSpec(sqsAdapter hapitypes.AdapterConfig, conf *hapitype
 		maybePushCap(&alexaCapabilities, caps.Color, "ColorController")
 		maybePushCap(&alexaCapabilities, caps.ColorTemperature, "ColorTemperatureController")
 		maybePushCap(&alexaCapabilities, caps.Playback, "PlaybackController")
+
 		// custom trigger gets in Alexa:
 		// - outbound support via PowerController
 		// - inbound support via ContactSensor
@@ -88,7 +81,7 @@ func createAlexaConnectorSpec(sqsAdapter hapitypes.AdapterConfig, conf *hapitype
 			Id:              device.DeviceId,
 			FriendlyName:    device.Name,
 			Description:     device.Description,
-			DisplayCategory: device.AlexaCategory,
+			DisplayCategory: deviceClass.AlexaCategory,
 			CapabilityCodes: alexaCapabilities,
 		})
 	}
