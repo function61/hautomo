@@ -79,14 +79,13 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 				return fmt.Errorf("entityById: not found: %s", cmd.EntityId)
 			}
 
-			// TODO: entity id is wrong
-			switch cmd.State {
+			switch cmd.Payload {
 			case "ON":
 				adapter.Receive(hapitypes.NewPowerEvent(cmd.EntityId, hapitypes.PowerKindOn, true))
 			case "OFF":
 				adapter.Receive(hapitypes.NewPowerEvent(cmd.EntityId, hapitypes.PowerKindOff, true))
 			default:
-				adapter.Logl.Error.Printf("unrecognized state: %s", cmd.State)
+				adapter.Logl.Error.Printf("unrecognized state: %s", cmd.Payload)
 			}
 
 			// immediately send state back

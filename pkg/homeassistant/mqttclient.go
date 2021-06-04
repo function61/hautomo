@@ -10,9 +10,14 @@ import (
 	"github.com/yosssi/gmq/mqtt/client"
 )
 
+const (
+	ClientIdA = "Hautomo-Home-Assistant1"
+	ClientIdB = "Hautomo-EZHub"
+)
+
 type InboundCommand struct {
 	EntityId string
-	State    string
+	Payload  string
 }
 
 // sends data to Home Assistant over a MQTT broker
@@ -23,6 +28,7 @@ type MqttClient struct {
 
 func NewMqttClient(
 	mqttAddr string,
+	clientId string,
 	logl *logex.Leveled,
 ) (*MqttClient, error) {
 	mqttClient := client.New(&client.Options{
@@ -34,7 +40,7 @@ func NewMqttClient(
 	if err := mqttClient.Connect(&client.ConnectOptions{
 		Network:  "tcp",
 		Address:  mqttAddr,
-		ClientID: []byte("Hautomo-Home-Assistant"),
+		ClientID: []byte(clientId),
 	}); err != nil {
 		return nil, err
 	}
@@ -47,26 +53,18 @@ func NewMqttClient(
 	return ha, nil
 }
 
-func (h *MqttClient) SubscribeForStateChanges() (<-chan InboundCommand, error) {
+func (h *MqttClient) SubscribeForCommands(prefix TopicPrefix) (<-chan InboundCommand, error) {
 	inboundCh := make(chan InboundCommand, 1)
 
 	if err := h.mqtt.Subscribe(&client.SubscribeOptions{
 		SubReqs: []*client.SubReq{
 			{
-				TopicFilter: []byte("homeassistant/+/hautomo/+/set"),
+				TopicFilter: []byte(prefix.WildcardCommandSubscriptionPattern()),
 				QoS:         mqtt.QoS0,
 				Handler: func(topicName, message []byte) {
-					components := strings.Split(string(topicName), "/")
-					if len(components) != 5 {
-						h.logl.Error.Printf("invalid topic name: %s", topicName)
-						return
-					}
-
-					entityId := components[3]
-
 					inboundCh <- InboundCommand{
-						EntityId: entityId,
-						State:    string(message),
+						EntityId: prefix.ExtractEntityID(string(topicName)),
+						Payload:  string(message),
 					}
 				},
 			},
@@ -132,4 +130,42 @@ func (h *MqttClient) AutodiscoverEntities(entities ...*Entity) error {
 	}
 
 	return nil
+}
+
+type TopicPrefix struct {
+	prefix string // "hautomo"
+}
+
+func NewTopicPrefix(prefix string) TopicPrefix {
+	return TopicPrefix{prefix}
+}
+
+func (t TopicPrefix) StateTopic(entityId string) string {
+	// "hautomo/foobar"
+	return fmt.Sprintf("%s/%s", t.prefix, entityId)
+}
+
+func (t TopicPrefix) CommandTopic(entityId string) string {
+	// "hautomo/foobar/set"
+	return fmt.Sprintf("%s/%s/set", t.prefix, entityId)
+}
+
+func (t TopicPrefix) AttributesTopic(entityId string) string {
+	// "hautomo/foobar/attributes"
+	return fmt.Sprintf("%s/%s/attributes", t.prefix, entityId)
+}
+
+func (t TopicPrefix) WildcardCommandSubscriptionPattern() string {
+	// "hautomo/+/set"
+	return fmt.Sprintf("%s/+/set", t.prefix)
+}
+
+func (t TopicPrefix) ExtractEntityID(topicName string) string {
+	// "hautomo/foobar/set" => "foobar"
+	components := strings.Split(topicName, "/")
+	if len(components) != 3 {
+		return ""
+	}
+
+	return components[1]
 }
