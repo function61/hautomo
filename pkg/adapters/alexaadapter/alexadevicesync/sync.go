@@ -72,11 +72,6 @@ func createAlexaConnectorSpec(sqsAdapter hapitypes.AdapterConfig, conf *hapitype
 		maybePushCap(&alexaCapabilities, caps.ColorTemperature, "ColorTemperatureController")
 		maybePushCap(&alexaCapabilities, caps.Playback, "PlaybackController")
 
-		// custom trigger gets in Alexa:
-		// - outbound support via PowerController
-		// - inbound support via ContactSensor
-		maybePushCap(&alexaCapabilities, caps.VirtualSwitch, "Hautomo.VirtualDummyAlexaTrigger")
-
 		devices = append(devices, AlexaConnectorDevice{
 			Id:              device.DeviceId,
 			FriendlyName:    device.Name,

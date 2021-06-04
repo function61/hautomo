@@ -13,7 +13,7 @@ func discoveryFileToAlexaInterfaces(
 	msgIdGenerator messageIdGenerator,
 ) (*alexatypes.AlexaResponse, error) {
 	endpoints := []alexatypes.EndpointSpec{}
-	for _, dev := range append(file.Devices, fiveCustomTriggers()...) {
+	for _, dev := range append(file.Devices) {
 		caps := []alexatypes.EndpointSpecCapability{}
 		for _, capCode := range dev.CapabilityCodes {
 			// some caps yield multiple Alexa capabilities, e.g. contact sensor
@@ -82,12 +82,6 @@ func makeCaps(capCode string) ([]alexatypes.EndpointSpecCapability, error) {
 			Version:             "3",
 			SupportedOperations: []string{"Play", "Pause", "Stop"},
 		}), nil
-	case "Hautomo.VirtualDummyAlexaTrigger":
-		return []alexatypes.EndpointSpecCapability{
-			capRetrievableAndProactivelyReported("Alexa.ContactSensor", "detectionState"),
-			capRetrievableAndProactivelyReported("Alexa.EndpointHealth", "connectivity"),
-			plainAlexaInterface(),
-		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported capability code: %s", capCode)
 	}
@@ -145,25 +139,5 @@ func plainAlexaInterface() alexatypes.EndpointSpecCapability {
 		Type:      "AlexaInterface",
 		Interface: "Alexa",
 		Version:   "3",
-	}
-}
-
-func fiveCustomTriggers() []alexadevicesync.AlexaConnectorDevice {
-	mkCustomTrigger := func(number int) alexadevicesync.AlexaConnectorDevice {
-		return alexadevicesync.AlexaConnectorDevice{
-			Id:              fmt.Sprintf("customTrigger%d", number),
-			FriendlyName:    fmt.Sprintf("Custom trigger %d", number),
-			Description:     "Custom trigger",
-			DisplayCategory: "CONTACT_SENSOR",
-			CapabilityCodes: []string{"Hautomo.VirtualDummyAlexaTrigger"},
-		}
-	}
-
-	return []alexadevicesync.AlexaConnectorDevice{
-		mkCustomTrigger(1),
-		mkCustomTrigger(2),
-		mkCustomTrigger(3),
-		mkCustomTrigger(4),
-		mkCustomTrigger(5),
 	}
 }
