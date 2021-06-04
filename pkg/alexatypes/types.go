@@ -84,6 +84,10 @@ type AlexaBrightnessControllerSetBrightness struct {
 	Brightness int `json:"brightness"`
 }
 
+type AlexaPercentageControllerSetPercentage struct {
+	Percentage int `json:"percentage"`
+}
+
 type AlexaColorTemperatureControllerSetColorTemperature struct {
 	ColorTemperatureInKelvin int `json:"colorTemperatureInKelvin"`
 }
