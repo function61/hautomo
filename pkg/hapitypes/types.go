@@ -25,11 +25,13 @@ import (
 	BrightnessEvent						BrightnessMsg
 */
 
+// event that we are sending to a device
 type OutboundEvent interface {
 	OutboundEventType() string
 	RedirectInbound(toDeviceId string) InboundEvent
 }
 
+// command we are receiving from another system or sensor
 type InboundEvent interface {
 	InboundEventType() string
 }
