@@ -16,6 +16,17 @@ func FirstError(errs ...error) error {
 	return nil
 }
 
+// TODO: this would greatly benefit from generics
+func FirstNonEmpty(items ...string) string {
+	for _, item := range items {
+		if item != "" {
+			return item
+		}
+	}
+
+	return ""
+}
+
 func UnsetErrorIf(isUnset bool, fieldName string) error {
 	if isUnset {
 		return fmt.Errorf("'%s' is required but not set", fieldName)
@@ -23,4 +34,3 @@ func UnsetErrorIf(isUnset bool, fieldName string) error {
 		return nil
 	}
 }
-// TODO: Coalesce() when we get generics..

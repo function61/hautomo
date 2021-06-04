@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	. "github.com/function61/hautomo/pkg/builtin"
 	"github.com/function61/hautomo/pkg/hapitypes"
 )
 
@@ -76,10 +77,25 @@ func createAlexaConnectorSpec(sqsAdapter hapitypes.AdapterConfig, conf *hapitype
 		maybePushCap(&alexaCapabilities, caps.CoverPosition, "PowerController")
 		maybePushCap(&alexaCapabilities, caps.CoverPosition, "PercentageController")
 
+		if len(alexaCapabilities) == 0 {
+			return nil, fmt.Errorf(
+				"device '%s' was opt-in to Alexa, but no suitable capabilities found",
+				device.DeviceId)
+		}
+
+		description := FirstNonEmpty(device.Description, device.Name)
+
+		// Alexa seems to silently fail whole discovery if this is not set, only telling the user of
+		// discovery that no new devices were found, telling nothing about the error. also there was
+		// no error logs in Alexa Skills developer console to troubleshoot this issue. wonderful stuff.
+		if description == "" {
+			return nil, fmt.Errorf("device '%s': description and name cannot be empty", device.DeviceId)
+		}
+
 		devices = append(devices, AlexaConnectorDevice{
 			Id:              device.DeviceId,
 			FriendlyName:    device.Name,
-			Description:     device.Description,
+			Description:     description,
 			DisplayCategory: deviceClass.AlexaCategory,
 			CapabilityCodes: alexaCapabilities,
 		})
