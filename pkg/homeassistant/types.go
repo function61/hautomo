@@ -47,7 +47,7 @@ type DiscoveryOptions struct {
 
 	Schema string `json:"schema,omitempty"` // use 'json' to receive commands in JSON. only applicable for controllable things, like lights (at least not applicable for sensors)
 
-	Device DiscoveryOptionsDevice `json:"device"`
+	Device *DiscoveryOptionsDevice `json:"device,omitempty"`
 
 	Optimistic bool `json:"optimistic,omitempty"` // whether Home Assistant just assumes that the command it sent succeeded
 

@@ -26,7 +26,7 @@ func AutodiscoveryEntities(dev *hubtypes.Device, mqttPrefix string) []*homeassis
 		return fmt.Sprintf("%s_%s_hautomo", id, entityType)
 	}
 
-	devSpec := homeassistant.DiscoveryOptionsDevice{
+	devSpec := &homeassistant.DiscoveryOptionsDevice{
 		Name:         dev.FriendlyName,
 		Manufacturer: dev.ZigbeeDevice.Manufacturer,
 		Model:        string(dev.ZigbeeDevice.Model),
