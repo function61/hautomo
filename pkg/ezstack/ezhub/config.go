@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/function61/gokit/encoding/jsonfile"
+	. "github.com/function61/hautomo/pkg/builtin"
 	"github.com/function61/hautomo/pkg/changedetector"
 	"github.com/function61/hautomo/pkg/ezstack/coordinator"
 	"github.com/function61/hautomo/pkg/ezstack/zigbee"
@@ -22,7 +23,7 @@ type Config struct {
 }
 
 func (c Config) Valid() error {
-	return firstError(
+	return FirstError(
 		c.Coordinator.Valid(),
 		c.MQTT.Valid())
 }
@@ -33,9 +34,9 @@ type MQTTConfig struct {
 }
 
 func (m MQTTConfig) Valid() error {
-	return firstError(
-		errorIfEmpty(m.Prefix, "Prefix"),
-		errorIfEmpty(m.Addr, "Addr"))
+	return FirstError(
+		UnsetErrorIf(m.Prefix == "", "Prefix"),
+		UnsetErrorIf(m.Addr == "", "Addr"))
 }
 
 func createStateSnapshotTask(nodeDatabase *nodeDb) func(ctx context.Context) error {
@@ -98,7 +99,7 @@ func GenerateConfiguration(output io.Writer) error {
 			NetworkConfiguration: coordinator.NetworkConfiguration{
 				PanId:       zigbee.PANID(panId.Int64()),
 				ExtPanId:    zigbee.ExtendedPANID(extPanId.Uint64()),
-				IEEEAddress: fmt.Sprintf("0x%x", coordinatorIEEEAddress), // is this same as extended PAN ID?
+				IEEEAddress: fmt.Sprintf("0x%x", coordinatorIEEEAddress),
 				NetworkKey:  networkKey,
 				Channel:     15,
 			},
@@ -113,22 +114,4 @@ func GenerateConfiguration(output io.Writer) error {
 	}
 
 	return jsonfile.Marshal(output, conf)
-}
-
-func errorIfEmpty(value string, fieldName string) error {
-	if value == "" {
-		return fmt.Errorf("required field: %s", fieldName)
-	} else {
-		return nil
-	}
-}
-
-func firstError(errs ...error) error {
-	for _, err := range errs {
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }

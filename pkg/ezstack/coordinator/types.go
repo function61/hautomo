@@ -58,24 +58,14 @@ func (c *Configuration) GetNetworkKey() (zigbee.NetworkKey, error) {
 }
 
 func (c *Configuration) Valid() error {
-	errorIfEmpty := func(empty bool, field string) error {
-		if empty {
-			return fmt.Errorf("required: %s", field)
-		} else {
-			return nil
-		}
-	}
-
 	return FirstError(
-		errorIfEmpty(c.IEEEAddress == "", "IEEEAddress"),
-		errorIfEmpty(c.PanId == 0, "PanId"),
-		errorIfEmpty(c.ExtPanId == 0, "ExtPanId"),
-		errorIfEmpty(c.Channel == 0, "Channel"),
-		errorIfEmpty(len(c.NetworkKey) != 16, "NetworkKey"),
-		errorIfEmpty(c.Serial == nil, "Serial"),
+		UnsetErrorIf(c.IEEEAddress == "", "IEEEAddress"),
+		UnsetErrorIf(c.PanId == 0, "PanId"),
+		UnsetErrorIf(c.ExtPanId == 0, "ExtPanId"),
+		UnsetErrorIf(c.Channel == 0, "Channel"),
+		UnsetErrorIf(len(c.NetworkKey) != 16, "NetworkKey"),
+		UnsetErrorIf(c.Serial == nil, "Serial"),
 	)
-
-	return nil
 }
 
 type Serial struct {
