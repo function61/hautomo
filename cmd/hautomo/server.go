@@ -465,12 +465,11 @@ func configureAppAndStartAdapters(
 		}
 
 		deviceConf := hapitypes.DeviceConfig{
-			DeviceId:      devGroup.DeviceId,
-			AdapterId:     adapterConf.Id,
-			Name:          devGroup.Name,
-			Description:   deviceGroupDescription,
-			AlexaCategory: firstDeviceOfGroup.AlexaCategory,
-			Type:          firstDeviceOfGroup.Type, // TODO: compute lowest common denominator type?
+			DeviceId:    devGroup.DeviceId,
+			AdapterId:   adapterConf.Id,
+			Name:        devGroup.Name,
+			Description: deviceGroupDescription,
+			Type:        firstDeviceOfGroup.Type, // TODO: compute lowest common denominator type?
 		}
 
 		conf.Adapters = append(conf.Adapters, adapterConf)
