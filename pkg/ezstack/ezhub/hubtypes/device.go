@@ -71,6 +71,8 @@ type Attributes struct {
 	ShadePosition    *AttrInt         `json:"shade_position,omitempty"` // 0-100. 100 % = covers whole window, i.e. closed
 	ShadeStop        *AttrEvent       `json:"shade_stop,omitempty"`
 
+	PlaybackControl *AttrPlaybackControl `json:"playback_control,omitempty"`
+
 	// the below maps are luckily new'd when JSON Unmarshal()'d
 
 	CustomFloat  map[string]*AttrFloat  `json:"custom_float,omitempty"`
@@ -276,6 +278,28 @@ var _ Attribute = (*AttrPress)(nil)
 
 func (a *AttrPress) LastChange() time.Time { return a.LastReport }
 
+type PlaybackControl string
+
+const (
+	PlaybackControlPlay        PlaybackControl = "Play"
+	PlaybackControlPause       PlaybackControl = "Pause"
+	PlaybackControlStop        PlaybackControl = "Stop"
+	PlaybackControlStartOver   PlaybackControl = "StartOver"
+	PlaybackControlPrevious    PlaybackControl = "Previous"
+	PlaybackControlNext        PlaybackControl = "Next"
+	PlaybackControlRewind      PlaybackControl = "Rewind"
+	PlaybackControlFastForward PlaybackControl = "FastForward"
+)
+
+type AttrPlaybackControl struct {
+	Control    PlaybackControl `json:"control"`
+	LastReport time.Time       `json:"reported"`
+}
+
+func (a *AttrPlaybackControl) LastChange() time.Time { return a.LastReport }
+
+var _ Attribute = (*AttrPlaybackControl)(nil)
+
 // builder helper for wrapping attributes with shared timestamp
 type AttrsCtx struct {
 	Attrs    *Attributes
@@ -329,6 +353,13 @@ func (a *AttrsCtx) PressUp(key evdevcodes.KeyOrButton) *AttrPress {
 	return &AttrPress{
 		Key:        key,
 		Kind:       PressKindUp,
+		LastReport: a.Reported,
+	}
+}
+
+func (a *AttrsCtx) PlaybackControl(control PlaybackControl) *AttrPlaybackControl {
+	return &AttrPlaybackControl{
+		Control:    control,
 		LastReport: a.Reported,
 	}
 }
