@@ -131,7 +131,7 @@ Code walkthrough
 Major pieces of functionality:
 
 - [Zigbee message comes in](https://github.com/function61/hautomo/blob/5d677aad13cdd4ccbc8982722586e02a2651c745/pkg/ezstack/ezhub/entrypoint.go#L112)
-- [MQTT client (like Home Assistant) wants to send a message to Zigbee network](https://github.com/function61/hautomo/blob/5d677aad13cdd4ccbc8982722586e02a2651c745/pkg/ezstack/ezhub/entrypoint.go#L150)
+- [MQTT client (like Home Assistant) wants to send a command to Zigbee network](https://github.com/function61/hautomo/blob/5d677aad13cdd4ccbc8982722586e02a2651c745/pkg/ezstack/ezhub/entrypoint.go#L150)
 - [ezhub advertises its device registry to Home Assistant](https://github.com/function61/hautomo/blob/879fd8160f82f14a205cb2f37e805411b8dd53f8/pkg/ezstack/ezhub/homeassistantmqtt/autodiscovery.go#L12)
 - [Adapter definition for a button that needs abstractions to paper over its non-standard use of ZCL](https://github.com/function61/hautomo/blob/5d677aad13cdd4ccbc8982722586e02a2651c745/pkg/ezstack/ezhub/deviceadapters/xiaomibutton.go#L10)
 	* The button sends single-click as off -> on events
