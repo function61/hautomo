@@ -95,46 +95,42 @@ func MessageFromChangedAttributes(
 		}
 	}()
 
-	// handle clicks
+	// handle clicks. TODO: migrate to device triggers?
 	action := func() *string {
-		if reportedNow(attrs.Press) {
-			// 1 => "single"
-			// ...
-			// 4 => "quadruple"
-			// (or "hold" if holding)
-			countText := func() string {
-				if attrs.Press.Kind == hubtypes.PressKindHold {
-					return "hold"
-				} else {
-					return pushesToString(attrs.Press.Count())
-				}
-			}()
-
-			buttonLabel := func() string {
-				left := attrs.Press.HasKey(evdevcodes.Btn0)
-				right := attrs.Press.HasKey(evdevcodes.Btn1)
-
-				switch {
-				case left && right:
-					return "both"
-				case left:
-					return "left"
-				case right:
-					return "right"
-				default:
-					return strconv.Itoa(int(attrs.Press.Key)) // NOTE: ignores additional keys
-				}
-			}()
-
-			if dev.ZigbeeDevice.Model == "lumi.remote.b286acn01\x00\x00\x00" {
-				// looks like "double_right"
-				return stringPtr(fmt.Sprintf("%s_%s", countText, buttonLabel))
-			} else {
-				return stringPtr(countText)
-			}
-		} else {
+		if !reportedNow(attrs.Press) {
 			return nil
 		}
+
+		// 1 => "single"
+		// ...
+		// 4 => "quadruple"
+		// (or "hold" if holding)
+		countText := func() string {
+			if attrs.Press.Kind == hubtypes.PressKindHold {
+				return "hold"
+			} else {
+				return pushesToString(attrs.Press.Count())
+			}
+		}()
+
+		buttonLabel := func() string {
+			left := attrs.Press.HasKey(evdevcodes.Btn0)
+			right := attrs.Press.HasKey(evdevcodes.Btn1)
+
+			switch {
+			case left && right:
+				return "both"
+			case left:
+				return "left"
+			case right:
+				return "right"
+			default:
+				return strconv.Itoa(int(attrs.Press.Key)) // NOTE: ignores additional keys
+			}
+		}()
+
+		// looks like "double_right" | "single_left" | "single_<num>" if button not Btn0 or Btn1
+		return stringPtr(fmt.Sprintf("%s_%s", countText, buttonLabel))
 	}()
 
 	// action might also be vibration/drop/tilt etc. (click is expected to be nil in these cases)
