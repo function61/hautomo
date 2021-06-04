@@ -41,8 +41,8 @@ type DiscoveryOptions struct {
 	ValueTemplate       string      `json:"value_template,omitempty"`
 	PayloadOn           interface{} `json:"payload_on,omitempty"`  // can be a string describing MQTT message or a boolean indicating property value resolved by *ValueTemplate*
 	PayloadOff          interface{} `json:"payload_off,omitempty"` // same as for *on*
-	UniqueId            string      `json:"unique_id,omitempty"`
-	Icon                string      `json:"icon,omitempty"` // e.g. "mdi:gesture-double-tap"
+	UniqueId            string      `json:"unique_id,omitempty"`   // really important to specify (otherwise you can't customize the entity in H-A)
+	Icon                IconId      `json:"icon,omitempty"`        // e.g. "mdi:gesture-double-tap"
 	UnitOfMeasurement   string      `json:"unit_of_measurement,omitempty"`
 
 	Schema string `json:"schema,omitempty"` // use 'json' to receive commands in JSON. only applicable for controllable things, like lights (at least not applicable for sensors)
