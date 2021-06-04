@@ -41,7 +41,7 @@ const tpl = `
 {{else}}
 	<td></td>
 {{end}}
-	<td>{{.Device.LinkQuality}} %</td>
+	<td>{{.Device.LinkQuality}}</td>
 	<td>{{.LastOnlineFormatted}}</td>
 	<td>{{if .Device.LastTemperatureHumidityPressureEvent}}
 		temp {{.Device.LastTemperatureHumidityPressureEvent.Temperature}}
