@@ -7,6 +7,8 @@ import (
 )
 
 func init() {
+	// see E1524 remote for explanation of these key mappings
+
 	defineAdapter("TRADFRI open/close remote",
 		withBatteryType(BatteryCR2032),
 		withCommandHandler(func(command interface{}, actx *hubtypes.AttrsCtx) error {
