@@ -177,8 +177,8 @@ func processMQTTInboundMessage(
 		// we'll do desired state vs. actual state diffs to determine which messages we'll
 		// actually send.
 		desiredState := &hubtypes.AttrsCtx{ // TODO: new somewhere else
-			Attrs:    hubtypes.NewAttributes(),
-			Reported: actx.Reported,
+			Attrs:       hubtypes.NewAttributes(),
+			AttrBuilder: actx.AttrBuilder,
 		}
 
 		currentlyOn := func() bool { // toggle msg needs this
@@ -294,7 +294,7 @@ func updateAttributesAndNotifyMQTT(
 		return fmt.Errorf("received message from non-declared endpoint: %d", endpoint)
 	}
 
-	actx := &hubtypes.AttrsCtx{attrs, now, endpoint}
+	actx := &hubtypes.AttrsCtx{hubtypes.NewAttrBuilder(now), attrs, endpoint}
 
 	// this is expected to modify device's attributes
 	if err := updater(actx); err != nil {

@@ -70,7 +70,7 @@ func afIncomingMessageToAttributes(t *testing.T, dev *ezstack.Device, payloadHex
 
 	assert.EqualString(t, incomingMessage.SrcAddr, dev.NetworkAddress)
 
-	actx := &hubtypes.AttrsCtx{hubtypes.NewAttributes(), staticTimestamp, incomingMessage.SrcEndpoint}
+	actx := &hubtypes.AttrsCtx{hubtypes.NewAttrBuilder(staticTimestamp), hubtypes.NewAttributes(), incomingMessage.SrcEndpoint}
 
 	assert.Ok(t, ZclIncomingMessageToAttributes(incomingMessage, actx, dev))
 

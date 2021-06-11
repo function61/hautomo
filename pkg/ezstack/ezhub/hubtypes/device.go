@@ -302,40 +302,48 @@ var _ Attribute = (*AttrPlaybackControl)(nil)
 
 // builder helper for wrapping attributes with shared timestamp
 type AttrsCtx struct {
+	AttrBuilder
 	Attrs    *Attributes
-	Reported time.Time
 	Endpoint zigbee.EndpointId
 }
 
-func (a *AttrsCtx) Int(value int64) *AttrInt {
+type AttrBuilder struct {
+	Reported time.Time
+}
+
+func NewAttrBuilder(reported time.Time) AttrBuilder {
+	return AttrBuilder{reported}
+}
+
+func (a AttrBuilder) Int(value int64) *AttrInt {
 	return &AttrInt{
 		Value:      value,
 		LastReport: a.Reported,
 	}
 }
 
-func (a *AttrsCtx) Float(value float64) *AttrFloat {
+func (a AttrBuilder) Float(value float64) *AttrFloat {
 	return &AttrFloat{
 		Value:      value,
 		LastReport: a.Reported,
 	}
 }
 
-func (a *AttrsCtx) Bool(value bool) *AttrBool {
+func (a AttrBuilder) Bool(value bool) *AttrBool {
 	return &AttrBool{
 		Value:      value,
 		LastReport: a.Reported,
 	}
 }
 
-func (a *AttrsCtx) String(value string) *AttrString {
+func (a AttrBuilder) String(value string) *AttrString {
 	return &AttrString{
 		Value:      value,
 		LastReport: a.Reported,
 	}
 }
 
-func (a *AttrsCtx) Event() *AttrEvent {
+func (a AttrBuilder) Event() *AttrEvent {
 	return &AttrEvent{
 		LastReport: a.Reported,
 	}
@@ -349,7 +357,7 @@ func (a *AttrsCtx) ColorXY(x, y uint16) *AttrColorXY {
 	}
 }
 
-func (a *AttrsCtx) PressUp(key evdevcodes.KeyOrButton) *AttrPress {
+func (a AttrBuilder) PressUp(key evdevcodes.KeyOrButton) *AttrPress {
 	return &AttrPress{
 		Key:        key,
 		Kind:       PressKindUp,
@@ -357,7 +365,7 @@ func (a *AttrsCtx) PressUp(key evdevcodes.KeyOrButton) *AttrPress {
 	}
 }
 
-func (a *AttrsCtx) PlaybackControl(control PlaybackControl) *AttrPlaybackControl {
+func (a AttrBuilder) PlaybackControl(control PlaybackControl) *AttrPlaybackControl {
 	return &AttrPlaybackControl{
 		Control:    control,
 		LastReport: a.Reported,
