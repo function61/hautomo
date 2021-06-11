@@ -8,11 +8,13 @@ import (
 type Component string
 
 const (
-	ComponentSwitch       Component = "switch"
-	ComponentLight        Component = "light"
-	ComponentSensor       Component = "sensor"
-	ComponentCover        Component = "cover"
-	ComponentBinarySensor Component = "binary_sensor"
+	ComponentSwitch        Component = "switch"
+	ComponentLight         Component = "light"
+	ComponentSensor        Component = "sensor"
+	ComponentCover         Component = "cover"
+	ComponentCamera        Component = "camera"
+	ComponentBinarySensor  Component = "binary_sensor"
+	ComponentDeviceTracker Component = "device_tracker"
 )
 
 // NOTE: device classes are platform-specific, i.e. "door" device class is only recognized by
@@ -35,7 +37,8 @@ const (
 type DiscoveryOptions struct {
 	Name                string      `json:"name"`
 	DeviceClass         string      `json:"device_class,omitempty"`  // https://www.home-assistant.io/integrations/binary_sensor/ | https://www.home-assistant.io/integrations/sensor/
-	StateTopic          string      `json:"state_topic,omitempty"`   // required
+	Topic               string      `json:"topic,omitempty"`         // *state_topic* or *topic* required
+	StateTopic          string      `json:"state_topic,omitempty"`   // *state_topic* or *topic* required
 	CommandTopic        string      `json:"command_topic,omitempty"` // optional (unset if isn't commandable)
 	JsonAttributesTopic string      `json:"json_attributes_topic,omitempty"`
 	ValueTemplate       string      `json:"value_template,omitempty"`
@@ -123,6 +126,16 @@ func NewCoverEntity(id string, name string, opts DiscoveryOptions) *Entity {
 	return NewEntityWithDiscoveryOpts(id, ComponentCover, name, opts)
 }
 
+// https://www.home-assistant.io/integrations/cover.mqtt
+func NewCameraEntity(id string, name string, opts DiscoveryOptions) *Entity {
+	return NewEntityWithDiscoveryOpts(id, ComponentCamera, name, opts)
+}
+
+// https://www.home-assistant.io/integrations/device_tracker
+func NewDeviceTrackerEntity(id string, name string, opts DiscoveryOptions) *Entity {
+	return NewEntityWithDiscoveryOpts(id, ComponentDeviceTracker, name, opts)
+}
+
 func NewEntityWithDiscoveryOpts(
 	id string,
 	component Component,
@@ -156,4 +169,12 @@ func (h *Entity) mqttDiscoveryMsg() []byte {
 		panic(err)
 	}
 	return msg
+}
+
+func DeviceTrackerLocationAttributes(lat, lon, accuracy float64) map[string]interface{} {
+	return map[string]interface{}{
+		"latitude":     lat,
+		"longitude":    lon,
+		"gps_accuracy": accuracy, // mandatory
+	}
 }
