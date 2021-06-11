@@ -10,22 +10,27 @@ func init() {
 	defineAdapter(modelAqaraButtonSensor,
 		aqaraVoltageEtc,
 		withBatteryType(BatteryCR2032),
-		attributeParser("genOnOff.onOff", aqaraButtonGenOnOffOnOff),
-		attributeParser("genOnOff.unknown(32768)", aqaraButtonMultiClick),
+		attributeParser("genOnOff.onOff", xiaomiButtonGenOnOffOnOff),
+		attributeParser("genOnOff.unknown(32768)", xiaomiButtonMultiClick),
 	)
 }
 
-// Aqara push button sends single click as two events:
-// power=off
-// power=on
-func aqaraButtonGenOnOffOnOff(attr *cluster.Attribute, actx *hubtypes.AttrsCtx) error {
-	actx.Attrs.Press = actx.PressUp(evdevcodes.Btn0)
+func xiaomiButtonGenOnOffOnOff(attr *cluster.Attribute, actx *hubtypes.AttrsCtx) error {
+	// Xiaomi push button sends single click as two events:
+	// power=off
+	// power=on
+
+	// only react on "on", so we don't broadcast multiple state changes.
+	// they might come in a single Zigbee message which makes this a non-issue, but better safe.
+	if attr.Value.(bool) {
+		actx.Attrs.Press = actx.PressUp(evdevcodes.Btn0)
+	}
 
 	return nil
 }
 
 // it sends click >= 2 as manufacturer-specific attribute
-func aqaraButtonMultiClick(attr *cluster.Attribute, actx *hubtypes.AttrsCtx) error {
+func xiaomiButtonMultiClick(attr *cluster.Attribute, actx *hubtypes.AttrsCtx) error {
 	count := int(attr.Value.(uint64))
 
 	actx.Attrs.Press = actx.PressUp(evdevcodes.Btn0)
