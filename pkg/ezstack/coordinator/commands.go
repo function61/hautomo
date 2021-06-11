@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/function61/hautomo/pkg/ezstack/zcl/cluster"
 	"github.com/function61/hautomo/pkg/ezstack/zigbee"
 	"github.com/function61/hautomo/pkg/ezstack/znp"
 )
@@ -70,10 +71,23 @@ func (c *Coordinator) SimpleDescription(nwkAddress string, endpoint zigbee.Endpo
 	return nil, err
 }
 
-func (c *Coordinator) Bind(dstAddr string, srcAddress string, srcEndpoint zigbee.EndpointId, clusterId uint16,
-	dstAddrMode znp.AddrMode, dstAddress string, dstEndpoint zigbee.EndpointId) (*znp.ZdoBindRsp, error) {
+func (c *Coordinator) Bind(
+	dstAddr string,
+	srcAddress zigbee.IEEEAddress,
+	srcEndpoint zigbee.EndpointId,
+	clusterId cluster.ClusterId,
+	dstAddress zigbee.IEEEAddress,
+	dstEndpoint zigbee.EndpointId,
+) (*znp.ZdoBindRsp, error) {
 	req := func() error {
-		status, err := c.networkProcessor.ZdoBindReq(dstAddr, srcAddress, srcEndpoint, clusterId, dstAddrMode, dstAddress, dstEndpoint)
+		status, err := c.networkProcessor.ZdoBindReq(
+			dstAddr,
+			srcAddress.HexPrefixedString(),
+			srcEndpoint,
+			uint16(clusterId),
+			znp.AddrModeAddr64Bit,
+			dstAddress.HexPrefixedString(),
+			dstEndpoint)
 		if err := firstError(err, func() error { return status.Status.Error() }); err != nil {
 			return fmt.Errorf("unable to bind: %w", err)
 		}
@@ -81,16 +95,30 @@ func (c *Coordinator) Bind(dstAddr string, srcAddress string, srcEndpoint zigbee
 	}
 
 	response, err := c.syncRequestResponseRetryable(req, ZdoBindRspType, defaultTimeout, 3)
-	if err == nil {
-		return response.(*znp.ZdoBindRsp), nil
+	if err != nil {
+		return nil, err
 	}
-	return nil, err
+
+	return response.(*znp.ZdoBindRsp), nil
 }
 
-func (c *Coordinator) Unbind(dstAddr string, srcAddress string, srcEndpoint zigbee.EndpointId, clusterId uint16,
-	dstAddrMode znp.AddrMode, dstAddress string, dstEndpoint zigbee.EndpointId) (*znp.ZdoUnbindRsp, error) {
+func (c *Coordinator) Unbind(
+	dstAddr string,
+	srcAddress zigbee.IEEEAddress,
+	srcEndpoint zigbee.EndpointId,
+	clusterId cluster.ClusterId,
+	dstAddress zigbee.IEEEAddress,
+	dstEndpoint zigbee.EndpointId,
+) (*znp.ZdoUnbindRsp, error) {
 	req := func() error {
-		status, err := c.networkProcessor.ZdoUnbindReq(dstAddr, srcAddress, srcEndpoint, clusterId, dstAddrMode, dstAddress, dstEndpoint)
+		status, err := c.networkProcessor.ZdoUnbindReq(
+			dstAddr,
+			srcAddress.HexPrefixedString(),
+			srcEndpoint,
+			uint16(clusterId),
+			znp.AddrModeAddr64Bit,
+			dstAddress.HexPrefixedString(),
+			dstEndpoint)
 		if err := firstError(err, func() error { return status.Status.Error() }); err != nil {
 			return fmt.Errorf("unable to unbind: %w", err)
 		}

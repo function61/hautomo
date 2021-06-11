@@ -60,7 +60,7 @@ func (d *nodeDb) InsertDevice(device *ezstack.Device) error {
 	}
 
 	d.Devices = append(d.Devices, &hubtypes.Device{
-		FriendlyName: device.IEEEAddress,
+		FriendlyName: device.IEEEAddress.HexPrefixedString(), // start with something for friendly name
 		ZigbeeDevice: device,
 
 		State: &hubtypes.DeviceState{
@@ -73,7 +73,7 @@ func (d *nodeDb) InsertDevice(device *ezstack.Device) error {
 	return saveNodeDatabase(d)
 }
 
-func (d *nodeDb) GetDevice(ieeeAddress string) (*ezstack.Device, bool) {
+func (d *nodeDb) GetDevice(ieeeAddress zigbee.IEEEAddress) (*ezstack.Device, bool) {
 	// lock implemented in subcall
 
 	if wdev := d.GetWrappedDevice(ieeeAddress); wdev != nil {
@@ -83,7 +83,7 @@ func (d *nodeDb) GetDevice(ieeeAddress string) (*ezstack.Device, bool) {
 	return nil, false
 }
 
-func (d *nodeDb) GetWrappedDevice(ieeeAddress string) *hubtypes.Device {
+func (d *nodeDb) GetWrappedDevice(ieeeAddress zigbee.IEEEAddress) *hubtypes.Device {
 	defer lockAndUnlock(&d.mu)()
 
 	for _, dev := range d.Devices {
@@ -107,7 +107,7 @@ func (d *nodeDb) GetDeviceByNetworkAddress(nwkAddress string) (*ezstack.Device, 
 	return nil, false
 }
 
-func (d *nodeDb) RemoveDevice(ieeeAddress string) error {
+func (d *nodeDb) RemoveDevice(ieeeAddress zigbee.IEEEAddress) error {
 	defer lockAndUnlock(&d.mu)()
 
 	for idx, dev := range d.Devices {

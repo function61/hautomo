@@ -52,8 +52,8 @@ const (
 )
 
 type Device struct {
-	IEEEAddress    string // "MAC address" that never changes. longer form of *NetworkAddress*, but curiously not present in incoming messages, so what is it used for?
-	NetworkAddress string // shorter address that is used in Zigbee frames. this changes each time the device leaves and then enters the network
+	IEEEAddress    zigbee.IEEEAddress // "MAC address" that never changes. longer form of *NetworkAddress*, but curiously not present in incoming messages, so what is it used for?
+	NetworkAddress string             // shorter address that is used in Zigbee frames. this changes each time the device leaves and then enters the network
 	Manufacturer   string
 	ManufacturerId uint16
 	Model          Model

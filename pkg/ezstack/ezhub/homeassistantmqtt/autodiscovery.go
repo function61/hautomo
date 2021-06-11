@@ -20,7 +20,7 @@ func AutodiscoveryEntities(dev *hubtypes.Device, mqttPrefix string) []*homeassis
 		entities = append(entities, entity)
 	}
 
-	id := dev.ZigbeeDevice.IEEEAddress
+	id := dev.ZigbeeDevice.IEEEAddress.HexPrefixedString()
 
 	uniqueId := func(entityType string) string {
 		return fmt.Sprintf("%s_%s_hautomo", id, entityType)

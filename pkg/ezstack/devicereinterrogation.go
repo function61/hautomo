@@ -6,12 +6,13 @@ import (
 	"fmt"
 
 	"github.com/function61/hautomo/pkg/ezstack/zcl/cluster"
+	"github.com/function61/hautomo/pkg/ezstack/zigbee"
 	"github.com/function61/hautomo/pkg/ezstack/znp"
 )
 
 // queries "device metadata" such as description, endpoints, supported clusters
 func (s *Stack) interrogateDevice(announcedDevice *znp.ZdoEndDeviceAnnceInd) (*Device, error) {
-	ieeeAddress := announcedDevice.IEEEAddr
+	ieeeAddress := zigbee.IEEEAddress(announcedDevice.IEEEAddr)
 	nwkAddress := announcedDevice.NwkAddr
 
 	deviceDetails, err := s.ReadAttributes(nwkAddress, cluster.IdGenBasic, []cluster.AttributeId{

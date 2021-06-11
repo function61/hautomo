@@ -17,7 +17,7 @@ type Configuration struct {
 }
 
 type NetworkConfiguration struct {
-	IEEEAddress string // has prefix "0x"
+	IEEEAddress zigbee.IEEEAddress // coordinator's
 	PanId       zigbee.PANID
 	ExtPanId    zigbee.ExtendedPANID
 	NetworkKey  []byte

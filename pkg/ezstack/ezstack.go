@@ -14,6 +14,7 @@ import (
 	"github.com/function61/hautomo/pkg/ezstack/zcl"
 	"github.com/function61/hautomo/pkg/ezstack/zcl/cluster"
 	"github.com/function61/hautomo/pkg/ezstack/zcl/frame"
+	"github.com/function61/hautomo/pkg/ezstack/zigbee"
 	"github.com/function61/hautomo/pkg/ezstack/znp"
 	"github.com/function61/hautomo/pkg/ezstack/znp/unp"
 	"go.bug.st/serial"
@@ -59,9 +60,9 @@ func (c *Channels) OnDeviceIncomingMessage() chan *DeviceIncomingMessage {
 
 type NodeDatabase interface {
 	InsertDevice(*Device) error
-	GetDevice(ieeeAddress string) (*Device, bool)
 	GetDeviceByNetworkAddress(nwkAddress string) (*Device, bool)
-	RemoveDevice(ieeeAddress string) error
+	GetDevice(address zigbee.IEEEAddress) (*Device, bool)
+	RemoveDevice(address zigbee.IEEEAddress) error
 }
 
 type Stack struct {
@@ -167,7 +168,7 @@ func (s *Stack) Run(ctx context.Context, joinEnable bool, packetCaptureFilename 
 		case announcedDevice := <-s.coordinator.OnDeviceAnnounce():
 			s.registrationQueue <- announcedDevice
 		case deviceLeave := <-s.coordinator.OnDeviceLeave():
-			ieeeAddress := deviceLeave.ExtAddr
+			ieeeAddress := zigbee.IEEEAddress(deviceLeave.ExtAddr)
 
 			logl.Info.Printf("Unregistering device: [%s]", ieeeAddress)
 
@@ -255,10 +256,12 @@ func (s *Stack) processIncomingMessage(incomingMessage *znp.AfIncomingMessage) e
 }
 
 func (s *Stack) registerDevice(announcedDevice *znp.ZdoEndDeviceAnnceInd) error {
-	logl.Info.Printf("Registering device [%s]", announcedDevice.IEEEAddr)
+	address := zigbee.IEEEAddress(announcedDevice.IEEEAddr)
 
-	if device, alreadyExists := s.db.GetDevice(announcedDevice.IEEEAddr); alreadyExists {
-		logl.Debug.Printf("device %s already exists in DB. Updating network address", announcedDevice.IEEEAddr)
+	logl.Info.Printf("Registering device [%s]", address)
+
+	if device, alreadyExists := s.db.GetDevice(address); alreadyExists {
+		logl.Debug.Printf("device %s already exists in DB. Updating network address", address)
 
 		// updating NwkAddr because when re-joining, device most likel has changed its network address,
 		// (but not its IEEEAddr, e.g. "MAC address")
@@ -300,7 +303,7 @@ func (s *Stack) registerDevice(announcedDevice *znp.ZdoEndDeviceAnnceInd) error 
 	}
 }
 
-func (s *Stack) unregisterDevice(ieeeAddress string) error {
+func (s *Stack) unregisterDevice(ieeeAddress zigbee.IEEEAddress) error {
 	device, found := s.db.GetDevice(ieeeAddress)
 	if !found {
 		return fmt.Errorf("not found: %s", ieeeAddress)

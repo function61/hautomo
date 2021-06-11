@@ -182,8 +182,8 @@ func (znp *Znp) SysVersion() (rsp *SysVersionResponse, err error) {
 }
 
 // set the extended address of the device
-func (znp *Znp) SysSetExtAddr(extAddr string) (rsp *StatusResponse, err error) {
-	req := &SysSetExtAddr{ExtAddress: extAddr}
+func (znp *Znp) SysSetExtAddr(addr zigbee.IEEEAddress) (rsp *StatusResponse, err error) {
+	req := &SysSetExtAddr{ExtAddress: addr.HexPrefixedString()}
 	err = znp.SendSync(unp.S_SYS, 0x03, req, &rsp)
 	return
 }

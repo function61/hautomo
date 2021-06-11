@@ -8,6 +8,18 @@ import (
 	"fmt"
 )
 
+// looks like "0x842e14fffe6a5cda".
+// yes, unfortunately with the "0x" prefix for now
+type IEEEAddress string
+
+func (i IEEEAddress) HexPrefixedString() string {
+	return string(i)
+}
+
+const (
+	CoordinatorNwkAddr = "0x0000"
+)
+
 type LogicalType uint8
 
 const (

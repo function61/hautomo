@@ -925,7 +925,7 @@ type ZdoBindUnbindReq struct {
 	SrcEndpoint zigbee.EndpointId
 	ClusterID   uint16
 	DstAddrMode AddrMode
-	DstAddress  string `hex:"8"`
+	DstAddress  string `hex:"8"` // TODO: this seems to imply we must use DstAddrMode=AddrModeAddr64Bit?
 	DstEndpoint zigbee.EndpointId
 }
 

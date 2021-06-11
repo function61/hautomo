@@ -79,7 +79,7 @@ func GenerateConfiguration(output io.Writer) error {
 		return err
 	}
 
-	networkKey := make([]byte, 16)
+	networkKey := make([]byte, len(zigbee.NetworkKey{}))
 	if _, err := rand.Read(networkKey); err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ func GenerateConfiguration(output io.Writer) error {
 			NetworkConfiguration: coordinator.NetworkConfiguration{
 				PanId:       zigbee.PANID(panId.Int64()),
 				ExtPanId:    zigbee.ExtendedPANID(extPanId.Uint64()),
-				IEEEAddress: fmt.Sprintf("0x%x", coordinatorIEEEAddress),
+				IEEEAddress: zigbee.IEEEAddress(fmt.Sprintf("0x%x", coordinatorIEEEAddress)),
 				NetworkKey:  networkKey,
 				Channel:     15,
 			},

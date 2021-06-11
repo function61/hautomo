@@ -400,7 +400,7 @@ func readNetworkConfigFromNVRAM(np *znp.Znp) (*NetworkConfiguration, error) {
 	*/
 
 	return &NetworkConfiguration{
-		IEEEAddress: savedNetworkParams.IEEEAddr,
+		IEEEAddress: zigbee.IEEEAddress(savedNetworkParams.IEEEAddr),
 		PanId:       savedNetworkParams.PanID,
 		ExtPanId:    savedExtPanID.ExtendedPANID,
 		Channel:     uint8(channel),

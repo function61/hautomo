@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/function61/gokit/encoding/jsonfile"
+	"github.com/function61/hautomo/pkg/ezstack/zigbee"
 	"github.com/yosssi/gmq/mqtt"
 	"github.com/yosssi/gmq/mqtt/client"
 )
@@ -18,7 +19,7 @@ type Message struct {
 }
 
 type InboundMessage struct {
-	DeviceId string
+	DeviceId zigbee.IEEEAddress
 	Message  zigbee2mqttGenericJson
 }
 
@@ -69,7 +70,7 @@ func ConnectAndServe(
 				QoS:         mqtt.QoS0,
 				Handler: func(topicName, message []byte) {
 					// "joonas/0xec1bbdfffe210132/set" => "0xec1bbdfffe210132"
-					deviceId := strings.Split(string(topicName), "/")[1]
+					address := strings.Split(string(topicName), "/")[1]
 
 					msg := zigbee2mqttGenericJson{}
 
@@ -91,7 +92,7 @@ func ConnectAndServe(
 					}
 
 					inbound <- InboundMessage{
-						DeviceId: deviceId,
+						DeviceId: zigbee.IEEEAddress(address),
 						Message:  msg,
 					}
 				},

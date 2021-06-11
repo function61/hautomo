@@ -318,7 +318,7 @@ func updateAttributesAndNotifyMQTT(
 	}
 
 	msg := homeassistantmqtt.Message{
-		Topic:   mqttPrefix + "/" + wdev.ZigbeeDevice.IEEEAddress,
+		Topic:   mqttPrefix + "/" + wdev.ZigbeeDevice.IEEEAddress.HexPrefixedString(),
 		Content: changedAttributesMsg,
 	}
 
