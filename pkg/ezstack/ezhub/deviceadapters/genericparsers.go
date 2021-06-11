@@ -18,6 +18,7 @@ var adapterByModel = map[ezstack.Model]Adapter{
 		attributeParser("msRelativeHumidity.measuredValue", msRelativeHumidityMeasuredValue),
 		attributeParser("msIlluminanceMeasurement.measuredValue", msIlluminanceMeasurementMeasuredValue),
 		attributeParser("genBasic.modelId", noopParser), // we already got this key in our Zigbee device metadata, so don't record it
+		attributeParser("closuresWindowCovering.currentPositionLiftPercentage", closuresWindowCoveringCurrentPositionLiftPercentage),
 	),
 }
 
@@ -57,6 +58,12 @@ func msTemperatureMeasurementMeasuredValue(attr *cluster.Attribute, actx *hubtyp
 
 func msRelativeHumidityMeasuredValue(attr *cluster.Attribute, actx *hubtypes.AttrsCtx) error {
 	actx.Attrs.HumidityRelative = actx.Float(float64(attr.Value.(uint64)) / 100)
+
+	return nil
+}
+
+func closuresWindowCoveringCurrentPositionLiftPercentage(attr *cluster.Attribute, actx *hubtypes.AttrsCtx) error {
+	actx.Attrs.ShadePosition = actx.Int(int64(attr.Value.(uint64)))
 
 	return nil
 }

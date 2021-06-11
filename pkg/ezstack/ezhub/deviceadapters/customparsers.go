@@ -14,4 +14,5 @@ const (
 	modelAqaraWaterLeakSensor    ezstack.Model = "lumi.sensor_wleak.aq1"
 	modelAqaraVibrationSensor    ezstack.Model = "lumi.vibration.aq1"
 	modelAqaraDoorSensor         ezstack.Model = "lumi.sensor_magnet.aq2"
+	modelIkeaRollerBlind         ezstack.Model = "FYRTUR block-out roller blind"
 )
