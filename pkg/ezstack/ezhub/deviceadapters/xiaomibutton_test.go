@@ -15,17 +15,17 @@ func TestButtonSensorHeartbeatMessage(t *testing.T) {
 
 func TestButtonSensorSingleClick(t *testing.T) {
 	assert.EqualString(t, afIncomingMessageToMqttMsg(t, aqaraButtonSensor(), "00000600bc820101006e0063aec900000b18010a0000100000001001bc821d"), `
-{"action":"single"}`)
+{"action":"single_left"}`)
 }
 
 func TestButtonSensorDoubleClick(t *testing.T) {
 	assert.EqualString(t, afIncomingMessageToMqttMsg(t, aqaraButtonSensor(), "00000600bc820101007b00fb81cb00000718020a00802002bc821d"), `
-{"action":"double"}`)
+{"action":"double_left"}`)
 }
 
 func TestButtonSensorTripleClick(t *testing.T) {
 	assert.EqualString(t, afIncomingMessageToMqttMsg(t, aqaraButtonSensor(), "00000600bc820101006b003f43cd00000718030a00802003bc821d"), `
-{"action":"triple"}`)
+{"action":"triple_left"}`)
 
 	// for some reason it also sends additional message (but only when >= 3 clicks)
 
@@ -35,7 +35,7 @@ func TestButtonSensorTripleClick(t *testing.T) {
 
 func TestButtonSensorQuadrupleClick(t *testing.T) {
 	assert.EqualString(t, afIncomingMessageToMqttMsg(t, aqaraButtonSensor(), "00000600bc820101007e009855d500000718070a00802004bc821d"), `
-{"action":"quadruple"}`)
+{"action":"quadruple_left"}`)
 
 	// for some reason it also sends additional message (but only when >= 3 clicks)
 
