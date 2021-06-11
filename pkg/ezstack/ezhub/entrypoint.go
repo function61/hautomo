@@ -231,9 +231,12 @@ func processMQTTInboundMessage(
 		}
 
 		if changed(attrs.Color) {
+			// 3rd return is luminance, which a color technically doesn't have
+			X, Y, _ := attrs.Color.Converter().Xyz()
+
 			if err := zigbee.LocalCommand(endpoint, &cluster.LightingColorCtrlMoveToColor{
-				X:              attrs.Color.X,
-				Y:              attrs.Color.Y,
+				X:              uint16(X * 65279),
+				Y:              uint16(Y * 65279),
 				TransitionTime: cluster.TransitionTimeFrom(1 * time.Second),
 			}); err != nil {
 				return err

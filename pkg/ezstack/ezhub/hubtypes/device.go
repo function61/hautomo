@@ -7,6 +7,7 @@ import (
 	"github.com/function61/hautomo/pkg/ezstack"
 	"github.com/function61/hautomo/pkg/ezstack/zcl/cluster"
 	"github.com/function61/hautomo/pkg/ezstack/zigbee"
+	"github.com/lucasb-eyer/go-colorful"
 )
 
 // unique id is ZigbeeDevice.IEEEAddress
@@ -49,19 +50,19 @@ func (d *Device) ImplementsCluster(cluster cluster.ClusterId) bool {
 // encapsulates device endpoint's (a device can have many) attribute values like sensor values (temperature, humidity etc.)
 // TODO: rename to endpointattributes?
 type Attributes struct {
-	Presence         *AttrBool    `json:"presence,omitempty"`   // user is present in a room
-	Brightness       *AttrInt     `json:"brightness,omitempty"` // 0-255
-	Color            *AttrColorXY `json:"color,omitempty"`      // color in (X,Y)
-	ColorTemperature *AttrInt     `json:"color_temp,omitempty"` // mireds
-	On               *AttrBool    `json:"on,omitempty"`         // on/off state
-	Press            *AttrPress   `json:"press,omitempty"`      // generalized version of push
-	Contact          *AttrBool    `json:"contact,omitempty"`    // true=> door/window closed
-	WaterDetected    *AttrBool    `json:"water_detected,omitempty"`
-	Vibration        *AttrEvent   `json:"vibration,omitempty"`
-	Tilt             *AttrEvent   `json:"tilt,omitempty"`
-	AlertSelect      *AttrEvent   `json:"alert_select,omitempty"` // light blinks
-	Drop             *AttrEvent   `json:"drop,omitempty"`
-	BatteryVoltage   *AttrFloat   `json:"battery_voltage,omitempty"` // [V]
+	Presence         *AttrBool  `json:"presence,omitempty"`   // user is present in a room
+	Brightness       *AttrInt   `json:"brightness,omitempty"` // 0-255
+	Color            *AttrColor `json:"color,omitempty"`      // color in (R,G,B)
+	ColorTemperature *AttrInt   `json:"color_temp,omitempty"` // mireds
+	On               *AttrBool  `json:"on,omitempty"`         // on/off state
+	Press            *AttrPress `json:"press,omitempty"`      // generalized version of push
+	Contact          *AttrBool  `json:"contact,omitempty"`    // true=> door/window closed
+	WaterDetected    *AttrBool  `json:"water_detected,omitempty"`
+	Vibration        *AttrEvent `json:"vibration,omitempty"`
+	Tilt             *AttrEvent `json:"tilt,omitempty"`
+	AlertSelect      *AttrEvent `json:"alert_select,omitempty"` // light blinks
+	Drop             *AttrEvent `json:"drop,omitempty"`
+	BatteryVoltage   *AttrFloat `json:"battery_voltage,omitempty"` // [V]
 	// BatteryLevel   *AttrFloat       `json:"battery_level,omitempty"` // [0-100 %]. only set if reported by device. calculated % levels to Home Assistant are usually calculated on-the-fly
 	Temperature      *AttrFloat       `json:"temperature,omitempty"`  // [°C]
 	HumidityRelative *AttrFloat       `json:"humidity_rel,omitempty"` // [0-100 %]
@@ -74,6 +75,8 @@ type Attributes struct {
 	PlaybackControl *AttrPlaybackControl `json:"playback_control,omitempty"`
 
 	// the below maps are luckily new'd when JSON Unmarshal()'d
+
+	// TODO: clearly separate commands and attributes?
 
 	CustomFloat  map[string]*AttrFloat  `json:"custom_float,omitempty"`
 	CustomString map[string]*AttrString `json:"custom_string,omitempty"`
@@ -197,18 +200,26 @@ var _ Attribute = (*AttrOrientation)(nil)
 
 func (a *AttrOrientation) LastChange() time.Time { return a.LastReport }
 
-type AttrColorXY struct {
-	X          uint16
-	Y          uint16
+type AttrColor struct {
+	Red        uint8     `json:"r"` // [0..255]
+	Green      uint8     `json:"g"` // [0..255]
+	Blue       uint8     `json:"b"` // [0..255]
 	LastReport time.Time `json:"reported"`
 }
 
-var _ Attribute = (*AttrColorXY)(nil)
+func (a AttrColor) Converter() colorful.Color {
+	return colorful.LinearRgb(
+		float64(a.Red)/255,
+		float64(a.Green)/255,
+		float64(a.Blue)/255)
+}
 
-func (a *AttrColorXY) LastChange() time.Time { return a.LastReport }
+var _ Attribute = (*AttrColor)(nil)
 
-func (a *AttrColorXY) CopyIfDifferent(dest **AttrColorXY) {
-	if a != nil && (*dest == nil || (*dest).X != a.X || (*dest).Y != a.Y) {
+func (a *AttrColor) LastChange() time.Time { return a.LastReport }
+
+func (a *AttrColor) CopyIfDifferent(dest **AttrColor) {
+	if a != nil && (*dest == nil || (*dest).Red != a.Red || (*dest).Green != a.Green || (*dest).Blue != a.Blue) {
 		*dest = a
 	}
 }
@@ -349,10 +360,11 @@ func (a AttrBuilder) Event() *AttrEvent {
 	}
 }
 
-func (a *AttrsCtx) ColorXY(x, y uint16) *AttrColorXY {
-	return &AttrColorXY{
-		X:          x,
-		Y:          y,
+func (a AttrBuilder) Color(r, g, b uint8) *AttrColor {
+	return &AttrColor{
+		Red:        r,
+		Green:      g,
+		Blue:       b,
 		LastReport: a.Reported,
 	}
 }

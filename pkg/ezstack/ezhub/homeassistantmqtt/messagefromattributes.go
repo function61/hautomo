@@ -205,8 +205,9 @@ func MessageFromChangedAttributes(
 		Color: func() *color {
 			if reportedNow(attrs.Color) {
 				return &color{
-					X: float64(attrs.Color.X) / xyColorScaleMax,
-					Y: float64(attrs.Color.Y) / xyColorScaleMax,
+					R: attrs.Color.Red,
+					G: attrs.Color.Green,
+					B: attrs.Color.Blue,
 				}
 			} else {
 				return nil
@@ -300,12 +301,7 @@ func MessageToAttributes(inboundMsg InboundMessage, actx *hubtypes.AttrsCtx, cur
 	}
 
 	if msg.Color != nil {
-		x, y, err := msg.Color.XYScaledTo65279()
-		if err != nil {
-			return err
-		}
-
-		attrs.Color = actx.ColorXY(x, y)
+		attrs.Color = actx.Color(msg.Color.R, msg.Color.G, msg.Color.B)
 	}
 
 	if msg.ColorTemp != nil {
@@ -366,18 +362,7 @@ func pushesToString(num int) string {
 }
 
 type color struct {
-	X float64 `json:"x"`
-	Y float64 `json:"y"`
-}
-
-func (c color) XYScaledTo65279() (uint16, uint16, error) {
-	if c.X > 1.0 || c.X < 0.0 {
-		return 0, 0, fmt.Errorf("x point outside of range: %d", c.X)
-	}
-
-	if c.Y > 1.0 || c.Y < 0.0 {
-		return 0, 0, fmt.Errorf("x point outside of range: %d", c.Y)
-	}
-
-	return uint16(c.X * xyColorScaleMax), uint16(c.Y * xyColorScaleMax), nil
+	R uint8 // 255
+	G uint8 // 255
+	B uint8 // 255
 }
