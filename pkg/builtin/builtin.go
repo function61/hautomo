@@ -31,7 +31,7 @@ func FirstNonEmpty(items ...string) string {
 	return ""
 }
 
-func UnsetErrorIf(isUnset bool, fieldName string) error {
+func ErrorIfUnset(isUnset bool, fieldName string) error {
 	if isUnset {
 		return fmt.Errorf("'%s' is required but not set", fieldName)
 	} else {

@@ -35,8 +35,8 @@ type MQTTConfig struct {
 
 func (m MQTTConfig) Valid() error {
 	return FirstError(
-		UnsetErrorIf(m.Prefix == "", "Prefix"),
-		UnsetErrorIf(m.Addr == "", "Addr"))
+		ErrorIfUnset(m.Prefix == "", "Prefix"),
+		ErrorIfUnset(m.Addr == "", "Addr"))
 }
 
 func createStateSnapshotTask(nodeDatabase *nodeDb) func(ctx context.Context) error {

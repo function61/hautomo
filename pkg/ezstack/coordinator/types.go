@@ -59,12 +59,12 @@ func (c *Configuration) GetNetworkKey() (zigbee.NetworkKey, error) {
 
 func (c *Configuration) Valid() error {
 	return FirstError(
-		UnsetErrorIf(c.IEEEAddress == "", "IEEEAddress"),
-		UnsetErrorIf(c.PanId == 0, "PanId"),
-		UnsetErrorIf(c.ExtPanId == 0, "ExtPanId"),
-		UnsetErrorIf(c.Channel == 0, "Channel"),
-		UnsetErrorIf(len(c.NetworkKey) != 16, "NetworkKey"),
-		UnsetErrorIf(c.Serial == nil, "Serial"),
+		ErrorIfUnset(c.IEEEAddress == "", "IEEEAddress"),
+		ErrorIfUnset(c.PanId == 0, "PanId"),
+		ErrorIfUnset(c.ExtPanId == 0, "ExtPanId"),
+		ErrorIfUnset(c.Channel == 0, "Channel"),
+		ErrorIfUnset(len(c.NetworkKey) != 16, "NetworkKey"),
+		ErrorIfUnset(c.Serial == nil, "Serial"),
 	)
 }
 
