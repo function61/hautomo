@@ -6,6 +6,10 @@ import (
 	"fmt"
 )
 
+// a type that cannot contain no information whatsoever.
+// perfect for when you need to make(chan struct{}) purely for signalling etc.
+type Void struct{}
+
 func FirstError(errs ...error) error {
 	for _, err := range errs {
 		if err != nil {
