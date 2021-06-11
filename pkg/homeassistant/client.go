@@ -34,7 +34,7 @@ func (c *Client) TextToSpeechGetUrl(ctx context.Context, message string) (string
 		c.baseUrl+"/api/tts_get_url",
 		ezhttp.AuthBearer(c.authToken),
 		ezhttp.SendJson(&req),
-		ezhttp.RespondsJson(&res, false),
+		ezhttp.RespondsJsonAllowUnknownFields(&res), // they have a history of adding fields ("path")
 	); err != nil {
 		return "", fmt.Errorf("TextToSpeechGetUrl: %w", err)
 	}
