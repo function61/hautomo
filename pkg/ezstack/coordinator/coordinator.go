@@ -3,6 +3,7 @@ package coordinator
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/bits"
 	"reflect"
@@ -24,10 +25,6 @@ var nextTransactionId = frame.MakeDefaultTransactionIdProvider()
 
 const defaultTimeout = 10 * time.Second
 
-type Network struct {
-	Address string
-}
-
 type MessageChannels struct {
 	onError           chan error
 	onDeviceAnnounce  chan *znp.ZdoEndDeviceAnnceInd
@@ -40,7 +37,7 @@ type Coordinator struct {
 	config           *Configuration
 	networkProcessor *znp.Znp
 	messageChannels  *MessageChannels
-	network          *Network
+	networkConf      *NetworkConfiguration
 	allIncomingMsgs  *topic.Topic // is buffered (capacity ~100)
 }
 
@@ -64,8 +61,8 @@ func (c *Coordinator) OnError() chan error {
 	return c.messageChannels.onError
 }
 
-func (c *Coordinator) Network() *Network {
-	return c.network
+func (c *Coordinator) NetworkConf() *NetworkConfiguration {
+	return c.networkConf
 }
 
 func New(config *Configuration) *Coordinator {
@@ -79,7 +76,6 @@ func New(config *Configuration) *Coordinator {
 	return &Coordinator{
 		config:          config,
 		messageChannels: messageChannels,
-		network:         &Network{},
 		allIncomingMsgs: topic.New(),
 	}
 }
@@ -150,9 +146,12 @@ func (c *Coordinator) Run(ctx context.Context, joinEnable bool, networkProcessor
 		firmwareVer.TransportRev)
 
 	// applies network settings (network address, radio channel, encryption key) etc.
-	if err := configureAndReset(c, settingsFlash); err != nil {
+	networkConf, err := configureAndReset(c, settingsFlash)
+	if err != nil {
 		return fmt.Errorf("configureAndReset: %w", err)
 	}
+
+	c.networkConf = networkConf
 
 	// "enable all subsystems"
 	if _, err := c.networkProcessor.UtilCallbackSubCmd(znp.SubsystemIdAllSubsystems, znp.ActionEnable); err != nil {
@@ -170,14 +169,19 @@ func (c *Coordinator) Run(ctx context.Context, joinEnable bool, networkProcessor
 	}
 
 	log.Debug.Printf(
-		"ZNP DeviceInfo: status=%s IEEEAddr=%s Addr=%s state=%s assocdevices=%v",
+		"ZNP DeviceInfo: status=%s IEEEAddr=%s state=%s assocdevices=%v",
 		deviceInfo.Status,
 		deviceInfo.IEEEAddr,
-		deviceInfo.ShortAddr,
 		deviceInfo.DeviceState,
 		deviceInfo.AssocDevicesList)
 
-	c.network.Address = deviceInfo.ShortAddr // this seems to be 0x0000
+	if deviceInfo.ShortAddr != zigbee.CoordinatorNwkAddr {
+		return fmt.Errorf("coordinator NwkAddress should always be " + zigbee.CoordinatorNwkAddr)
+	}
+
+	if deviceInfo.IEEEAddr != networkConf.IEEEAddress.HexPrefixedString() { // shouldn't happen
+		return errors.New("mismatching coordinator IEEEAddr in DeviceInfo vs radio config")
+	}
 
 	if err := setLed(c.config.Led, c.networkProcessor); err != nil {
 		return fmt.Errorf("setLed: %w", err)
@@ -408,7 +412,7 @@ func readNetworkConfigFromNVRAM(np *znp.Znp) (*NetworkConfiguration, error) {
 	}, nil
 }
 
-func configureAndReset(coordinator *Coordinator, settingsFlash bool) error {
+func configureAndReset(coordinator *Coordinator, settingsFlash bool) (*NetworkConfiguration, error) {
 	maybeWrapErr := func(prefix string, err error) error {
 		if err != nil {
 			return fmt.Errorf("%s%w", prefix, err)
@@ -418,7 +422,7 @@ func configureAndReset(coordinator *Coordinator, settingsFlash bool) error {
 	}
 
 	if err := coordinator.Reset(); err != nil {
-		return maybeWrapErr("Reset: ", err)
+		return nil, maybeWrapErr("Reset: ", err)
 	}
 
 	np := coordinator.networkProcessor // shorthand
@@ -428,24 +432,24 @@ func configureAndReset(coordinator *Coordinator, settingsFlash bool) error {
 
 	if _, err := np.SysSetTime(0, uint8(now.Hour()), uint8(now.Minute()), uint8(now.Second()),
 		uint8(now.Month()), uint8(now.Day()), uint16(now.Year())); err != nil {
-		return maybeWrapErr("SysSetTime: ", err)
+		return nil, maybeWrapErr("SysSetTime: ", err)
 	}
 
 	radioConf, err := readNetworkConfigFromNVRAM(np)
 	if err != nil {
-		return fmt.Errorf("readNetworkConfigFromNVRAM: %w", err)
+		return nil, fmt.Errorf("readNetworkConfigFromNVRAM: %w", err)
 	}
 
 	// check if in-device persisted configuration matches what we have. it would not be
 	// wise to flash config each time we start, because it wears out the EEPROM
 	if coordinator.config.Equal(*radioConf) {
-		return nil // happy path
+		return radioConf, nil // happy path
 	}
 
 	if !settingsFlash { // dangerous unless explicitly given permission
 		radioConfJson, _ := json.MarshalIndent(radioConf, "", "  ")
 
-		return fmt.Errorf("mismatching config. add flag to allow flashing!\nradio config = %s", radioConfJson)
+		return nil, fmt.Errorf("mismatching config. add flag to allow flashing!\nradio config = %s", radioConfJson)
 	}
 
 	log.Error.Println("mismatching config - flashing")
@@ -541,11 +545,11 @@ func configureAndReset(coordinator *Coordinator, settingsFlash bool) error {
 		},
 	} {
 		if err := step(); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
+	return radioConf, nil
 }
 
 func setPermitJoiningStatus(permitJoin bool, coordinator *Coordinator) error {
@@ -565,7 +569,10 @@ func setPermitJoiningStatus(permitJoin bool, coordinator *Coordinator) error {
 		}
 	}()
 
-	if _, err := coordinator.networkProcessor.SapiZbPermitJoiningRequest(coordinator.network.Address, timeout); err != nil {
+	if _, err := coordinator.networkProcessor.SapiZbPermitJoiningRequest(
+		zigbee.CoordinatorNwkAddr,
+		timeout,
+	); err != nil {
 		return fmt.Errorf("SapiZbPermitJoiningRequest: %w", err)
 	}
 

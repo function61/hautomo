@@ -229,10 +229,6 @@ func (f *Stack) LocalCommand(dev DeviceAndEndpoint, command cluster.LocalCommand
 	return nil
 }
 
-func (s *Stack) Network() *coordinator.Network {
-	return s.coordinator.Network()
-}
-
 func (s *Stack) processIncomingMessage(incomingMessage *znp.AfIncomingMessage) error {
 	zclIncomingMessage, err := s.zcl.ToZclIncomingMessage(incomingMessage)
 	if err != nil {

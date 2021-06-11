@@ -17,7 +17,7 @@ func (i IEEEAddress) HexPrefixedString() string {
 }
 
 const (
-	CoordinatorNwkAddr = "0x0000"
+	CoordinatorNwkAddr = "0x0000" // https://www.eetimes.com/zigbee-applications-part-4-zigbee-addressing/
 )
 
 type LogicalType uint8
