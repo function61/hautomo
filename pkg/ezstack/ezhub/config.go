@@ -84,7 +84,9 @@ func GenerateConfiguration(output io.Writer) error {
 		return err
 	}
 
-	panId, err := rand.Int(rand.Reader, big.NewInt(math.MaxUint16))
+	// 0x3fff = thanks for the surprise. not uint16 but surpriseint16. makes sense.
+	// https://www.eetimes.com/zigbee-applications-part-4-zigbee-addressing/
+	panId, err := rand.Int(rand.Reader, big.NewInt(0x3fff))
 	if err != nil {
 		return err
 	}
