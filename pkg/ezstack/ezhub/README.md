@@ -30,12 +30,13 @@ SUBSYSTEM=="tty", ATTRS{idVendor}=="0451", ATTRS{idProduct}=="16a8", ATTRS{seria
 SUBSYSTEM=="tty", ATTRS{idVendor}=="0451", ATTRS{idProduct}=="16a8", ATTRS{serial}=="__0X00124B001CDC5B21", SYMLINK="ttyUSB.CC2531-ezhub2", OWNER="pi"
 ```
 
-NOTE: replace serials numbers with your own. You can find them with:
+NOTE: replace serial numbers with your own. You can find them with:
 
 ```
 $ udevadm info -a -n /dev/ttyACM0 | grep serial
 ```
 
+You might want to restart to verify that device got assigned the correct path.
 
 
 Quickstart
@@ -46,12 +47,6 @@ you should leave yourself a chance in the future), it's a good idea to number th
 
 Download Hautomo into that directory. It contains the `ezhub` component (as sub-command).
 
-Install as a service:
-
-```console
-$ ./hautomo ezhub --install
-```
-
 Generate new configuration file:
 
 ```console
@@ -59,7 +54,28 @@ $ ./hautomo ezhub new-config > ezhub-config.json
 ```
 
 All the values are randomized (except channel) -
-[you might want to change it]((https://home-assistant-guide.com/2020/10/29/choose-your-zigbee-channel-wisely/)).
+[you might want to change it](https://home-assistant-guide.com/2020/10/29/choose-your-zigbee-channel-wisely/).
+
+Test starting it manually:
+
+```console
+$ ./hautomo ezhub --install
+```
+
+You should get a complaint that your configuration does not match the one stored inside the radio.
+Run again with `--settings-flash` to confirm the settings change. You should get this warning only
+once (because you changed the network configuration).
+
+Install as a service to start automatically on system restarts:
+
+```console
+$ ./hautomo ezhub --install
+Wrote unit file to /etc/systemd/system/ezhub1.service
+Run to enable on boot & to start (--)now:
+	$ systemctl enable --now ezhub1
+Verify successful start:
+	$ systemctl status ezhub1
+```
 
 
 How to pair devices
@@ -128,6 +144,6 @@ You should be ready if the
 If not, and:
 
 - The sensor sends data according to ZCL specs
-	* You can write a new generic parser
+	* You can write a new [generic parser](https://github.com/function61/hautomo/commit/2550653a8491de18a1141aa8f9f91be70f010541#diff-8d5a42146d96459e82bab90022074bb2891106a2ededf42540d77363a058e284)
 - The sensor uses its own data format
 	* You need to write a [custom adapter](https://github.com/function61/hautomo/blob/d7335aba0e0acf5583af2f88e1757d32dc9c25ee/pkg/ezstack/ezhub/deviceadapters/xiaomibutton.go#L10)
