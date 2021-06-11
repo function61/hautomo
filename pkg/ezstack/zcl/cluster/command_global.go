@@ -32,8 +32,9 @@ type Date struct {
 	DayOfWeek  uint8
 }
 
+// NOTE: has custom marshaling defined
 type Attribute struct {
-	DataType ZclDataType
+	DataType ZclDataType // upon serialization this disappears (only *Value* is marshaled)
 	Value    interface{}
 }
 
@@ -80,10 +81,10 @@ type AttributeReportingConfigurationRecord struct {
 	Direction                ReportDirection
 	AttributeName            string `transient:"true"`
 	AttributeID              uint16
-	AttributeDataType        ZclDataType `cond:"uint:Direction==0"`
-	MinimumReportingInterval uint16      `cond:"uint:Direction==0"`
-	MaximumReportingInterval uint16      `cond:"uint:Direction==0"`
-	ReportableChange         *Attribute  `cond:"uint:Direction==0"`
+	AttributeDataType        ZclDataType `cond:"uint:Direction==0"` // specified by the attribute
+	MinimumReportingInterval uint16      `cond:"uint:Direction==0"` // [s]
+	MaximumReportingInterval uint16      `cond:"uint:Direction==0"` // [s]
+	ReportableChange         *Attribute  `cond:"uint:Direction==0"` // [in units of the attribute]
 	TimeoutPeriod            uint16      `cond:"uint:Direction==1"`
 }
 
@@ -99,7 +100,10 @@ type AttributeStatusRecord struct {
 }
 
 type ConfigureReportingResponse struct {
-	AttributeStatusRecords []*AttributeStatusRecord
+	// "In the case of successful configuration of all attributes, only a single attribute status
+	//  record SHALL be included in the command, with the status field set to SUCCESS and the
+	//  direction and attribute identifier fields omitted.
+	AttributeStatusRecords []*AttributeStatusRecord // you can think of this as "failed attribute sets"
 }
 
 type AttributeRecord struct {
