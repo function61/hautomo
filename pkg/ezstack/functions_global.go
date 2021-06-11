@@ -11,26 +11,41 @@ import (
 	"github.com/function61/hautomo/pkg/ezstack/znp"
 )
 
+// ZCL spec section 2.5.1
 func (s *Stack) ReadAttributes(
 	nwkAddress string,
 	clusterId cluster.ClusterId,
 	attributeIds []cluster.AttributeId,
 ) (*cluster.ReadAttributesResponse, error) {
 	response, err := s.globalCommand(nwkAddress, clusterId, 0x00, &cluster.ReadAttributesCommand{castAttributeIds(attributeIds)})
-
-	if err == nil {
-		return response.(*cluster.ReadAttributesResponse), nil
+	if err != nil {
+		return nil, err
 	}
-	return nil, err
+
+	return response.(*cluster.ReadAttributesResponse), nil
 }
 
+// ZCL spec section 2.5.3
 func (s *Stack) WriteAttributes(nwkAddress string, clusterId cluster.ClusterId, writeAttributeRecords []*cluster.WriteAttributeRecord) (*cluster.WriteAttributesResponse, error) {
 	response, err := s.globalCommand(nwkAddress, clusterId, 0x02, &cluster.WriteAttributesCommand{writeAttributeRecords})
-
-	if err == nil {
-		return response.(*cluster.WriteAttributesResponse), nil
+	if err != nil {
+		return nil, err
 	}
-	return nil, err
+
+	return response.(*cluster.WriteAttributesResponse), nil
+}
+
+// ZCL spec section 2.5.7
+func (s *Stack) ConfigureReporting(nwkAddress string, clusterId cluster.ClusterId, configs ...*cluster.AttributeReportingConfigurationRecord) error {
+	response, err := s.globalCommand(nwkAddress, clusterId, 0x06, &cluster.ConfigureReportingCommand{configs})
+	if err != nil {
+		return err
+	}
+
+	// TODO: validate status
+	_ = response.(*cluster.ConfigureReportingResponse)
+
+	return nil
 }
 
 func (s *Stack) globalCommand(nwkAddress string, clusterId cluster.ClusterId, commandId uint8, command interface{}) (interface{}, error) {
