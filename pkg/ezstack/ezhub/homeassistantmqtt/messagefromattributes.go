@@ -44,7 +44,8 @@ type zigbee2mqttGenericJson struct {
 	Battery     *int64            `json:"battery,omitempty"`     // [%]
 	Extra       map[string]string `json:"extra,omitempty"`
 
-	HackShadeCommand *string `json:"shade_command,omitempty"` // not really in Home Assistant
+	HackShadeCommand *string `json:"shade_command,omitempty"`  // not really in Home Assistant
+	CoverPosition    *int    `json:"cover_position,omitempty"` // not really in Home Assistant
 }
 
 func MessageFromChangedAttributes(
@@ -322,6 +323,10 @@ func MessageToAttributes(inboundMsg InboundMessage, actx *hubtypes.AttrsCtx, cur
 		default:
 			return fmt.Errorf("unknown HackShadeCommand: %s", *msg.HackShadeCommand)
 		}
+	}
+
+	if msg.CoverPosition != nil {
+		attrs.ShadePosition = actx.Int(int64(*msg.CoverPosition))
 	}
 
 	if msg.Alert != nil {
