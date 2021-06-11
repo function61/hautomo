@@ -10,7 +10,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/function61/gokit/app/retry"
 	"github.com/function61/gokit/encoding/jsonfile"
 	"github.com/function61/gokit/log/logex"
 	"github.com/function61/gokit/net/http/httputils"
@@ -51,11 +50,11 @@ func Run(
 		return fmt.Errorf("loadNodeDatabaseOrInitIfNotFound: %w", err)
 	}
 
-	if err := homeAssistantAutoDiscovery(conf.MQTT.Addr, conf.MQTT.Prefix, nodeDatabase, logl); err != nil {
+	if err := homeAssistantAutoDiscovery(conf.MQTT.Addr, conf.MQTT.Prefix, nodeDatabase, rootLogger); err != nil {
 		logl.Error.Printf("homeAssistantAutoDiscovery: %w", err)
 	}
 
-	zigbee := ezstack.New(conf.Coordinator, nodeDatabase)
+	stack := ezstack.New(conf.Coordinator, nodeDatabase)
 
 	tasks := taskrunner.New(ctx, rootLogger)
 
@@ -79,13 +78,13 @@ func Run(
 	})
 
 	tasks.Start("ezstack", func(ctx context.Context) error {
-		return zigbee.Run(ctx, joinEnable, packetCaptureFile, settingsFlash)
+		return stack.Run(ctx, joinEnable, packetCaptureFile, settingsFlash)
 	})
 
 	if conf.HttpAddr != "" {
 		srv := &http.Server{
 			Addr:    conf.HttpAddr,
-			Handler: createHttpApi(zigbee, nodeDatabase),
+			Handler: createHttpApi(stack, nodeDatabase),
 		}
 
 		tasks.Start("http "+srv.Addr, func(ctx context.Context) error {
@@ -105,7 +104,7 @@ func Run(
 				logl.Debug.Printf("MQTT inbound %s: %s", msg.DeviceId, msgJson)
 
 				go func() {
-					if err := processMQTTInboundMessage(msg, zigbee, nodeDatabase, mqttPublish, conf.MQTT.Prefix); err != nil {
+					if err := processMQTTInboundMessage(msg, stack, nodeDatabase, mqttPublish, conf.MQTT.Prefix); err != nil {
 						logl.Error.Printf("processMQTTInboundMessage: %v", err.Error())
 					}
 				}()
@@ -338,7 +337,7 @@ func homeAssistantAutoDiscovery(
 	mqttAddr string,
 	mqttPrefix string,
 	nodeDatabase *nodeDb,
-	logl *logex.Leveled,
+	logger *log.Logger,
 ) error {
 	entities := []*homeassistant.Entity{}
 
@@ -356,23 +355,21 @@ func homeAssistantAutoDiscovery(
 		return nil
 	}
 
-	// try for a while so that if MQTT server hasn't had the chance to come online,
-	// we try a little more
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	homeAssistant, mqttTask := homeassistant.NewMqttClient(mqttAddr, mqttPrefix, logex.Levels(logger))
+
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ifFails := func(err error) {
-		logl.Error.Println(err.Error())
+	tasks := taskrunner.New(ctx, logger)
+	tasks.Start("mqtt", mqttTask)
+
+	if err := homeAssistant.AutodiscoverEntities(entities...); err != nil {
+		return err
 	}
 
-	return retry.Retry(ctx, func(ctx context.Context) error {
-		homeAssistant, err := homeassistant.NewMqttClient(mqttAddr, mqttPrefix, logl)
-		if err != nil {
-			return err
-		}
+	cancel()
 
-		return homeAssistant.AutodiscoverEntities(entities...)
-	}, retry.DefaultBackoff(), ifFails)
+	return tasks.Wait()
 }
 
 func isNilInterface(i interface{}) bool {

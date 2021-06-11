@@ -7,9 +7,9 @@ require (
 	github.com/aws/aws-sdk-go v1.25.19
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dyrkin/composer v0.0.0-20200122082441-a24eee489fd9
+	github.com/eclipse/paho.mqtt.golang v1.3.5
 	github.com/function61/gokit v0.0.0-20210402130425-341c2c9ecfd0
 	github.com/lucasb-eyer/go-colorful v1.0.2
-	github.com/mmcdole/gofeed v1.0.0
 	github.com/prometheus/client_golang v1.1.0
 	github.com/shimmeringbee/bytecodec v0.0.0-20201107142444-94bb5c0baaee
 	github.com/shimmeringbee/zcl v0.0.0-20210228205506-7c69558adab2
@@ -19,7 +19,7 @@ require (
 	github.com/yaslama/astrocalc v0.0.0-20140803181550-059903143858
 	github.com/yosssi/gmq v0.0.1
 	go.bug.st/serial v1.1.4-0.20210226135948-383ed1cd2abf
-	golang.org/x/net v0.0.0-20191021144547-ec77196f6094
+	golang.org/x/net v0.0.0-20200425230154-ff2c4b7c35a0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/text v0.3.2 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
