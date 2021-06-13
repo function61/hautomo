@@ -17,11 +17,12 @@ var (
 )
 
 func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
-	ha, err := homeassistant.NewMqttClient(adapter.Conf.Url, adapter.Logl)
-	ha, err := homeassistant.NewMqttClient(adapter.Conf.Url, "Hautomo-Home-Assistant", adapter.Logl)
-	if err != nil {
-		return fmt.Errorf("NewMqttClient: %w", err)
-	}
+	ha, mqttTask := homeassistant.NewMQTTClient(
+		homeassistant.MQTTConfig{
+			Address: adapter.Conf.Url,
+		},
+		"Hautomo-Home-Assistant",
+		adapter.Logl)
 
 	homeAssistantInboundCommand, err := ha.SubscribeForCommands(topicPrefix)
 	if err != nil {

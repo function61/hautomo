@@ -19,6 +19,20 @@ const (
 	mqttQoS2 = 2 // Exactly once delivery
 )
 
+type MQTTConfig struct {
+	Address     string                 `json:"address"`
+	Credentials *MQTTConfigCredentials `json:"credentials"`
+}
+
+func (m MQTTConfig) Valid() error {
+	return ErrorIfUnset(m.Address == "", "Address")
+}
+
+type MQTTConfigCredentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 type task func(context.Context) error
 
 type InboundCommand struct {
@@ -48,8 +62,8 @@ type MqttClient struct {
 	logl     *logex.Leveled
 }
 
-func NewMqttClient(
-	mqttAddr string,
+func NewMQTTClient(
+	mqttConf MQTTConfig,
 	clientId string,
 	logl *logex.Leveled,
 ) (*MqttClient, task) {
@@ -61,8 +75,12 @@ func NewMqttClient(
 	}
 
 	return ha, func(ctx context.Context) error {
+		if err := mqttConf.Valid(); err != nil {
+			return err
+		}
+
 		for {
-			if err := mqttConnection(ctx, ha, mqttAddr, clientId); err != nil {
+			if err := mqttConnection(ctx, ha, mqttConf, clientId); err != nil {
 				logl.Error.Printf("mqttConnection: %v", err)
 			}
 
@@ -79,12 +97,12 @@ func NewMqttClient(
 func mqttConnection(
 	ctx context.Context,
 	h *MqttClient,
-	addr string,
+	conf MQTTConfig,
 	clientId string,
 ) error {
 	connectionLost := make(chan error, 1)
 
-	opts := mqtt.NewClientOptions().AddBroker("tcp://" + addr)
+	opts := mqtt.NewClientOptions().AddBroker("tcp://" + conf.Address)
 	opts.SetClientID(clientId)
 	opts.SetConnectionLostHandler(func(_ mqtt.Client, err error) {
 		connectionLost <- err
@@ -92,6 +110,10 @@ func mqttConnection(
 	// we manage reconnects ourselves. it's easier than trying to understand / trust how
 	// *ResumeSubs*, *CleanSession* and delivery guarantees of Publish() when reconnecting is needed.
 	opts.SetAutoReconnect(false)
+	if conf.Credentials != nil {
+		opts.SetUsername(conf.Credentials.Username)
+		opts.SetPassword(conf.Credentials.Password)
+	}
 
 	mqttClient := mqtt.NewClient(opts)
 	if err := waitFor(mqttClient.Connect()); err != nil {

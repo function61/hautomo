@@ -355,7 +355,14 @@ func homeAssistantAutoDiscovery(
 		return nil
 	}
 
-	homeAssistant, mqttTask := homeassistant.NewMqttClient(mqttAddr, mqttPrefix, logex.Levels(logger))
+	clientId := mqttPrefix // use prefix as client ID
+
+	homeAssistant, mqttTask := homeassistant.NewMQTTClient(
+		homeassistant.MQTTConfig{
+			Address: mqttAddr,
+		},
+		clientId,
+		logex.Levels(logger))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
