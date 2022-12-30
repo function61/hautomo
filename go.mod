@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/aws/aws-lambda-go v1.13.2
-	github.com/aws/aws-sdk-go v1.25.19
+	github.com/aws/aws-sdk-go v1.33.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dyrkin/composer v0.0.0-20200122082441-a24eee489fd9
 	github.com/eclipse/paho.mqtt.golang v1.3.5
