@@ -19,9 +19,9 @@ require (
 	github.com/yaslama/astrocalc v0.0.0-20140803181550-059903143858
 	github.com/yosssi/gmq v0.0.1
 	go.bug.st/serial v1.1.4-0.20210226135948-383ed1cd2abf
-	golang.org/x/net v0.0.0-20200425230154-ff2c4b7c35a0
+	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/text v0.3.2 // indirect
+	golang.org/x/text v0.3.8 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
