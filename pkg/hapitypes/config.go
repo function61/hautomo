@@ -1,5 +1,9 @@
 package hapitypes
 
+import (
+	"fmt"
+)
+
 type PresenceByPingDevice struct {
 	Ip     string `json:"ip"`
 	Person string `json:"person"`

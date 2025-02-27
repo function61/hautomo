@@ -93,7 +93,7 @@ func Run(
 	}
 
 	tasks.Start("messagehandler", func(ctx context.Context) error {
-		chans := zigbee.Channels()
+		chans := stack.Channels()
 
 		for {
 			select {

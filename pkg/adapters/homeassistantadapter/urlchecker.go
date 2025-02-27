@@ -35,6 +35,6 @@ func makeUrlCheckerSensor(
 
 		logl.Info.Printf("%s changed", entityId)
 
-		return ha.PublishState(sensor, cacheBust(url))
+		return <-ha.PublishState(sensor, cacheBust(url))
 	}
 }

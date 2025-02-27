@@ -185,7 +185,7 @@ func runOnce(ctx context.Context, sqsClient *sqs.SQS, adapter *hapitypes.Adapter
 		if attrs.PlaybackControl != nil {
 			adapter.Receive(hapitypes.NewPlaybackEvent(
 				msg.DeviceId,
-				attrs.PlaybackControl.Control))
+				string(attrs.PlaybackControl.Control)))
 		}
 
 		if attrs.ShadePosition != nil {

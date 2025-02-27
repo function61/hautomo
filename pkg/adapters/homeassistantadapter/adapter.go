@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/function61/gokit/log/logex"
 	"github.com/function61/hautomo/pkg/hapitypes"
 	"github.com/function61/hautomo/pkg/homeassistant"
 )
@@ -23,6 +22,8 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 		},
 		"Hautomo-Home-Assistant",
 		adapter.Logl)
+
+	mqttTaskExited := launch(ctx, mqttTask)
 
 	homeAssistantInboundCommand, err := ha.SubscribeForCommands(topicPrefix)
 	if err != nil {
@@ -42,7 +43,7 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 			continue
 		}
 
-		switchEntity := homeassistant.NewSwitch(dev.AdaptersDeviceId, dev.Name)
+		switchEntity := homeassistant.NewSwitchEntity(dev.AdaptersDeviceId, dev.Name, homeassistant.DiscoveryOptions{})
 		entityById[switchEntity.Id] = switchEntity
 		allEntities = append(allEntities, switchEntity)
 	}
@@ -79,6 +80,8 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 		select {
 		case <-ctx.Done():
 			return nil
+		case err := <-mqttTaskExited:
+			return err
 		case cmd := <-homeAssistantInboundCommand:
 			entity, found := entityById[cmd.EntityId]
 			if !found {
@@ -96,7 +99,7 @@ func Start(ctx context.Context, adapter *hapitypes.Adapter) error {
 
 			// immediately send state back
 			// TODO: don't do this from here
-			if err := ha.PublishState(entity, cmd.State); err != nil {
+			if err := ha.PublishState(entity, cmd.Payload); err != nil {
 				adapter.Logl.Error.Printf("PublishState: %v", err)
 			}
 		case <-pollInterval.C:

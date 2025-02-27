@@ -43,7 +43,7 @@ func newPolicyEngine(booleans *booleanStorage, obtain func(key string) *hapitype
 	}
 }
 
-func (p *policyEngine) evaluatePowerPolicies(powerManager *PowerManager) {
+func (p *policyEngine) evaluatePowerPolicies(powerManager *hapitypes.PowerManager) {
 	boolToPowerKind := func(on bool) hapitypes.PowerKind {
 		if on {
 			return hapitypes.PowerKindOn
