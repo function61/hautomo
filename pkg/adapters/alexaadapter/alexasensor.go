@@ -212,7 +212,7 @@ func runOnce(ctx context.Context, sqsClient *sqs.SQS, adapter *hapitypes.Adapter
 }
 
 // FIXME: this is an ugly hack because we can't semantically represent curtain in Alexa, so we've to
-//        on-the-fly transform semantics in this layer
+// on-the-fly transform semantics in this layer
 func isCurtainDevice(deviceId string) bool {
 	return deviceId == "bedroomWindowShade"
 }

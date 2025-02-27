@@ -302,7 +302,7 @@ type SysResetReq struct {
 	ResetType byte
 }
 
-//Capabilities represents the interfaces that this device can handle (compiled into the device)
+// Capabilities represents the interfaces that this device can handle (compiled into the device)
 type Capabilities struct {
 	Sys   uint16 `bitmask:"start" bits:"0x0001"`
 	Mac   uint16 `bits:"0x0002"`

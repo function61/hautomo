@@ -90,7 +90,7 @@ func colorTempY(temp ColorTemp) int {
 }
 
 // adapted from:
-//   https://github.com/ffleurey/ThingML-Tradfri/blob/e4c8a8bbe48e36d364b9fd1c574e6a1e292bb58e/tradfri-java/src/main/java/org/thingml/tradfri/LightBulb.java#L106
+// https://github.com/ffleurey/ThingML-Tradfri/blob/e4c8a8bbe48e36d364b9fd1c574e6a1e292bb58e/tradfri-java/src/main/java/org/thingml/tradfri/LightBulb.java#L106
 func rgbToXY(red uint8, green uint8, blue uint8) (int, int) {
 	// convert to XYZ
 	x, y, z := colorful.Color{

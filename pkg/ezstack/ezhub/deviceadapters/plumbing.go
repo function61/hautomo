@@ -125,8 +125,8 @@ func (h *simpleAdapter) BatteryType() *hubtypes.BatteryType {
 // if no such thing is found, returns parser from secondary device.
 //
 // used as building block to transparently paper over differences, e.g. meanings:
+// usually: genOnOff.onOff=true -> turn on
 //
-//           usually: genOnOff.onOff=true -> turn on
 // with Aqara Button: genOnOff.onOff=true -> single click
 type mergedDevice struct {
 	primary   Adapter

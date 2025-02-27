@@ -6,11 +6,11 @@
 	"builders": [
 		{
 			"name": "default",
-			"uses": "docker://fn61/buildkit-golang:20200612_1221_eca6dcb6",
+			"uses": "docker://fn61/buildkit-golang:20250109_1140_037f68db",
 			"mount_destination": "/workspace",
 			"workdir": "/workspace",
 			"commands": {
-				"build": ["bin/build.sh"],
+				"build": ["build-go-project.sh", "--directory=cmd/hautomo/", "--binary-basename=hautomo"],
 				"dev": ["bash"]
 			}
 		},

@@ -11,7 +11,7 @@ type encoder struct {
 	buf *bytes.Buffer
 }
 
-//Encode struct to byte array
+// Encode struct to byte array
 func Encode(request interface{}) []byte {
 	value := reflect.ValueOf(request)
 	buf := bytes.NewBuffer(make([]byte, 0, 200))

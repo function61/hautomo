@@ -18,7 +18,7 @@ const (
 )
 
 // NOTE: device classes are platform-specific, i.e. "door" device class is only recognized by
-//       binary_sensor platform
+// binary_sensor platform
 const (
 	DeviceClassDefault     = ""
 	DeviceClassMotion      = "motion"      // component=binary_sensor
