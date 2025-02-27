@@ -13,18 +13,6 @@
 				"build": ["build-go-project.sh", "--directory=cmd/hautomo/", "--binary-basename=hautomo"],
 				"dev": ["bash"]
 			}
-		},
-		{
-			"name": "publisher",
-			"uses": "docker://fn61/buildkit-publisher:20190206_1058_d35b3939",
-			"mount_destination": "/workspace",
-			"commands": {
-				"publish": ["publish.sh", "rel/*"]
-			},
-			"env": {
-				"BINTRAY_PROJECT": "function61/dl/hautomo"
-			},
-			"pass_envs": ["BINTRAY_CREDS"]
 		}
 	],
 	"os_arches": {

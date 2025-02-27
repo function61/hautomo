@@ -1,6 +1,3 @@
-[![Build Status](https://img.shields.io/travis/function61/hautomo.svg?style=for-the-badge)](https://travis-ci.org/function61/hautomo)
-[![Download](https://img.shields.io/bintray/v/function61/dl/hautomo.svg?style=for-the-badge&label=Download)](https://bintray.com/function61/dl/hautomo/_latestVersion#files)
-
 Home automation hub built to serve my specific requirements.
 
 Due to Golang runs pretty much anywhere, but some specifics work best with a Raspberry Pi.
